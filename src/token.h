@@ -87,6 +87,9 @@ namespace tempearly
             KW_WHILE,
             
             IDENTIFIER,
+            STRING,
+            INT,
+            FLOAT,
             CLOSE_TAG,
             ERROR,
             END_OF_INPUT

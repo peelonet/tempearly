@@ -2,6 +2,7 @@
 
 #include "interpreter.h"
 #include "parser.h"
+#include "utils.h"
 
 namespace tempearly
 {
@@ -39,6 +40,29 @@ namespace tempearly
             std::fclose(m_stream);
             m_stream = 0;
         }
+    }
+
+    int Parser::PeekChar()
+    {
+        if (m_pushback_chars.empty())
+        {
+            int c = ReadChar();
+
+            if (c < 0)
+            {
+                return -1;
+            }
+            m_pushback_chars.push(c);
+
+            return c;
+        }
+
+        return m_pushback_chars.front();
+    }
+
+    bool Parser::PeekChar(int c)
+    {
+        return PeekChar() == c;
     }
 
     int Parser::ReadChar()
@@ -108,6 +132,16 @@ namespace tempearly
         if (c > 0)
         {
             m_pushback_chars.push(c);
+        }
+    }
+
+    void Parser::SkipChar()
+    {
+        if (m_pushback_chars.empty())
+        {
+            ReadChar();
+        } else {
+            m_pushback_chars.pop();
         }
     }
 
@@ -278,7 +312,6 @@ READ_NEXT_CHAR:
                 // Multi-line comment?
                 else if (ReadChar('*'))
                 {
-                    const int line = m_token.position.line;
                     unsigned int depth = 1;
 
                     for (;;)
@@ -288,7 +321,7 @@ READ_NEXT_CHAR:
                             std::stringstream ss;
 
                             ss << "Unterminated multi-line comment at "
-                               << line
+                               << token.position.line
                                << "; Missing `*/'";
                             token.kind = Token::ERROR;
                             token.text = ss.str();
@@ -455,26 +488,233 @@ READ_NEXT_CHAR:
                 }
                 break;
 
-            // TODO: strings, number literals
+            case '\'':
+            case '"':
+            {
+                const int separator = c;
+
+                m_buffer.clear();
+                for (;;)
+                {
+                    if ((c = ReadChar()) < 0)
+                    {
+                        std::stringstream ss;
+
+                        ss << "Unterminated string literal at "
+                           << token.position.line
+                           << "; missing `"
+                           << static_cast<char>(separator)
+                           << "'";
+                        token.kind = Token::ERROR;
+                        token.text = ss.str();
+
+                        return token;
+                    }
+                    else if (c == separator)
+                    {
+                        break;
+                    }
+                    else if (c == '\\')
+                    {
+                        // TODO: process escape sequence
+                    } else {
+                        m_buffer.append(1, static_cast<char>(c));
+                    }
+                }
+                token.kind = Token::STRING;
+                token.text = m_buffer;
+                break;
+            }
+
+            case '0':
+                m_buffer.assign(1, '0');
+                switch (c = ReadChar())
+                {
+                    // Binary integer literal.
+                    case 'b': case 'B':
+                        m_buffer.append(1, 'b');
+                        while (PeekChar('_') || std::isdigit(PeekChar()))
+                        {
+                            if ((c = ReadChar()) == '_')
+                            {
+                                continue;
+                            }
+                            else if (c != '0' && c != '1')
+                            {
+                                std::stringstream ss;
+
+                                ss << "Invalid binary digit: "
+                                   << static_cast<char>(c);
+                                token.kind = Token::ERROR;
+                                token.text = ss.str();
+
+                                return token;
+                            } else {
+                                m_buffer.append(1, static_cast<char>(c));
+                            }
+                        }
+                        token.kind = Token::INT;
+                        token.text = m_buffer;
+                        break;
+
+                    // Hex integer literal.
+                    case 'x': case 'X':
+
+                    // Octal integer literal.
+                    case 'o': case 'O':
+                    case '0': case '1':
+                    case '2': case '3':
+                    case '4': case '5':
+                    case '6': case '7':
+                        m_buffer.append(1, static_cast<char>(c));
+                        while (PeekChar('_') || std::isdigit(PeekChar()))
+                        {
+                            if ((c = ReadChar()) == '_')
+                            {
+                                continue;
+                            }
+                            else if (c > '7')
+                            {
+                                std::stringstream ss;
+
+                                ss << "Invalid octal digit: "
+                                   << static_cast<char>(c);
+                                token.kind = Token::ERROR;
+                                token.text = ss.str();
+
+                                return token;
+                            } else {
+                                m_buffer.append(1, static_cast<char>(c));
+                            }
+                        }
+                        token.kind = Token::INT;
+                        token.text = m_buffer;
+                        break;
+
+                    case '8': case '9':
+                    {
+                        std::stringstream ss;
+
+                        ss << "Invalid octal digit: " << static_cast<char>(c);
+                        token.kind = Token::ERROR;
+                        token.text = ss.str();
+
+                        return token;
+                    }
+
+                    case 'e': case 'E':
+                        goto SCAN_EXPONENT;
+
+                    case '.':
+                        goto SCAN_FLOAT;
+
+                    case 'f': case 'F':
+                        token.kind = Token::FLOAT;
+                        token.text = m_buffer;
+                        break;
+
+                    default:
+                        UnreadChar(c);
+                        token.kind = Token::INT;
+                        token.text = m_buffer;
+                }
+                break;
+
+            case '1': case '2': case '3':
+            case '4': case '5': case '6':
+            case '7': case '8': case '9':
+                m_buffer.assign(1, static_cast<char>(c));
+                while (PeekChar('_') || std::isdigit(PeekChar()))
+                {
+                    if ((c = ReadChar()) != '_')
+                    {
+                        m_buffer.append(1, static_cast<char>(c));
+                    }
+                }
+                if (PeekChar('.'))
+                {
+                    SkipChar();
+SCAN_FLOAT:
+                    m_buffer.append(1, '.');
+                    if (std::isdigit(PeekChar()))
+                    {
+                        m_buffer.append(1, static_cast<char>(ReadChar()));
+                        while (PeekChar('_') || std::isdigit(PeekChar()))
+                        {
+                            if ((c = ReadChar()) != '_')
+                            {
+                                m_buffer.append(1, static_cast<char>(c));
+                            }
+                        }
+                        if (ReadChar('e') || ReadChar('E'))
+                        {
+SCAN_EXPONENT:
+                            m_buffer.append(1, 'e');
+                            if (PeekChar('+') || PeekChar('-'))
+                            {
+                                m_buffer.append(1, static_cast<char>(ReadChar()));
+                                c = ReadChar(); // isdigit() might be a macro
+                                if (!std::isdigit(c))
+                                {
+                                    token.kind = Token::ERROR;
+                                    token.text = "Invalid exponent";
+
+                                    return token;
+                                }
+                                m_buffer.append(1, static_cast<char>(c));
+                            }
+                            else if (std::isdigit(PeekChar()))
+                            {
+                                m_buffer.append(1, static_cast<char>(ReadChar()));
+                            } else {
+                                token.kind = Token::ERROR;
+                                token.text = "Invalid exponent";
+
+                                return token;
+                            }
+                            while (std::isdigit(PeekChar()))
+                            {
+                                m_buffer.append(1, static_cast<char>(ReadChar()));
+                            }
+                        }
+                        token.kind = Token::FLOAT;
+                        token.text = m_buffer;
+                    } else {
+                        UnreadChar('.');
+                        m_buffer.erase(m_buffer.end() - 1);
+                    }
+                }
+                else if (ReadChar('e') || ReadChar('E'))
+                {
+                    goto SCAN_EXPONENT;
+                } else {
+                    if (ReadChar('f') || ReadChar('F'))
+                    {
+                        token.kind = Token::FLOAT;
+                    } else {
+                        token.kind = Token::INT;
+                    }
+                    token.text = m_buffer;
+                }
+                break;
 
             default:
                 if (c == '_' || std::isalpha(c))
                 {
-                    std::string text;
                     const Dictionary<Token::Kind>::Entry* entry;
 
-                    text.append(1, static_cast<char>(c));
+                    m_buffer.assign(1, static_cast<char>(c));
                     while ((c = ReadChar()) == '_' || std::isalnum(c))
                     {
-                        text.append(1, static_cast<char>(c));
+                        m_buffer.append(1, static_cast<char>(c));
                     }
                     UnreadChar(c);
-                    if ((entry = m_keywords.Find(text)))
+                    if ((entry = m_keywords.Find(m_buffer)))
                     {
                         token.kind = entry->value;
                     } else {
                         token.kind = Token::IDENTIFIER;
-                        token.text = text;
+                        token.text = m_buffer;
                     }
                 } else {
                     token.kind = Token::ERROR;
@@ -801,6 +1041,40 @@ READ_NEXT_CHAR:
                 node = new ValueNode(Value::NullValue());
                 break;
 
+            case Token::STRING:
+                node = new ValueNode(Value(token.text));
+                break;
+
+            case Token::INT:
+            {
+                int value;
+
+                if (!Utils::ParseInt(token.text, value))
+                {
+                    interpreter->Throw(interpreter->eSyntaxError,
+                                       "Integer overflow");
+
+                    return Handle<Node>();
+                }
+                node = new ValueNode(Value(value));
+                break;
+            }
+
+            case Token::FLOAT:
+            {
+                double value;
+
+                if (!Utils::ParseFloat(token.text, value))
+                {
+                    interpreter->Throw(interpreter->eSyntaxError,
+                                       "Float overflow");
+
+                    return Handle<Node>();
+                }
+                node = new ValueNode(Value(value));
+                break;
+            }
+
             case Token::LPAREN:
                 if (!(node = parse_expr(interpreter, parser))
                     || !expect_token(interpreter, parser, Token::RPAREN))
@@ -908,7 +1182,18 @@ READ_NEXT_CHAR:
             else if (token.kind == Token::INCREMENT
                     || token.kind == Token::DECREMENT)
             {
-                // TODO
+                const PostfixNode::Kind kind = token.kind == Token::INCREMENT ?
+                    PostfixNode::INCREMENT : PostfixNode::DECREMENT;
+
+                parser->SkipToken();
+                if (!node->IsVariable())
+                {
+                    interpreter->Throw(interpreter->eSyntaxError,
+                                       "Node is not assignable");
+
+                    return Handle<Node>();
+                }
+                node = new PostfixNode(node, kind);
             } else {
                 return node;
             }
@@ -965,8 +1250,27 @@ READ_NEXT_CHAR:
                 break;
             }
 
-            //TODO:case Token::INCREMENT:
-            //TODO:case Token::DECREMENT:
+            case Token::INCREMENT:
+            case Token::DECREMENT:
+            {
+                const PrefixNode::Kind kind = token.kind == Token::INCREMENT ?
+                    PrefixNode::INCREMENT : PrefixNode::DECREMENT;
+
+                parser->SkipToken();
+                if (!(node = parse_unary(interpreter, parser)))
+                {
+                    return Handle<Node>();
+                }
+                else if (!node->IsVariable())
+                {
+                    interpreter->Throw(interpreter->eSyntaxError,
+                                       "Node is not assignable");
+
+                    return Handle<Node>();
+                }
+                node = new PrefixNode(node, kind);
+                break;
+            }
 
             default:
                 node = parse_postfix(interpreter, parser);
