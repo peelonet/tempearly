@@ -54,7 +54,7 @@ namespace tempearly
         }
         if (globals)
         {
-            globals->SetVariable(name, Value(cls));
+            globals->SetVariable(name, static_cast<CoreObject*>(cls.Get()));
         }
 
         return cls;
