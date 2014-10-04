@@ -30,6 +30,12 @@ namespace tempearly
          */
         static bool ParseFloat(const String& source, double& slot);
 
+        static String ToString(u64 number, int radix = 10);
+
+        static String ToString(i64 number, int radix = 10);
+
+        static String ToString(double number);
+
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Utils);
     };

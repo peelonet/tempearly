@@ -211,4 +211,78 @@ namespace tempearly
 
         return true;
     }
+
+    static const char digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    String Utils::ToString(u64 number, int radix)
+    {
+        if (radix < 2 || radix > 36)
+        {
+            radix = 10;
+        }
+        if (number != 0)
+        {
+            String result;
+
+            result.reserve(20);
+            do
+            {
+                result.insert(result.begin(), digitmap[number % radix]);
+                number /= radix;
+            }
+            while (number);
+
+            return result;
+        }
+
+        return "0";
+    }
+
+    String Utils::ToString(i64 number, int radix)
+    {
+        if (radix < 2 || radix > 36)
+        {
+            radix = 10;
+        }
+        if (number != 0)
+        {
+            std::string result;
+            const bool negative = number < 0;
+            u64 mag = static_cast<u64>(negative ? -number: number);
+
+            result.reserve(21);
+            do
+            {
+                result.insert(result.begin(), digitmap[mag % radix]);
+                mag /= radix;
+            }
+            while (mag);
+            if (negative)
+            {
+                result.insert(result.begin(), '-');
+            }
+
+            return result;
+        }
+
+        return "0";
+    }
+
+    String Utils::ToString(double number)
+    {
+        if (std::isinf(number))
+        {
+            return number < 0.0 ? "-Inf" : "Inf";
+        }
+        else if (std::isnan(number))
+        {
+            return "NaN";
+        } else {
+            char buffer[20];
+
+            std::snprintf(buffer, sizeof(buffer), "%g", number);
+
+            return buffer;
+        }
+    }
 }
