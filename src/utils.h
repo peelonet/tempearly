@@ -18,7 +18,7 @@ namespace tempearly
          * \return      True if the conversion was successfull, false if
          *              underflow or overflow error occurred
          */
-        static bool ParseInt(const String& source, int& slot, int radix = -1);
+        static bool ParseInt(const String& source, i64& slot, int radix = -1);
 
         /**
          * Parses an double precision decimal value from contents of the
@@ -29,6 +29,12 @@ namespace tempearly
          *             underflow or overflow error occurred
          */
         static bool ParseFloat(const String& source, double& slot);
+
+        static String ToString(u64 number, int radix = 10);
+
+        static String ToString(i64 number, int radix = 10);
+
+        static String ToString(double number);
 
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Utils);

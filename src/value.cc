@@ -1,3 +1,6 @@
+#include <cmath>
+#include <sstream>
+
 #include "functionobject.h"
 #include "interpreter.h"
 
@@ -12,9 +15,6 @@ namespace tempearly
         switch (m_kind)
         {
             case KIND_BOOL:
-                m_data.b = that.m_data.b;
-                break;
-
             case KIND_INT:
                 m_data.i = that.m_data.i;
                 break;
@@ -36,22 +36,34 @@ namespace tempearly
         }
     }
 
-    Value::Value(bool value)
-        : m_kind(KIND_BOOL)
+    Value Value::NewBool(bool b)
     {
-        m_data.b = value;
+        Value value;
+
+        value.m_kind = KIND_BOOL;
+        value.m_data.i = b ? 1 : 0;
+
+        return value;
     }
 
-    Value::Value(int value)
-        : m_kind(KIND_INT)
+    Value Value::NewInt(i64 number)
     {
-        m_data.i = value;
+        Value value;
+
+        value.m_kind = KIND_INT;
+        value.m_data.i = number;
+
+        return value;
     }
 
-    Value::Value(double value)
-        : m_kind(KIND_FLOAT)
+    Value Value::NewFloat(double number)
     {
-        m_data.f = value;
+        Value value;
+
+        value.m_kind = KIND_FLOAT;
+        value.m_data.f = number;
+
+        return value;
     }
 
     Value Value::NewString(const String& string)
@@ -117,9 +129,6 @@ namespace tempearly
         switch (m_kind = that.m_kind)
         {
             case KIND_BOOL:
-                m_data.b = that.m_data.b;
-                break;
-
             case KIND_INT:
                 m_data.i = that.m_data.i;
                 break;
@@ -266,6 +275,101 @@ namespace tempearly
         }
     }
 
+    i64 Value::AsInt() const
+    {
+        if (m_kind == KIND_INT)
+        {
+            return m_data.i;
+        }
+        else if (m_kind == KIND_FLOAT)
+        {
+            double f = m_data.f;
+
+            if (f > 0.0)
+            {
+                f = std::floor(f);
+            }
+            if (f < 0.0)
+            {
+                f = std::ceil(f);
+            }
+
+            return static_cast<i64>(f);
+        }
+
+        return 0;
+    }
+
+    bool Value::AsInt(const Handle<Interpreter>& interpreter, i64& slot) const
+    {
+        if (m_kind == KIND_INT)
+        {
+            slot = m_data.i;
+        }
+        else if (m_kind == KIND_FLOAT)
+        {
+            double f = m_data.f;
+
+            if (f > 0.0)
+            {
+                f = std::floor(f);
+            }
+            if (f < 0.0)
+            {
+                f = std::ceil(f);
+            }
+            slot = static_cast<i64>(f);
+        } else {
+            std::stringstream ss;
+
+            ss << "'Int' required instead of '"
+               << GetClass(interpreter)->GetName()
+               << "'";
+            interpreter->Throw(interpreter->eTypeError, ss.str());
+
+            return false;
+        }
+
+        return true;
+    }
+
+    double Value::AsFloat() const
+    {
+        if (m_kind == KIND_FLOAT)
+        {
+            return m_data.f;
+        }
+        else if (m_kind == KIND_INT)
+        {
+            return static_cast<double>(m_data.i);
+        } else {
+            return 0;
+        }
+    }
+
+    bool Value::AsFloat(const Handle<Interpreter>& interpreter, double& slot) const
+    {
+        if (m_kind == KIND_FLOAT)
+        {
+            slot = m_data.f;
+        }
+        else if (m_kind == KIND_INT)
+        {
+            slot = static_cast<double>(m_data.i);
+        } else {
+            std::stringstream ss;
+
+            ss << "'Float' required instead of '"
+               << GetClass(interpreter)->GetName()
+               << "'";
+            interpreter->Throw(interpreter->eTypeError, ss.str());
+
+            return false;
+        }
+
+        return true;
+    }
+
     bool Value::ToBool(const Handle<Interpreter>& interpreter, bool& value) const
     {
         switch (m_kind)
@@ -276,7 +380,7 @@ namespace tempearly
                 break;
 
             case KIND_BOOL:
-                value = m_data.b;
+                value = m_data.i != 0;
                 break;
 
             default:
@@ -285,7 +389,7 @@ namespace tempearly
 
                 if (result.m_kind == KIND_BOOL)
                 {
-                    value = result.m_data.b;
+                    value = result.m_data.i != 0;
                 } else {
                     if (!interpreter->HasException())
                     {

@@ -180,7 +180,7 @@ namespace tempearly
         {
             return Result(Result::KIND_ERROR);
         } else {
-            return Result(Result::KIND_SUCCESS, Value(!b));
+            return Result(Result::KIND_SUCCESS, Value::NewBool(!b));
         }
     }
 
@@ -261,6 +261,7 @@ namespace tempearly
                 {
                     return Result(Result::KIND_ERROR);
                 }
+                args.push_back(argument);
             }
             if ((value = value.Call(interpreter, m_id, args)))
             {

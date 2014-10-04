@@ -64,6 +64,8 @@ namespace tempearly
         Handle<Class> eAttributeError;
         Handle<Class> eSyntaxError;
         Handle<Class> eTypeError;
+        Handle<Class> eValueError;
+        Handle<Class> eZeroDivisionError;
 
     private:
         /** Current uncaught exception. */

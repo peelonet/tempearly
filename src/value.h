@@ -41,17 +41,17 @@ namespace tempearly
         /**
          * Constructs boolean value.
          */
-        Value(bool value);
+        static Value NewBool(bool b);
 
         /**
          * Constructs integer value.
          */
-        Value(int value);
+        static Value NewInt(i64 number);
 
         /**
          * Constructs floating point decimal value.
          */
-        Value(double value);
+        static Value NewFloat(double number);
 
         /**
          * Constructs string value.
@@ -163,15 +163,13 @@ namespace tempearly
             return m_data.i != 0;
         }
 
-        inline int AsInt() const
-        {
-            return m_data.i;
-        }
+        i64 AsInt() const;
 
-        inline double AsFloat() const
-        {
-            return m_data.f;
-        }
+        bool AsInt(const Handle<Interpreter>& interpreter, i64& slot) const;
+
+        double AsFloat() const;
+
+        bool AsFloat(const Handle<Interpreter>& interpreter, double& slot) const;
 
         inline const String& AsString() const
         {
@@ -201,8 +199,7 @@ namespace tempearly
         Kind m_kind;
         union
         {
-            bool b;
-            int i;
+            i64 i;
             double f;
             String* s;
             CoreObject* o;
