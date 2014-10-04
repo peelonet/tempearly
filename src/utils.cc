@@ -1,16 +1,29 @@
-#include <climits>
 #include <cfloat>
 #include <cmath>
 
 #include "utils.h"
 
+#if defined(TEMPEARLY_HAVE_CLIMITS)
+# include <climits>
+#elif defined(TEMPEARLY_HAVE_LIMITS_H)
+# include <limits.h>
+#endif
+
+#if !defined(INT64_MAX)
+# if defined(LLONG_MAX)
+#  define INT64_MAX LLONG_MAX
+# else
+#  define INT64_MAX 0x7fffffffffffffff
+# endif
+#endif
+
 namespace tempearly
 {
-    bool Utils::ParseInt(const String& source, int& slot, int radix)
+    bool Utils::ParseInt(const String& source, i64& slot, int radix)
     {
         const char* ptr = source.c_str();
         std::size_t remain = source.length();
-        unsigned int number = 0;
+        u64 number = 0;
         bool sign = true;
 
         // Eat whitespace.
@@ -72,8 +85,8 @@ namespace tempearly
             radix = 10;
         }
 
-        const unsigned int div = INT_MAX / radix;
-        const unsigned int rem = INT_MAX % radix;
+        const u64 div = INT64_MAX / radix;
+        const u64 rem = INT64_MAX % radix;
 
         while (remain)
         {
@@ -117,7 +130,7 @@ namespace tempearly
         std::size_t remain = source.length();
         double number = 0.0;
         bool sign;
-        int exponent = 0;
+        i64 exponent = 0;
         bool has_digits = false;
         bool has_dot = false;
 

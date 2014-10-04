@@ -12,9 +12,6 @@ namespace tempearly
         switch (m_kind)
         {
             case KIND_BOOL:
-                m_data.b = that.m_data.b;
-                break;
-
             case KIND_INT:
                 m_data.i = that.m_data.i;
                 break;
@@ -36,22 +33,34 @@ namespace tempearly
         }
     }
 
-    Value::Value(bool value)
-        : m_kind(KIND_BOOL)
+    Value Value::NewBool(bool b)
     {
-        m_data.b = value;
+        Value value;
+
+        value.m_kind = KIND_BOOL;
+        value.m_data.i = b ? 1 : 0;
+
+        return value;
     }
 
-    Value::Value(int value)
-        : m_kind(KIND_INT)
+    Value Value::NewInt(i64 number)
     {
-        m_data.i = value;
+        Value value;
+
+        value.m_kind = KIND_INT;
+        value.m_data.i = number;
+
+        return value;
     }
 
-    Value::Value(double value)
-        : m_kind(KIND_FLOAT)
+    Value Value::NewFloat(double number)
     {
-        m_data.f = value;
+        Value value;
+
+        value.m_kind = KIND_FLOAT;
+        value.m_data.f = number;
+
+        return value;
     }
 
     Value Value::NewString(const String& string)
@@ -117,9 +126,6 @@ namespace tempearly
         switch (m_kind = that.m_kind)
         {
             case KIND_BOOL:
-                m_data.b = that.m_data.b;
-                break;
-
             case KIND_INT:
                 m_data.i = that.m_data.i;
                 break;
@@ -276,7 +282,7 @@ namespace tempearly
                 break;
 
             case KIND_BOOL:
-                value = m_data.b;
+                value = m_data.i != 0;
                 break;
 
             default:
@@ -285,7 +291,7 @@ namespace tempearly
 
                 if (result.m_kind == KIND_BOOL)
                 {
-                    value = result.m_data.b;
+                    value = result.m_data.i != 0;
                 } else {
                     if (!interpreter->HasException())
                     {

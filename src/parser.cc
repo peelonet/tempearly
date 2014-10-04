@@ -1041,11 +1041,11 @@ SCAN_EXPONENT:
                 break;
 
             case Token::KW_TRUE:
-                node = new ValueNode(Value(true));
+                node = new ValueNode(Value::NewBool(true));
                 break;
 
             case Token::KW_FALSE:
-                node = new ValueNode(Value(false));
+                node = new ValueNode(Value::NewBool(false));
                 break;
 
             case Token::KW_NULL:
@@ -1058,7 +1058,7 @@ SCAN_EXPONENT:
 
             case Token::INT:
             {
-                int value;
+                i64 value;
 
                 if (!Utils::ParseInt(token.text, value))
                 {
@@ -1067,7 +1067,7 @@ SCAN_EXPONENT:
 
                     return Handle<Node>();
                 }
-                node = new ValueNode(Value(value));
+                node = new ValueNode(Value::NewInt(value));
                 break;
             }
 
@@ -1082,7 +1082,7 @@ SCAN_EXPONENT:
 
                     return Handle<Node>();
                 }
-                node = new ValueNode(Value(value));
+                node = new ValueNode(Value::NewFloat(value));
                 break;
             }
 
