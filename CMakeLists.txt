@@ -20,6 +20,7 @@ SET(
     src/scope.cc
     src/script.cc
     src/token.cc
+    src/utils.cc
     src/value.cc
     src/api/bool.cc
     src/api/object.cc

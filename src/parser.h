@@ -35,11 +35,17 @@ namespace tempearly
          */
         void Close();
 
+        int PeekChar();
+
+        bool PeekChar(int c);
+
         int ReadChar();
 
         bool ReadChar(int c);
 
         void UnreadChar(int expected);
+
+        void SkipChar();
 
         const TokenDescriptor& PeekToken();
 
@@ -63,6 +69,7 @@ namespace tempearly
         bool m_seen_cr;
         /** Current token scanned from the stream. */
         TokenDescriptor m_token;
+        std::string m_buffer;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Parser);
     };
 }
