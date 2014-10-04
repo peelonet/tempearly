@@ -261,6 +261,7 @@ namespace tempearly
                 {
                     return Result(Result::KIND_ERROR);
                 }
+                args.push_back(argument);
             }
             if ((value = value.Call(interpreter, m_id, args)))
             {
