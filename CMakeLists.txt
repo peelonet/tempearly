@@ -18,6 +18,7 @@ SET(
     src/response.cc
     src/result.cc
     src/scope.cc
+    src/script.cc
     src/token.cc
     src/value.cc
     src/api/bool.cc

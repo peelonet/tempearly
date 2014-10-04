@@ -20,6 +20,7 @@ namespace tempearly
     class Response;
     class Result;
     class Scope;
+    class Script;
     class Token;
     class Value;
 }

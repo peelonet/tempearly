@@ -2,9 +2,8 @@
 #define TEMPEARLY_PARSER_H_GUARD
 
 #include <queue>
-#include <vector>
 
-#include "node.h"
+#include "script.h"
 #include "token.h"
 
 namespace tempearly
@@ -52,8 +51,7 @@ namespace tempearly
 
         void SkipToken();
 
-        bool Compile(const Handle<Interpreter>& interpreter,
-                     std::vector<Handle<Node> >& script);
+        Handle<Script> Compile(const Handle<Interpreter>& interpreter);
 
     private:
         /** Keyword lookup map. */

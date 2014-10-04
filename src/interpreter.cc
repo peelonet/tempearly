@@ -29,27 +29,15 @@ namespace tempearly
         if (stream)
         {
             Handle<Parser> parser = new Parser(stream);
-            std::vector<Handle<Node> > script;
-            bool result = parser->Compile(this, script);
+            Handle<Script> script = parser->Compile(this);
 
             parser->Close();
-            if (result)
+            if (script)
             {
-                for (std::vector<Handle<Node> >::iterator i = script.begin(); i != script.end(); ++i)
-                {
-                    const Handle<Node>& node = *i;
-                    Result result = node->Execute(this);
-
-                    if (!result.Is(Result::KIND_SUCCESS))
-                    {
-                        std::fprintf(stdout, "ERROR\n");
-
-                        return EXIT_FAILURE;
-                    }
-                }
+                return script->Execute(this);
             }
         } else {
-            // TODO: throw error
+            // TODO: throw exception
         }
 
         return false;

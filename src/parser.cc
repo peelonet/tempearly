@@ -505,9 +505,9 @@ READ_NEXT_CHAR:
         }
     }
 
-    bool Parser::Compile(const Handle<Interpreter>& interpreter,
-                         std::vector<Handle<Node> >& script)
+    Handle<Script> Parser::Compile(const Handle<Interpreter>& interpreter)
     {
+        std::vector<Handle<Node> > nodes;
 
         // Skip leading shebang if such exists
         if (ReadChar('#'))
@@ -520,7 +520,7 @@ READ_NEXT_CHAR:
                 {
                     if (c < 0)
                     {
-                        return true;
+                        return new Script(nodes);
                     }
                 }
             } else {
@@ -531,15 +531,15 @@ READ_NEXT_CHAR:
         {
             bool should_continue = false;
 
-            if (!parse_text_block(interpreter, this, script, should_continue))
+            if (!parse_text_block(interpreter, this, nodes, should_continue))
             {
-                return false;
+                return Handle<Script>();
             }
             else if (should_continue)
             {
-                if (!parse_script_block(interpreter, this, script, should_continue))
+                if (!parse_script_block(interpreter, this, nodes, should_continue))
                 {
-                    return false;
+                    return Handle<Script>();
                 }
                 else if (!should_continue)
                 {
@@ -550,7 +550,7 @@ READ_NEXT_CHAR:
             }
         }
 
-        return true;
+        return new Script(nodes);
     }
 
     static bool expect_token(const Handle<Interpreter>& interpreter,
