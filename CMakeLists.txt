@@ -49,6 +49,8 @@ SET(
     src/api/bool.cc
     src/api/number.cc
     src/api/object.cc
+    src/api/string.cc
+    src/api/void.cc
 )
 
 ADD_EXECUTABLE(
