@@ -54,21 +54,30 @@ namespace tempearly
         m_data.f = value;
     }
 
-    Value::Value(const String& value)
-        : m_kind(KIND_STRING)
+    Value Value::NewString(const String& string)
     {
-        m_data.s = new String(value);
+        Value value;
+
+        value.m_kind = KIND_STRING;
+        value.m_data.s = new String(string);
+
+        return value;
     }
 
-    Value::Value(const Handle<CoreObject>& object)
-        : m_kind(KIND_OBJECT)
+    Value Value::NewObject(const Handle<CoreObject>& object)
     {
-        if ((m_data.o = object.Get()))
+        Value value;
+
+        if (object)
         {
-            m_data.o->IncReferenceCounter();
+            value.m_kind = KIND_OBJECT;
+            value.m_data.o = object.Get();
+            value.m_data.o->IncReferenceCounter();
         } else {
-            m_kind = KIND_NULL;
+            value.m_kind = KIND_NULL;
         }
+
+        return value;
     }
 
     Value::~Value()
@@ -132,6 +141,12 @@ namespace tempearly
         }
 
         return *this;
+    }
+
+    bool Value::IsInstance(const Handle<Interpreter>& interpreter,
+                           const Handle<Class>& cls) const
+    {
+        return GetClass(interpreter)->IsSubclassOf(cls);
     }
 
     Handle<Class> Value::GetClass(const Handle<Interpreter>& interpreter) const
@@ -295,20 +310,27 @@ namespace tempearly
                 string.clear();
                 break;
 
-            case KIND_BOOL:
-                string = m_data.b ? "true" : "false";
-                break;
-
-            // TODO: KIND_INT
-            // TODO: KIND_FLOAT
-
             case KIND_STRING:
                 string = *m_data.s;
                 break;
 
             default:
-                string = "TODO";
-                break;
+            {
+                Value result = Call(interpreter, "__str__");
+
+                if (result.m_kind == KIND_STRING)
+                {
+                    string = *result.m_data.s;
+                } else {
+                    if (!interpreter->HasException())
+                    {
+                        interpreter->Throw(interpreter->eTypeError,
+                                           "Cannot convert into string");
+                    }
+
+                    return false;
+                }
+            }
         }
 
         return true;

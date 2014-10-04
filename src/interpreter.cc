@@ -50,11 +50,11 @@ namespace tempearly
 
         if (!name.empty())
         {
-            cls->SetAttribute("__name__", Value(name));
+            cls->SetAttribute("__name__", Value::NewString(name));
         }
         if (globals)
         {
-            globals->SetVariable(name, static_cast<CoreObject*>(cls.Get()));
+            globals->SetVariable(name, Value::NewObject(cls.Get()));
         }
 
         return cls;

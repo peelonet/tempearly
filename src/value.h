@@ -1,8 +1,6 @@
 #ifndef TEMPEARLY_VALUE_H_GUARD
 #define TEMPEARLY_VALUE_H_GUARD
 
-#include <vector>
-
 #include "coreobject.h"
 
 namespace tempearly
@@ -58,14 +56,14 @@ namespace tempearly
         /**
          * Constructs string value.
          */
-        Value(const String& value);
+        static Value NewString(const String& string);
 
         /**
          * Constructs value from object.
          *
          * \param object Handle to the object
          */
-        Value(const Handle<CoreObject>& object);
+        static Value NewObject(const Handle<CoreObject>& object);
 
         /**
          * Destructor.
@@ -97,6 +95,12 @@ namespace tempearly
         {
             return m_kind == kind;
         }
+
+        /**
+         * Tests whether the value is instance of given class.
+         */
+        bool IsInstance(const Handle<Interpreter>& interpreter,
+                        const Handle<Class>& cls) const;
 
         inline bool IsNull() const
         {

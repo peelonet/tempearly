@@ -1,8 +1,6 @@
 #ifndef TEMPEARLY_FUNCTIONOBJECT_H_GUARD
 #define TEMPEARLY_FUNCTIONOBJECT_H_GUARD
 
-#include <vector>
-
 #include "object.h"
 
 namespace tempearly
@@ -13,6 +11,9 @@ namespace tempearly
     class FunctionObject : public Object
     {
     public:
+        typedef Value(*Callback)(const Handle<Interpreter>&,
+                                 const std::vector<Value>&);
+
         /**
          * Default constructor.
          */
@@ -22,6 +23,24 @@ namespace tempearly
          * Default destructor.
          */
         virtual ~FunctionObject();
+
+        /**
+         * Constructs method.
+         *
+         * \param interpreter Script interpreter
+         * \param cls         Class which declares the method
+         * \param name        Name of the method
+         * \param arity       Method arity, e.g. how many arguments the method
+         *                    takes
+         * \param callback    Callback function which is invoked when the method
+         *                    is invoked
+         * \return            Value which is the constructed method
+         */
+        static Value NewMethod(const Handle<Interpreter>& interpreter,
+                               const Handle<Class>& cls,
+                               const String& name,
+                               int arity,
+                               Callback callback);
 
         /**
          * Invokes the function.

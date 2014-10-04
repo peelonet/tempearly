@@ -17,4 +17,8 @@
     TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(TypeName)
 #endif
 
+#define TEMPEARLY_NATIVE_METHOD(MethodName) \
+    static Value MethodName(const Handle<Interpreter>& interpreter, \
+                            const std::vector<Value>& args)
+
 #endif /* !TEMPEARLY_MACROS_H_GUARD */
