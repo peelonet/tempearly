@@ -286,4 +286,65 @@ namespace tempearly
             }
         }
     }
+
+    PrefixNode::PrefixNode(const Handle<Node>& variable, Kind kind)
+        : m_variable(variable.Get())
+        , m_kind(kind) {}
+
+    Result PrefixNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value value = m_variable->Evaluate(interpreter);
+
+        if (!value)
+        {
+            return Result(Result::KIND_ERROR);
+        }
+        value = value.Call(interpreter, m_kind == INCREMENT ? "__inc__" : "__dec__");
+        if (!value || !m_variable->Assign(interpreter, value))
+        {
+            return Result(Result::KIND_ERROR);
+        }
+
+        return Result(Result::KIND_SUCCESS, value);
+    }
+
+    void PrefixNode::Mark()
+    {
+        Node::Mark();
+        if (!m_variable->IsMarked())
+        {
+            m_variable->Mark();
+        }
+    }
+
+    PostfixNode::PostfixNode(const Handle<Node>& variable, Kind kind)
+        : m_variable(variable.Get())
+        , m_kind(kind) {}
+
+    Result PostfixNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value value = m_variable->Evaluate(interpreter);
+        Value result;
+
+        if (!value)
+        {
+            return Result(Result::KIND_ERROR);
+        }
+        result = value.Call(interpreter, m_kind == INCREMENT ? "__inc__" : "__dec__");
+        if (!result || !m_variable->Assign(interpreter, result))
+        {
+            return Result(Result::KIND_ERROR);
+        }
+
+        return Result(Result::KIND_SUCCESS, value);
+    }
+
+    void PostfixNode::Mark()
+    {
+        Node::Mark();
+        if (!m_variable->IsMarked())
+        {
+            m_variable->Mark();
+        }
+    }
 }
