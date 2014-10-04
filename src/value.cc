@@ -28,7 +28,7 @@ namespace tempearly
                 break;
 
             case KIND_OBJECT:
-                m_data.o = that.m_data.o;
+                (m_data.o = that.m_data.o)->IncReferenceCounter();
                 break;
 
             default:
@@ -60,11 +60,26 @@ namespace tempearly
         m_data.s = new String(value);
     }
 
+    Value::Value(const Handle<CoreObject>& object)
+        : m_kind(KIND_OBJECT)
+    {
+        if ((m_data.o = object.Get()))
+        {
+            m_data.o->IncReferenceCounter();
+        } else {
+            m_kind = KIND_NULL;
+        }
+    }
+
     Value::~Value()
     {
         if (m_kind == KIND_STRING)
         {
             delete m_data.s;
+        }
+        else if (m_kind == KIND_OBJECT)
+        {
+            m_data.o->DecReferenceCounter();
         }
     }
 
@@ -86,6 +101,10 @@ namespace tempearly
         {
             delete m_data.s;
         }
+        else if (m_kind == KIND_OBJECT)
+        {
+            m_data.o->DecReferenceCounter();
+        }
         switch (m_kind = that.m_kind)
         {
             case KIND_BOOL:
@@ -105,7 +124,7 @@ namespace tempearly
                 break;
 
             case KIND_OBJECT:
-                m_data.o = that.m_data.o;
+                (m_data.o = that.m_data.o)->IncReferenceCounter();
                 break;
 
             default:

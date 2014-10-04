@@ -61,6 +61,13 @@ namespace tempearly
         Value(const String& value);
 
         /**
+         * Constructs value from object.
+         *
+         * \param object Handle to the object
+         */
+        Value(const Handle<CoreObject>& object);
+
+        /**
          * Destructor.
          */
         virtual ~Value();
