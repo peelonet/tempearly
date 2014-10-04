@@ -1,0 +1,41 @@
+#ifndef TEMPEARLY_COREOBJECT_H_GUARD
+#define TEMPEARLY_COREOBJECT_H_GUARD
+
+#include "memory.h"
+
+namespace tempearly
+{
+    class CoreObject : public CountedObject
+    {
+    public:
+        explicit CoreObject();
+
+        virtual Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const = 0;
+
+        virtual bool HasAttribute(const String& id) const = 0;
+
+        virtual bool GetAttribute(const String& id, Value& value) const = 0;
+
+        virtual void SetAttribute(const String& id, const Value& value) = 0;
+
+        virtual bool IsClass() const
+        {
+            return false;
+        }
+
+        virtual bool IsException() const
+        {
+            return false;
+        }
+
+        virtual bool IsFunction() const
+        {
+            return false;
+        }
+
+    private:
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CoreObject);
+    };
+}
+
+#endif /* !TEMPEARLY_COREOBJECT_H_GUARD */
