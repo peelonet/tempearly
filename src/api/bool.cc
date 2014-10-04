@@ -13,10 +13,10 @@ namespace tempearly
         return Value::NewString(args[0].AsBool() ? "true" : "false");
     }
 
-    void init_bool(Interpreter* interpreter)
+    void init_bool(Interpreter* i)
     {
-        interpreter->cBool = interpreter->AddClass("Bool", interpreter->cObject);
+        i->cBool = i->AddClass("Bool", i->cObject);
 
-        interpreter->cBool->AddMethod(interpreter, "__str__", 0, bool_str);
+        i->cBool->AddMethod(i, "__str__", 0, bool_str);
     }
 }
