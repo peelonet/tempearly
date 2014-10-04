@@ -1,3 +1,4 @@
+#include "functionobject.h"
 #include "interpreter.h"
 
 namespace tempearly
@@ -17,6 +18,28 @@ namespace tempearly
     Handle<Class> Class::GetClass(const Handle<Interpreter>& interpreter) const
     {
         return interpreter->cClass;
+    }
+
+    String Class::GetName() const
+    {
+        Value value;
+
+        if (GetAttribute("__name__", value) && value.IsString())
+        {
+            return value.AsString();
+        } else {
+            return "<anonymous class>";
+        }
+    }
+
+    bool Class::IsSubclassOf(const Handle<Class>& that) const
+    {
+        if (this == that)
+        {
+            return true;
+        } else {
+            return m_base && m_base->IsSubclassOf(that);
+        }
     }
 
     bool Class::HasAttribute(const String& id) const
@@ -48,6 +71,25 @@ namespace tempearly
             m_attributes = new AttributeMap();
         }
         m_attributes->Insert(id, value);
+    }
+
+    void Class::AddMethod(const Handle<Interpreter>& interpreter,
+                          const String& name,
+                          int arity,
+                          Value (*callback)(const Handle<Interpreter>&,
+                                            const std::vector<Value>&))
+    {
+        Value method = FunctionObject::NewMethod(interpreter,
+                                                 this,
+                                                 name,
+                                                 arity,
+                                                 callback);
+
+        if (!m_attributes)
+        {
+            m_attributes = new AttributeMap();
+        }
+        m_attributes->Insert(name, method);
     }
 
     void Class::Mark()

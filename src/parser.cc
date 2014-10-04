@@ -1053,7 +1053,7 @@ SCAN_EXPONENT:
                 break;
 
             case Token::STRING:
-                node = new ValueNode(Value(token.text));
+                node = new ValueNode(Value::NewString(token.text));
                 break;
 
             case Token::INT:

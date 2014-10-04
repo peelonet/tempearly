@@ -4,6 +4,9 @@
 #include <cstdlib>
 #include <cstdio>
 
+#include <string>
+#include <vector>
+
 #include "macros.h"
 #include "defines.h"
 

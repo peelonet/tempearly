@@ -1,8 +1,6 @@
 #ifndef TEMPEARLY_DEFINES_H_GUARD
 #define TEMPEARLY_DEFINES_H_GUARD
 
-#include <string>
-
 namespace tempearly
 {
     typedef std::string String;
