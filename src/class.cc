@@ -60,8 +60,12 @@ namespace tempearly
                 return true;
             }
         }
-
-        return false;
+        else if (m_base)
+        {
+            return m_base->GetAttribute(id, value);
+        } else {
+            return false;
+        }
     }
 
     void Class::SetAttribute(const String& id, const Value& value)
