@@ -5,6 +5,7 @@
 namespace tempearly
 {
     void init_bool(Interpreter*);
+    void init_number(Interpreter*);
     void init_object(Interpreter*);
 
     Interpreter::Interpreter() {}
@@ -20,6 +21,7 @@ namespace tempearly
 
         init_object(this);
         init_bool(this);
+        init_number(this);
     }
 
     bool Interpreter::Include(const String& filename)
