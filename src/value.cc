@@ -1,3 +1,6 @@
+#include <cmath>
+#include <sstream>
+
 #include "functionobject.h"
 #include "interpreter.h"
 
@@ -270,6 +273,101 @@ namespace tempearly
         {
             m_data.o->Mark();
         }
+    }
+
+    i64 Value::AsInt() const
+    {
+        if (m_kind == KIND_INT)
+        {
+            return m_data.i;
+        }
+        else if (m_kind == KIND_FLOAT)
+        {
+            double f = m_data.f;
+
+            if (f > 0.0)
+            {
+                f = std::floor(f);
+            }
+            if (f < 0.0)
+            {
+                f = std::ceil(f);
+            }
+
+            return static_cast<i64>(f);
+        }
+
+        return 0;
+    }
+
+    bool Value::AsInt(const Handle<Interpreter>& interpreter, i64& slot) const
+    {
+        if (m_kind == KIND_INT)
+        {
+            slot = m_data.i;
+        }
+        else if (m_kind == KIND_FLOAT)
+        {
+            double f = m_data.f;
+
+            if (f > 0.0)
+            {
+                f = std::floor(f);
+            }
+            if (f < 0.0)
+            {
+                f = std::ceil(f);
+            }
+            slot = static_cast<i64>(f);
+        } else {
+            std::stringstream ss;
+
+            ss << "'Int' required instead of '"
+               << GetClass(interpreter)->GetName()
+               << "'";
+            interpreter->Throw(interpreter->eTypeError, ss.str());
+
+            return false;
+        }
+
+        return true;
+    }
+
+    double Value::AsFloat() const
+    {
+        if (m_kind == KIND_FLOAT)
+        {
+            return m_data.f;
+        }
+        else if (m_kind == KIND_INT)
+        {
+            return static_cast<double>(m_data.i);
+        } else {
+            return 0;
+        }
+    }
+
+    bool Value::AsFloat(const Handle<Interpreter>& interpreter, double& slot) const
+    {
+        if (m_kind == KIND_FLOAT)
+        {
+            slot = m_data.f;
+        }
+        else if (m_kind == KIND_INT)
+        {
+            slot = static_cast<double>(m_data.i);
+        } else {
+            std::stringstream ss;
+
+            ss << "'Float' required instead of '"
+               << GetClass(interpreter)->GetName()
+               << "'";
+            interpreter->Throw(interpreter->eTypeError, ss.str());
+
+            return false;
+        }
+
+        return true;
     }
 
     bool Value::ToBool(const Handle<Interpreter>& interpreter, bool& value) const

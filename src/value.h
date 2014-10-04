@@ -163,15 +163,13 @@ namespace tempearly
             return m_data.i != 0;
         }
 
-        inline i64 AsInt() const
-        {
-            return m_data.i;
-        }
+        i64 AsInt() const;
 
-        inline double AsFloat() const
-        {
-            return m_data.f;
-        }
+        bool AsInt(const Handle<Interpreter>& interpreter, i64& slot) const;
+
+        double AsFloat() const;
+
+        bool AsFloat(const Handle<Interpreter>& interpreter, double& slot) const;
 
         inline const String& AsString() const
         {
