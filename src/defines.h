@@ -43,8 +43,10 @@ namespace tempearly
 # endif
 #endif
 
-    typedef std::string String;
+    typedef u8 byte;
+    typedef u32 rune;
 
+    class ByteString;
     class Class;
     class CoreObject;
     class ExceptionObject;
@@ -61,6 +63,8 @@ namespace tempearly
     class Result;
     class Scope;
     class Script;
+    class String;
+    class StringBuilder;
     class Token;
     class Value;
 }

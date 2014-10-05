@@ -1,4 +1,5 @@
 #include "api/exception.h"
+#include "core/bytestring.h"
 #include "sapi/cgi/cgi-response.h"
 
 namespace tempearly
@@ -28,8 +29,8 @@ namespace tempearly
         {
             std::fprintf(stdout,
                          "%s: %s\r\n",
-                         e->id.c_str(),
-                         e->value.c_str());
+                         e->id.Encode().c_str(),
+                         e->value.Encode().c_str());
         }
         std::fprintf(stdout, "\r\n");
         std::fflush(stdout);
@@ -58,7 +59,7 @@ namespace tempearly
             std::fprintf(
                 stdout,
                 "<p><strong>ERROR:</strong> %s</p>",
-                exception->GetMessage().c_str()
+                exception->GetMessage().Encode().c_str()
             );
         } else {
             m_committed = true;
@@ -69,7 +70,7 @@ namespace tempearly
             std::fprintf(
                 stdout,
                 "ERROR:\n%s\n",
-                exception->GetMessage().c_str()
+                exception->GetMessage().Encode().c_str()
             );
             std::fflush(stdout);
         }

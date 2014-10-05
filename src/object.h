@@ -8,8 +8,6 @@ namespace tempearly
     class Object : public CoreObject
     {
     public:
-        typedef Dictionary<Value> AttributeMap;
-
         explicit Object(const Handle<Class>& cls);
 
         virtual ~Object();

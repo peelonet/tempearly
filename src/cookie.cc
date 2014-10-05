@@ -20,7 +20,7 @@ namespace tempearly
     bool Cookie::Parse(const String& source, Cookie& cookie)
     {
         // Find the '=' separating the name and value.
-        String::size_type pos = source.find('=');
+        std::size_t pos = source.IndexOf('=');
 
         // If no '=' was found, it's an invalid cookie.
         if (pos == String::npos)
@@ -29,9 +29,9 @@ namespace tempearly
         }
 
         // Skip leading whitespace.
-        String::size_type wscount = 0;
+        std::size_t wscount = 0;
 
-        for (String::size_type i = 0; i < source.length(); ++i)
+        for (std::size_t i = 0; i < source.GetLength(); ++i)
         {
             if (source[i] == ' '
                 || source[i] == '\f'
@@ -46,8 +46,8 @@ namespace tempearly
             }
         }
 
-        cookie.m_name = source.substr(wscount, pos - wscount);
-        cookie.m_value = source.substr(pos + 1);
+        cookie.m_name = source.SubString(wscount, pos - wscount);
+        cookie.m_value = source.SubString(pos + 1);
 
         return true;
     }

@@ -1,4 +1,5 @@
 #include "response.h"
+#include "core/bytestring.h"
 
 namespace tempearly
 {
@@ -46,8 +47,10 @@ namespace tempearly
         }
     }
 
-    void Response::Write(const std::string& string)
+    void Response::Write(const String& string)
     {
-        Write(string.length(), string.c_str());
+        ByteString bytes = string.Encode();
+
+        Write(bytes.GetLength(), bytes.c_str());
     }
 }

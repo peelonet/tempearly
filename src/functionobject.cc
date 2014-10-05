@@ -1,7 +1,6 @@
-#include <sstream>
-
 #include "functionobject.h"
 #include "interpreter.h"
+#include "core/stringbuilder.h"
 
 namespace tempearly
 {
@@ -40,13 +39,13 @@ namespace tempearly
                 // Test that the first argument is correct type.
                 else if (!args[0].IsInstance(interpreter, m_declaring_class))
                 {
-                    std::stringstream ss;
+                    StringBuilder sb;
 
-                    ss << "Method requires a '"
+                    sb << "Method requires a '"
                        << m_declaring_class->GetName()
                        << "' object but received a '"
                        << args[0].GetClass(interpreter)->GetName();
-                    interpreter->Throw(interpreter->eTypeError, ss.str());
+                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                     return Value();
                 }
@@ -55,26 +54,26 @@ namespace tempearly
                 {
                     if (args.size() < static_cast<unsigned>(-(m_arity + 1) + 1))
                     {
-                        std::stringstream ss;
+                        StringBuilder sb;
 
-                        ss << "Method expected at least "
+                        sb << "Method expected at least "
                            << (-(m_arity) - 1)
                            << " arguments, got "
                            << args.size();
-                        interpreter->Throw(interpreter->eTypeError, ss.str());
+                        interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                         return Value();
                     }
                 }
                 else if (args.size() != static_cast<unsigned>(m_arity) + 1)
                 {
-                    std::stringstream ss;
+                    StringBuilder sb;
 
-                    ss << "Method expected "
+                    sb << "Method expected "
                        << m_arity
                        << " arguments, got "
                        << args.size();
-                    interpreter->Throw(interpreter->eTypeError, ss.str());
+                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                     return Value();
                 }

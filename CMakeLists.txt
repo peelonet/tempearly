@@ -56,6 +56,9 @@ SET(
     src/api/response.cc
     src/api/string.cc
     src/api/void.cc
+    src/core/bytestring.cc
+    src/core/string.cc
+    src/core/stringbuilder.cc
 )
 
 ADD_EXECUTABLE(

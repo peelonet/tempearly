@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_DICTIONARY_H_GUARD
 #define TEMPEARLY_DICTIONARY_H_GUARD
 
-#include "memory.h"
+#include "core/string.h"
 
 namespace tempearly
 {
@@ -123,27 +123,6 @@ namespace tempearly
         }
 
         /**
-         * Generates hash code for given string with Jenkins hash and returns
-         * result.
-         */
-        static std::size_t Hash(const String& str)
-        {
-            std::size_t result = 0;
-
-            for (String::size_type i = 0; i < str.length(); ++i)
-            {
-                result += str[i];
-                result += (result << 10);
-                result ^= (result >> 6);
-            }
-            result += (result << 3);
-            result ^= (result >> 11);
-            result += (result << 15);
-
-            return result;
-        }
-
-        /**
          * Searches for an value with given identifier. Returns pointer to the
          * entry holding the value, if such exists. Otherwise NULL is returned.
          *
@@ -151,7 +130,7 @@ namespace tempearly
          */
         const Entry* Find(const String& id) const
         {
-            const std::size_t hash = Hash(id);
+            const std::size_t hash = id.HashCode();
             const std::size_t index = hash % kBucketSize;
 
             for (const Entry* entry = m_bucket[index]; entry; entry = entry->child)
@@ -174,7 +153,7 @@ namespace tempearly
          */
         void Insert(const String& id, const T& value)
         {
-            const std::size_t hash = Hash(id);
+            const std::size_t hash = id.HashCode();
             const std::size_t index = hash % kBucketSize;
             Entry* entry;
 

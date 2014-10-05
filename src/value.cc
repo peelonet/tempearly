@@ -1,5 +1,4 @@
 #include <cmath>
-#include <sstream>
 
 #include "functionobject.h"
 #include "interpreter.h"
@@ -307,12 +306,10 @@ namespace tempearly
 
             return true;
         }
-        std::stringstream ss;
-
-        ss << "'Bool' required instead of '"
-           << GetClass(interpreter)->GetName()
-           << "'";
-        interpreter->Throw(interpreter->eTypeError, ss.str());
+        interpreter->Throw(interpreter->eTypeError,
+                           "'Bool' required instead of '"
+                           + GetClass(interpreter)->GetName()
+                           + "'");
 
         return false;
     }
@@ -362,12 +359,10 @@ namespace tempearly
             }
             slot = static_cast<i64>(f);
         } else {
-            std::stringstream ss;
-
-            ss << "'Int' required instead of '"
-               << GetClass(interpreter)->GetName()
-               << "'";
-            interpreter->Throw(interpreter->eTypeError, ss.str());
+            interpreter->Throw(interpreter->eTypeError,
+                               "'Int' required instead of '"
+                               + GetClass(interpreter)->GetName()
+                               + "'");
 
             return false;
         }
@@ -399,12 +394,10 @@ namespace tempearly
         {
             slot = static_cast<double>(m_data.i);
         } else {
-            std::stringstream ss;
-
-            ss << "'Float' required instead of '"
-               << GetClass(interpreter)->GetName()
-               << "'";
-            interpreter->Throw(interpreter->eTypeError, ss.str());
+            interpreter->Throw(interpreter->eTypeError,
+                               "'Float' required instead of "
+                               + GetClass(interpreter)->GetName()
+                               + "'");
 
             return false;
         }
@@ -420,12 +413,10 @@ namespace tempearly
 
             return true;
         }
-        std::stringstream ss;
-
-        ss << "'String' required instead of '"
-           << GetClass(interpreter)->GetName()
-           << "'";
-        interpreter->Throw(interpreter->eTypeError, ss.str());
+        interpreter->Throw(interpreter->eTypeError,
+                           "'String' required instead of '"
+                           + GetClass(interpreter)->GetName()
+                           + "'");
 
         return false;
     }
@@ -471,7 +462,7 @@ namespace tempearly
         {
             case KIND_ERROR:
             case KIND_NULL:
-                string.clear();
+                string.Clear();
                 break;
 
             case KIND_STRING:

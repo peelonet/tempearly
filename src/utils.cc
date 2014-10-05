@@ -2,6 +2,8 @@
 #include <cmath>
 
 #include "utils.h"
+#include "core/bytestring.h"
+#include "core/stringbuilder.h"
 
 #if defined(TEMPEARLY_HAVE_CLIMITS)
 # include <climits>
@@ -21,8 +23,8 @@ namespace tempearly
 {
     bool Utils::ParseInt(const String& source, i64& slot, int radix)
     {
-        const char* ptr = source.c_str();
-        std::size_t remain = source.length();
+        const rune* ptr = source.GetRunes();
+        std::size_t remain = source.GetLength();
         u64 number = 0;
         bool sign = true;
 
@@ -126,8 +128,8 @@ namespace tempearly
 
     bool Utils::ParseFloat(const String& source, double& slot)
     {
-        const char* ptr = source.c_str();
-        std::size_t remain = source.length();
+        const rune* ptr = source.GetRunes();
+        std::size_t remain = source.GetLength();
         double number = 0.0;
         bool sign;
         i64 exponent = 0;
@@ -222,17 +224,17 @@ namespace tempearly
         }
         if (number != 0)
         {
-            String result;
+            StringBuilder result;
 
-            result.reserve(20);
+            result.Reserve(20);
             do
             {
-                result.insert(result.begin(), digitmap[number % radix]);
+                result.Prepend(digitmap[number % radix]);
                 number /= radix;
             }
             while (number);
 
-            return result;
+            return result.ToString();
         }
 
         return "0";
@@ -246,23 +248,23 @@ namespace tempearly
         }
         if (number != 0)
         {
-            std::string result;
+            StringBuilder result;
             const bool negative = number < 0;
             u64 mag = static_cast<u64>(negative ? -number: number);
 
-            result.reserve(21);
+            result.Reserve(21);
             do
             {
-                result.insert(result.begin(), digitmap[mag % radix]);
+                result.Prepend(digitmap[mag % radix]);
                 mag /= radix;
             }
             while (mag);
             if (negative)
             {
-                result.insert(result.begin(), '-');
+                result.Prepend('-');
             }
 
-            return result;
+            return result.ToString();
         }
 
         return "0";
@@ -288,50 +290,50 @@ namespace tempearly
 
     String Utils::XmlEscape(const String& string)
     {
-        if (string.find('&') != String::npos
-            || string.find('<') != String::npos
-            || string.find('>') != String::npos
-            || string.find('"') != String::npos
-            || string.find('\'') != String::npos)
+        if (string.IndexOf('&') != String::npos
+            || string.IndexOf('<') != String::npos
+            || string.IndexOf('>') != String::npos
+            || string.IndexOf('"') != String::npos
+            || string.IndexOf('\'') != String::npos)
         {
-            String result;
+            StringBuilder result;
 
-            result.reserve(string.length() + 16);
-            for (std::size_t i = 0; i < string.length(); ++i)
+            result.Reserve(string.GetLength() + 16);
+            for (std::size_t i = 0; i < string.GetLength(); ++i)
             {
-                const char c = string[i];
+                const rune r = string[i];
 
-                switch (c)
+                switch (r)
                 {
                     case '&':
-                        result.append("&amp;");
+                        result << "&amp;";
                         break;
 
                     case '<':
-                        result.append("&lt;");
+                        result << "&lt;";
                         break;
 
                     case '>':
-                        result.append("&gt;");
+                        result << "&gt;";
                         break;
 
                     case '"':
-                        result.append("&quot;");
+                        result << "&quot;";
                         break;
 
                     case '\'':
-                        result.append("&#39;");
+                        result << "&#39;";
                         break;
 
                     case '\r':
                         break;
 
                     default:
-                        result.append(1, c);
+                        result << r;
                 }
             }
 
-            return result;
+            return result.ToString();
         }
 
         return string;
@@ -339,70 +341,60 @@ namespace tempearly
 
     bool Utils::UrlDecode(const String& string, String& slot)
     {
-        String::size_type index = 0;
-        bool encoded = false;
-
         // First check if the string has any encoding.
-        while (!encoded && index < string.length())
+        if (string.IndexOf('+') != String::npos
+            || string.IndexOf('%') != String::npos)
         {
-            encoded = string[index] == '+' || string[index] == '%';
-            ++index;
-        }
-        if (!encoded)
-        {
+            ByteString bytes = string.Encode();
+            std::vector<char> result;
+
+            result.reserve(bytes.GetLength());
+            for (std::size_t i = 0; i < bytes.GetLength(); ++i)
+            {
+                const byte b = bytes[i];
+
+                if (b == '+')
+                {
+                    result.push_back(' ');
+                }
+                else if (b == '%')
+                {
+                    char byte = 0;
+
+                    if (bytes.GetLength() - i < 2)
+                    {
+                        return false; // Malformed query string
+                    }
+                    for (std::size_t j = 0; j < 2; ++j)
+                    {
+                        const char code = bytes[i + j + 1];
+
+                        if (0x30 <= code && code <= 0x39)
+                        {
+                            byte = byte * 16 + code - 0x30;
+                        }
+                        else if (0x41 <= code && code <= 0x46)
+                        {
+                            byte = byte * 16 + code - 0x37;
+                        }
+                        else if (0x61 <= code && code <= 0x66)
+                        {
+                            byte = byte * 16 + code - 0x57;
+                        } else {
+                            return false;
+                        }
+                    }
+                    result.push_back(byte);
+                    i += 2;
+                } else {
+                    result.push_back(b);
+                }
+            }
+            result.push_back(0);
+            slot = String(result.data());
+        } else {
             slot = string;
-
-            return true;
         }
-        --index;
-
-        // Start decoding from first encoded characters.
-        String result;
-
-        result.reserve(string.length());
-        result.append(string.substr(0, index));
-
-        for (String::size_type i = index; i < string.length(); ++i)
-        {
-            if (string[i] == '+')
-            {
-                result.append(1, ' ');
-            }
-            else if (string[i] == '%')
-            {
-                char byte = 0;
-
-                if (string.length() - i < 2)
-                {
-                    return false; // Malformed query string
-                }
-                for (String::size_type j = 0; j < 2; ++j)
-                {
-                    const char code = string[i + j + 1];
-
-                    if (0x30 <= code && code <= 0x39)
-                    {
-                        byte = byte * 16 + code - 0x30;
-                    }
-                    else if (0x41 <= code && code <= 0x46)
-                    {
-                        byte = byte * 16 + code - 0x37;
-                    }
-                    else if (0x61 <= code && code <= 0x66)
-                    {
-                        byte = byte * 16 + code - 0x57;
-                    } else {
-                        return false;
-                    }
-                }
-                result.append(1, byte);
-                i += 2;
-            } else {
-                result.append(1, string[i]);
-            }
-        }
-
-        slot = result;
 
         return true;
     }
@@ -410,29 +402,29 @@ namespace tempearly
     void Utils::ParseQueryString(const String& string,
                                  Dictionary<std::vector<String> >& dictionary)
     {
-        String::size_type current_pos = 0;
+        std::size_t current_pos = 0;
         String name;
         String value;
 
-        while (current_pos < string.length())
+        while (current_pos < string.GetLength())
         {
-            String::size_type pos = string.find('=', current_pos);
+            std::size_t pos = string.IndexOf('=', current_pos);
 
             if (pos == String::npos)
             {
                 return;
             }
 
-            name = string.substr(current_pos, pos);
+            name = string.SubString(current_pos, pos);
             current_pos = pos + 1;
-            pos = string.find('&', current_pos);
+            pos = string.IndexOf('&', current_pos);
 
             if (pos == String::npos)
             {
-                value = string.substr(current_pos);
-                current_pos = string.length();
+                value = string.SubString(current_pos);
+                current_pos = string.GetLength();
             } else {
-                value = string.substr(current_pos, pos);
+                value = string.SubString(current_pos, pos);
                 current_pos = pos + 1;
             }
 

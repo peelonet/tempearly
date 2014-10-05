@@ -1,5 +1,3 @@
-#include <sstream>
-
 #include "interpreter.h"
 #include "parser.h"
 #include "utils.h"
@@ -67,6 +65,40 @@ namespace tempearly
         return PeekChar() == c;
     }
 
+    static inline std::size_t utf8_size(unsigned char input)
+    {
+        if ((input & 0x80) == 0x00)
+        {
+            return 1;
+        }
+        else if ((input & 0xc0) == 0x80)
+        {
+            return 0;
+        }
+        else if ((input & 0xe0) == 0xc0)
+        {
+            return 2;
+        }
+        else if ((input & 0xf0) == 0xe0)
+        {
+            return 3;
+        }
+        else if ((input & 0xf8) == 0xf0)
+        {
+            return 4;
+        }
+        else if ((input & 0xfc) == 0xf8)
+        {
+            return 5;
+        }
+        else if ((input & 0xfe) == 0xfc)
+        {
+            return 6;
+        } else {
+            return 0;
+        }
+    }
+
     int Parser::ReadChar()
     {
         if (!m_pushback_chars.empty())
@@ -79,9 +111,55 @@ namespace tempearly
         }
         if (m_stream)
         {
-            int c = std::fgetc(m_stream);
+            int initial = std::fgetc(m_stream);
+            std::size_t size;
+            rune result;
 
-            switch (c)
+            if (initial < 0)
+            {
+                return -1;
+            }
+            switch (size = utf8_size(initial))
+            {
+                case 1:
+                    result = static_cast<rune>(initial);
+                    break;
+
+                case 2:
+                    result = static_cast<rune>(initial & 0x1f);
+                    break;
+
+                case 3:
+                    result = static_cast<rune>(initial & 0x0f);
+                    break;
+
+                case 4:
+                    result = static_cast<rune>(initial & 0x07);
+                    break;
+
+                case 5:
+                    result = static_cast<rune>(initial & 0x03);
+                    break;
+
+                case 6:
+                    result = static_cast<rune>(initial & 0x01);
+                    break;
+
+                default:
+                    return 0xfffd; // Invalid code point
+            }
+            for (std::size_t i = 1; i < size; ++i)
+            {
+                int next = std::fgetc(m_stream);
+
+                if ((next & 0xc0) == 0x80)
+                {
+                    result = (result << 6) | (next & 0x3f);
+                } else {
+                    return 0xfffd;
+                }
+            }
+            switch (result)
             {
                 case '\r':
                     ++m_position.line;
@@ -107,7 +185,7 @@ namespace tempearly
                     }
             }
 
-            return c;
+            return result;
         }
 
         return -1;
@@ -323,13 +401,13 @@ READ_NEXT_CHAR:
                     {
                         if ((c = ReadChar()) < 0)
                         {
-                            std::stringstream ss;
+                            StringBuilder sb;
 
-                            ss << "Unterminated multi-line comment at "
-                               << token.position.line
+                            sb << "Unterminated multi-line comment at "
+                               << Utils::ToString(static_cast<i64>(token.position.line))
                                << "; Missing `*/'";
                             token.kind = Token::ERROR;
-                            token.text = ss.str();
+                            token.text = sb.ToString();
 
                             return token;
                         }
@@ -498,20 +576,20 @@ READ_NEXT_CHAR:
             {
                 const int separator = c;
 
-                m_buffer.clear();
+                m_buffer.Clear();
                 for (;;)
                 {
                     if ((c = ReadChar()) < 0)
                     {
-                        std::stringstream ss;
+                        StringBuilder sb;
 
-                        ss << "Unterminated string literal at "
-                           << token.position.line
+                        sb << "Unterminated string literal at "
+                           << Utils::ToString(static_cast<i64>(token.position.line))
                            << "; missing `"
-                           << static_cast<char>(separator)
+                           << separator
                            << "'";
                         token.kind = Token::ERROR;
-                        token.text = ss.str();
+                        token.text = sb.ToString();
 
                         return token;
                     }
@@ -523,21 +601,21 @@ READ_NEXT_CHAR:
                     {
                         // TODO: process escape sequence
                     } else {
-                        m_buffer.append(1, static_cast<char>(c));
+                        m_buffer << c;
                     }
                 }
                 token.kind = Token::STRING;
-                token.text = m_buffer;
+                token.text = m_buffer.ToString();
                 break;
             }
 
             case '0':
-                m_buffer.assign(1, '0');
+                m_buffer.Assign(1, '0');
                 switch (c = ReadChar())
                 {
                     // Binary integer literal.
                     case 'b': case 'B':
-                        m_buffer.append(1, 'b');
+                        m_buffer << 'b';
                         while (PeekChar('_') || std::isdigit(PeekChar()))
                         {
                             if ((c = ReadChar()) == '_')
@@ -546,34 +624,33 @@ READ_NEXT_CHAR:
                             }
                             else if (c != '0' && c != '1')
                             {
-                                std::stringstream ss;
+                                StringBuilder sb;
 
-                                ss << "Invalid binary digit: "
-                                   << static_cast<char>(c);
+                                sb << "Invalid binary digit: " << c;
                                 token.kind = Token::ERROR;
-                                token.text = ss.str();
+                                token.text = sb.ToString();
 
                                 return token;
                             } else {
-                                m_buffer.append(1, static_cast<char>(c));
+                                m_buffer << c;
                             }
                         }
                         token.kind = Token::INT;
-                        token.text = m_buffer;
+                        token.text = m_buffer.ToString();
                         break;
 
                     // Hex integer literal.
                     case 'x': case 'X':
-                        m_buffer.append(1, static_cast<char>(c));
+                        m_buffer << 'x';
                         while (PeekChar('_') || std::isxdigit(PeekChar()))
                         {
                             if ((c = ReadChar()) != '_')
                             {
-                                m_buffer.append(1, static_cast<char>(c));
+                                m_buffer << c;
                             }
                         }
                         token.kind = Token::INT;
-                        token.text = m_buffer;
+                        token.text = m_buffer.ToString();
                         break;
 
                     // Octal integer literal.
@@ -582,7 +659,7 @@ READ_NEXT_CHAR:
                     case '2': case '3':
                     case '4': case '5':
                     case '6': case '7':
-                        m_buffer.append(1, static_cast<char>(c));
+                        m_buffer << c;
                         while (PeekChar('_') || std::isdigit(PeekChar()))
                         {
                             if ((c = ReadChar()) == '_')
@@ -591,29 +668,28 @@ READ_NEXT_CHAR:
                             }
                             else if (c > '7')
                             {
-                                std::stringstream ss;
+                                StringBuilder sb;
 
-                                ss << "Invalid octal digit: "
-                                   << static_cast<char>(c);
+                                sb << "Invalid octal digit: " << c;
                                 token.kind = Token::ERROR;
-                                token.text = ss.str();
+                                token.text = sb.ToString();
 
                                 return token;
                             } else {
-                                m_buffer.append(1, static_cast<char>(c));
+                                m_buffer << c;
                             }
                         }
                         token.kind = Token::INT;
-                        token.text = m_buffer;
+                        token.text = m_buffer.ToString();
                         break;
 
                     case '8': case '9':
                     {
-                        std::stringstream ss;
+                        StringBuilder sb;
 
-                        ss << "Invalid octal digit: " << static_cast<char>(c);
+                        sb << "Invalid octal digit: " << c;
                         token.kind = Token::ERROR;
-                        token.text = ss.str();
+                        token.text = sb.ToString();
 
                         return token;
                     }
@@ -626,49 +702,49 @@ READ_NEXT_CHAR:
 
                     case 'f': case 'F':
                         token.kind = Token::FLOAT;
-                        token.text = m_buffer;
+                        token.text = m_buffer.ToString();
                         break;
 
                     default:
                         UnreadChar(c);
                         token.kind = Token::INT;
-                        token.text = m_buffer;
+                        token.text = m_buffer.ToString();
                 }
                 break;
 
             case '1': case '2': case '3':
             case '4': case '5': case '6':
             case '7': case '8': case '9':
-                m_buffer.assign(1, static_cast<char>(c));
+                m_buffer.Assign(1, c);
                 while (PeekChar('_') || std::isdigit(PeekChar()))
                 {
                     if ((c = ReadChar()) != '_')
                     {
-                        m_buffer.append(1, static_cast<char>(c));
+                        m_buffer << c;
                     }
                 }
                 if (PeekChar('.'))
                 {
                     SkipChar();
 SCAN_FLOAT:
-                    m_buffer.append(1, '.');
+                    m_buffer << '.';
                     if (std::isdigit(PeekChar()))
                     {
-                        m_buffer.append(1, static_cast<char>(ReadChar()));
+                        m_buffer << ReadChar();
                         while (PeekChar('_') || std::isdigit(PeekChar()))
                         {
                             if ((c = ReadChar()) != '_')
                             {
-                                m_buffer.append(1, static_cast<char>(c));
+                                m_buffer << c;
                             }
                         }
                         if (ReadChar('e') || ReadChar('E'))
                         {
 SCAN_EXPONENT:
-                            m_buffer.append(1, 'e');
+                            m_buffer << 'e';
                             if (PeekChar('+') || PeekChar('-'))
                             {
-                                m_buffer.append(1, static_cast<char>(ReadChar()));
+                                m_buffer << ReadChar();
                                 c = ReadChar(); // isdigit() might be a macro
                                 if (!std::isdigit(c))
                                 {
@@ -677,11 +753,11 @@ SCAN_EXPONENT:
 
                                     return token;
                                 }
-                                m_buffer.append(1, static_cast<char>(c));
+                                m_buffer << c;
                             }
                             else if (std::isdigit(PeekChar()))
                             {
-                                m_buffer.append(1, static_cast<char>(ReadChar()));
+                                m_buffer << ReadChar();
                             } else {
                                 token.kind = Token::ERROR;
                                 token.text = "Invalid exponent";
@@ -690,14 +766,14 @@ SCAN_EXPONENT:
                             }
                             while (std::isdigit(PeekChar()))
                             {
-                                m_buffer.append(1, static_cast<char>(ReadChar()));
+                                m_buffer << ReadChar();
                             }
                         }
                         token.kind = Token::FLOAT;
-                        token.text = m_buffer;
+                        token.text = m_buffer.ToString();
                     } else {
                         UnreadChar('.');
-                        m_buffer.erase(m_buffer.end() - 1);
+                        m_buffer.PopBack();
                     }
                 }
                 else if (ReadChar('e') || ReadChar('E'))
@@ -710,7 +786,7 @@ SCAN_EXPONENT:
                     } else {
                         token.kind = Token::INT;
                     }
-                    token.text = m_buffer;
+                    token.text = m_buffer.ToString();
                 }
                 break;
 
@@ -718,19 +794,21 @@ SCAN_EXPONENT:
                 if (c == '_' || std::isalpha(c))
                 {
                     const Dictionary<Token::Kind>::Entry* entry;
+                    String string;
 
-                    m_buffer.assign(1, static_cast<char>(c));
+                    m_buffer.Assign(1, c);
                     while ((c = ReadChar()) == '_' || std::isalnum(c))
                     {
-                        m_buffer.append(1, static_cast<char>(c));
+                        m_buffer << c;
                     }
                     UnreadChar(c);
-                    if ((entry = m_keywords.Find(m_buffer)))
+                    string = m_buffer.ToString();
+                    if ((entry = m_keywords.Find(string)))
                     {
                         token.kind = entry->value;
                     } else {
                         token.kind = Token::IDENTIFIER;
-                        token.text = m_buffer;
+                        token.text = string;
                     }
                 } else {
                     token.kind = Token::ERROR;
@@ -840,7 +918,7 @@ SCAN_EXPONENT:
                                  std::vector<Handle<Node> >& nodes,
                                  bool& should_continue)
     {
-        String text;
+        StringBuilder text;
         int c = parser->ReadChar();
 
         while (c > 0)
@@ -849,16 +927,16 @@ SCAN_EXPONENT:
             {
                 if (parser->ReadChar('%'))
                 {
-                    if (!text.empty())
+                    if (!text.IsEmpty())
                     {
-                        nodes.push_back(new TextNode(text));
-                        text.clear();
+                        nodes.push_back(new TextNode(text.ToString()));
+                        text.Clear();
                     }
                     should_continue = true;
 
                     return true;
                 } else {
-                    text.append(1, '<');
+                    text << '<';
                     c = parser->ReadChar();
                 }
             }
@@ -869,10 +947,10 @@ SCAN_EXPONENT:
                     const bool escape = c == '!';
                     Handle<Node> expr;
 
-                    if (!text.empty())
+                    if (!text.IsEmpty())
                     {
-                        nodes.push_back(new TextNode(text));
-                        text.clear();
+                        nodes.push_back(new TextNode(text.ToString()));
+                        text.Clear();
                     }
                     if (!(expr = parse_expr(interpreter, parser)))
                     {
@@ -884,17 +962,15 @@ SCAN_EXPONENT:
                     }
                     else if (parser->ReadChar() != escape ? '!' : '}')
                     {
-                        interpreter->Throw(
-                            interpreter->eSyntaxError,
-                            "Unterminated expression: Missing `}'"
-                        );
+                        interpreter->Throw(interpreter->eSyntaxError,
+                                           "Unterminated expression: Missing `}'");
 
                         return false;
                     }
                     nodes.push_back(new ExpressionNode(expr, escape));
                     c = parser->ReadChar();
                 } else {
-                    text.append(1, '$');
+                    text << '$';
                 }
             }
             else if (c == '\\')
@@ -903,7 +979,7 @@ SCAN_EXPONENT:
                 {
                     if ((c = parser->ReadChar()) != '\n')
                     {
-                        text.append(1, static_cast<char>(c));
+                        text << c;
                     }
                 }
                 else if (c == '\n')
@@ -914,33 +990,32 @@ SCAN_EXPONENT:
                 {
                     if ((c = parser->ReadChar()) == '%')
                     {
-                        text.append("<%");
+                        text << '<' << '%';
                         c = parser->ReadChar();
                     } else {
-                        text.append("\\<");
+                        text << '\\' << '<';
                     }
                 }
                 else if (c == '$')
                 {
                     if ((c = parser->ReadChar()) == '{' || c == '!')
                     {
-                        text.append(1, '$');
-                        text.append(1, static_cast<char>(c));
+                        text << '$' << c;
                         c = parser->ReadChar();
                     } else {
-                        text.append("\\$");
+                        text << '\\' << '$';
                     }
                 } else {
-                    text.append(1, '\\');
+                    text << '\\';
                 }
             } else {
-                text.append(1, static_cast<char>(c));
+                text << c;
                 c = parser->ReadChar();
             }
         }
-        if (!text.empty())
+        if (!text.IsEmpty())
         {
-            nodes.push_back(new TextNode(text));
+            nodes.push_back(new TextNode(text.ToString()));
         }
         should_continue = false;
 
@@ -1346,10 +1421,8 @@ SCAN_EXPONENT:
             {
                 return true;
             }
-            interpreter->Throw(
-                interpreter->eSyntaxError,
-                "Unterminated argument list"
-            );
+            interpreter->Throw(interpreter->eSyntaxError,
+                               "Unterminated argument list");
 
             return false;
         }
@@ -1364,12 +1437,12 @@ SCAN_EXPONENT:
 
         if (token.kind != Token::IDENTIFIER)
         {
-            std::stringstream ss;
+            StringBuilder sb;
 
-            ss << "Unexpected "
+            sb << "Unexpected "
                << Token::What(token.kind)
                << "; Missing identifier";
-            interpreter->Throw(interpreter->eSyntaxError, ss.str());
+            interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
 
             return Handle<Node>();
         }
@@ -2051,11 +2124,11 @@ SCAN_EXPONENT:
                 }
                 else if (!node->IsVariable())
                 {
-                    std::stringstream ss;
+                    StringBuilder sb;
 
-                    ss << "Missing variable expression before "
+                    sb << "Missing variable expression before "
                        << Token::What(kind);
-                    interpreter->Throw(interpreter->eSyntaxError, ss.str());
+                    interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
 
                     return Handle<Node>();
                 }
@@ -2087,11 +2160,11 @@ SCAN_EXPONENT:
                 }
                 else if (!node->IsVariable())
                 {
-                    std::stringstream ss;
+                    StringBuilder sb;
 
-                    ss << "Missing variable expression before "
+                    sb << "Missing variable expression before "
                        << Token::What(kind);
-                    interpreter->Throw(interpreter->eSyntaxError, ss.str());
+                    interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
 
                     return Handle<Node>();
                 }

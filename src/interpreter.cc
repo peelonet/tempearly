@@ -2,6 +2,7 @@
 #include "interpreter.h"
 #include "parser.h"
 #include "api/iterator.h"
+#include "core/bytestring.h"
 
 namespace tempearly
 {
@@ -42,7 +43,7 @@ namespace tempearly
 
     bool Interpreter::Include(const String& filename)
     {
-        FILE* stream = std::fopen(filename.c_str(), "rb");
+        FILE* stream = std::fopen(filename.Encode().c_str(), "rb");
 
         if (stream)
         {
@@ -72,7 +73,7 @@ namespace tempearly
     {
         Handle<Class> cls = new Class(base);
 
-        if (!name.empty())
+        if (!name.IsEmpty())
         {
             cls->SetAttribute("__name__", Value::NewString(name));
         }
@@ -95,7 +96,7 @@ namespace tempearly
         } else {
             std::fprintf(stderr,
                          "%s (fatal internal error)\n",
-                         message.c_str());
+                         message.Encode().c_str());
             std::abort();
         }
     }
