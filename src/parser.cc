@@ -1764,8 +1764,8 @@ SCAN_EXPONENT:
      * relational-expression "<=" bit-or-expression
      * relational-expression ">=" bit-or-expression
      */
-    static Handle<Node> parse_rational(const Handle<Interpreter>& interpreter,
-                                       Parser* parser)
+    static Handle<Node> parse_relational(const Handle<Interpreter>& interpreter,
+                                         Parser* parser)
     {
         Handle<Node> node = parse_bit_or(interpreter, parser);
 
@@ -1773,9 +1773,40 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
-        // TODO
+        for (;;)
+        {
+            const Parser::TokenDescriptor& token = parser->PeekToken();
 
-        return node;
+            switch (token.kind)
+            {
+                case Token::LT:
+                case Token::GT:
+                case Token::LTE:
+                case Token::GTE:
+                {
+                    const Token::Kind kind = token.kind;
+                    Handle<Node> operand;
+
+                    parser->SkipToken();
+                    if (!(operand = parse_bit_or(interpreter, parser)))
+                    {
+                        return Handle<Node>();
+                    }
+                    node = new CallNode(
+                        node,
+                        kind == Token::LT  ? "__lt__"  :
+                        kind == Token::GT  ? "__gt__"  :
+                        kind == Token::LTE ? "__lte__" :
+                                             "__gte__",
+                        std::vector<Handle<Node> >(1, operand)
+                    );
+                    break;
+                }
+
+                default:
+                    return node;
+            }
+        }
     }
 
     /**
@@ -1789,15 +1820,65 @@ SCAN_EXPONENT:
     static Handle<Node> parse_equality(const Handle<Interpreter>& interpreter,
                                        Parser* parser)
     {
-        Handle<Node> node = parse_rational(interpreter, parser);
+        Handle<Node> node = parse_relational(interpreter, parser);
 
         if (!node)
         {
             return Handle<Node>();
         }
-        // TODO
+        for (;;)
+        {
+            const Parser::TokenDescriptor& token = parser->PeekToken();
 
-        return node;
+            switch (token.kind)
+            {
+                case Token::EQ:
+                case Token::MATCH:
+                case Token::CMP:
+                {
+                    const Token::Kind kind = token.kind;
+                    Handle<Node> operand;
+
+                    parser->SkipToken();
+                    if (!(operand = parse_relational(interpreter, parser)))
+                    {
+                        return Handle<Node>();
+                    }
+                    node = new CallNode(
+                        node,
+                        kind == Token::EQ    ? "__eq__"    :
+                        kind == Token::MATCH ? "__match__" :
+                                               "__cmp__",
+                        std::vector<Handle<Node> >(1, operand)
+                    );
+                    break;
+                }
+
+                case Token::NE:
+                case Token::NO_MATCH:
+                {
+                    const Token::Kind kind = token.kind;
+                    Handle<Node> operand;
+
+                    parser->SkipToken();
+                    if (!(operand = parse_relational(interpreter, parser)))
+                    {
+                        return Handle<Node>();
+                    }
+                    node = new NotNode(
+                        new CallNode(
+                            node,
+                            kind == Token::NE ? "__eq__" : "__match__",
+                            std::vector<Handle<Node> >(1, operand)
+                        )
+                    );
+                    break;
+                }
+
+                default:
+                    return node;
+            }
+        }
     }
 
     /**
