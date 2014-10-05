@@ -11,7 +11,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(str_length)
     {
-        return Value::NewInt(args[0].AsString().length());
+        return Value::NewInt(args[0].AsString().GetLength());
     }
 
     /**
@@ -22,7 +22,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(str_bool)
     {
-        return Value::NewBool(!args[0].AsString().empty());
+        return Value::NewBool(!args[0].AsString().IsEmpty());
     }
 
     /**
@@ -39,7 +39,7 @@ namespace tempearly
             const String& a = args[0].AsString();
             const String& b = operand.AsString();
 
-            return Value::NewInt(a.compare(b));
+            return Value::NewInt(a.Compare(b));
         }
         interpreter->Throw(interpreter->eTypeError,
                            "Values are not comparable");

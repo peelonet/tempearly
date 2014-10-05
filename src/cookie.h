@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_COOKIE_H_GUARD
 #define TEMPEARLY_COOKIE_H_GUARD
 
-#include "tempearly.h"
+#include "core/string.h"
 
 namespace tempearly
 {

@@ -23,7 +23,7 @@ namespace tempearly
     {
         ReadEnvironmentVariables();
 
-        if (!m_query_string.empty())
+        if (!m_query_string.IsEmpty())
         {
             Utils::ParseQueryString(m_query_string, m_parameters);
         }

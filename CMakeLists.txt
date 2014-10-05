@@ -32,7 +32,6 @@ SET(
     src/class.cc
     src/cookie.cc
     src/coreobject.cc
-    src/functionobject.cc
     src/interpreter.cc
     src/memory.cc
     src/node.cc
@@ -48,6 +47,7 @@ SET(
     src/value.cc
     src/api/bool.cc
     src/api/exception.cc
+    src/api/function.cc
     src/api/iterator.cc
     src/api/list.cc
     src/api/number.cc
@@ -56,6 +56,9 @@ SET(
     src/api/response.cc
     src/api/string.cc
     src/api/void.cc
+    src/core/bytestring.cc
+    src/core/string.cc
+    src/core/stringbuilder.cc
 )
 
 ADD_EXECUTABLE(

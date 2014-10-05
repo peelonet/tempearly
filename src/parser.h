@@ -5,6 +5,7 @@
 
 #include "script.h"
 #include "token.h"
+#include "core/stringbuilder.h"
 
 namespace tempearly
 {
@@ -69,7 +70,7 @@ namespace tempearly
         bool m_seen_cr;
         /** Current position in source code. */
         SourcePosition m_position;
-        std::string m_buffer;
+        StringBuilder m_buffer;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Parser);
     };
 }

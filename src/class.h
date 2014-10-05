@@ -2,15 +2,12 @@
 #define TEMPEARLY_CLASS_H_GUARD
 
 #include "coreobject.h"
-#include "dictionary.h"
 
 namespace tempearly
 {
     class Class : public CoreObject
     {
     public:
-        typedef Dictionary<Value> AttributeMap;
-
         explicit Class(const Handle<Class>& base);
 
         virtual ~Class();

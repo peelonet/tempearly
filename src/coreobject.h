@@ -1,13 +1,15 @@
 #ifndef TEMPEARLY_COREOBJECT_H_GUARD
 #define TEMPEARLY_COREOBJECT_H_GUARD
 
-#include "memory.h"
+#include "dictionary.h"
 
 namespace tempearly
 {
     class CoreObject : public CountedObject
     {
     public:
+        typedef Dictionary<Value> AttributeMap;
+
         explicit CoreObject();
 
         virtual Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const = 0;
