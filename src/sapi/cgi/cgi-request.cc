@@ -22,6 +22,15 @@ namespace tempearly
         , m_using_https(false)
     {
         ReadEnvironmentVariables();
+
+        // On Win32, use binary read to avoid CRLF conversion.
+#if defined(_WIN32)
+# if defined(__BORLANDC__)
+        setmode(_fileno(stdin), O_BINARY);
+# else
+        setmode(_fileno(stdin), _O_BINARY);
+# endif
+#endif
     }
 
     void CgiRequest::ReadEnvironmentVariables()
