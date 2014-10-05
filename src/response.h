@@ -77,6 +77,8 @@ namespace tempearly
 
         virtual void Write(std::size_t size, const char* data) = 0;
 
+        virtual void SendException(const Handle<ExceptionObject>& exception) = 0;
+
     private:
         /** Status code of the response. */
         int m_status;

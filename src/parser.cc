@@ -1152,6 +1152,40 @@ SCAN_EXPONENT:
         }
     }
 
+    static Handle<Node> parse_list(const Handle<Interpreter>& interpreter,
+                                   Parser* parser)
+    {
+        std::vector<Handle<Node> > elements;
+
+        if (!parser->ReadToken(Token::RBRACK))
+        {
+            for (;;)
+            {
+                Handle<Node> node = parse_expr(interpreter, parser);
+
+                if (!node)
+                {
+                    return Handle<Node>();
+                }
+                elements.push_back(node);
+                if (parser->ReadToken(Token::COMMA))
+                {
+                    continue;
+                }
+                else if (parser->ReadToken(Token::RBRACK))
+                {
+                    break;
+                }
+                interpreter->Throw(interpreter->eSyntaxError,
+                                   "Unterminated list literal");
+
+                return Handle<Node>();
+            }
+        }
+
+        return new ListNode(elements);
+    }
+
     static Handle<Node> parse_primary(const Handle<Interpreter>& interpreter,
                                       Parser* parser)
     {
@@ -1225,7 +1259,10 @@ SCAN_EXPONENT:
                 }
                 break;
 
-            //TODO:case Token::LBRACK:
+            case Token::LBRACK:
+                node = parse_list(interpreter, parser);
+                break;
+
             //TODO:case Token::LBRACE:
 
             case Token::IDENTIFIER:

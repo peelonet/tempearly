@@ -366,6 +366,25 @@ namespace tempearly
         const String m_id;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(IdentifierNode);
     };
+
+    class ListNode : public Node
+    {
+    public:
+        explicit ListNode(const std::vector<Handle<Node> >& elements);
+
+        bool IsVariable() const;
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        bool Assign(const Handle<Interpreter>& interpreter,
+                    const Value& value) const;
+
+        void Mark();
+
+    private:
+        const std::vector<Node*> m_elements;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ListNode);
+    };
 }
 
 #endif /* !TEMPEARLY_NODE_H_GUARD */

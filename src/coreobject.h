@@ -12,6 +12,12 @@ namespace tempearly
 
         virtual Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const = 0;
 
+        /**
+         * Returns true if object is instance of given class.
+         */
+        bool IsInstance(const Handle<Interpreter>& interpreter,
+                        const Handle<Class>& cls) const;
+
         virtual bool HasAttribute(const String& id) const = 0;
 
         virtual bool GetAttribute(const String& id, Value& value) const = 0;
@@ -29,6 +35,16 @@ namespace tempearly
         }
 
         virtual bool IsFunction() const
+        {
+            return false;
+        }
+
+        virtual bool IsIterator() const
+        {
+            return false;
+        }
+
+        virtual bool IsList() const
         {
             return false;
         }

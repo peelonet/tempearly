@@ -47,6 +47,9 @@ SET(
     src/utils.cc
     src/value.cc
     src/api/bool.cc
+    src/api/exception.cc
+    src/api/iterator.cc
+    src/api/list.cc
     src/api/number.cc
     src/api/object.cc
     src/api/string.cc

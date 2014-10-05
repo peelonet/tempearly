@@ -5,6 +5,7 @@
 #include "request.h"
 #include "response.h"
 #include "scope.h"
+#include "api/exception.h"
 
 namespace tempearly
 {
@@ -20,19 +21,29 @@ namespace tempearly
         Handle<Class> AddClass(const String& name,
                                const Handle<Class>& base);
 
+        /**
+         * Returns true if this interpreter has an uncaught exception.
+         */
         inline bool HasException() const
         {
             return !!m_exception;
         }
 
-        inline const Value& GetException() const
+        /**
+         * Returns currently uncaught exception or NULL handle if there isn't
+         * any.
+         */
+        inline Handle<ExceptionObject> GetException() const
         {
             return m_exception;
         }
 
-        inline void SetException(const Value& exception)
+        /**
+         * Clears current exception if such exists.
+         */
+        inline void ClearException()
         {
-            m_exception = exception;
+            m_exception = 0;
         }
 
         /**
@@ -64,6 +75,11 @@ namespace tempearly
         void PopScope();
 
         /**
+         * Returns shared instance of empty iterator.
+         */
+        Handle<IteratorObject> GetEmptyIterator();
+
+        /**
          * Used by garbage collector to mark all objects used by the
          * interpreter.
          */
@@ -77,16 +93,21 @@ namespace tempearly
 
         Handle<Class> cBool;
         Handle<Class> cClass;
+        Handle<Class> cException;
         Handle<Class> cFloat;
         Handle<Class> cFunction;
         Handle<Class> cInt;
+        Handle<Class> cIterator;
+        Handle<Class> cList;
         Handle<Class> cNum;
         Handle<Class> cObject;
         Handle<Class> cString;
         Handle<Class> cVoid;
 
+        Handle<Class> eArithmeticError;
         Handle<Class> eAttributeError;
         Handle<Class> eNameError;
+        Handle<Class> eStopIteration;
         Handle<Class> eSyntaxError;
         Handle<Class> eTypeError;
         Handle<Class> eValueError;
@@ -94,9 +115,11 @@ namespace tempearly
 
     private:
         /** Current uncaught exception. */
-        Value m_exception;
+        ExceptionObject* m_exception;
         /** Current local variable scope. */
         Handle<Scope> m_scope;
+        /** Shared instance of empty iterator. */
+        IteratorObject* m_empty_iterator;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Interpreter);
     };
 }

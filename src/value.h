@@ -117,6 +117,11 @@ namespace tempearly
             return m_kind == KIND_INT;
         }
 
+        inline bool IsException() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsException();
+        }
+
         inline bool IsFloat() const
         {
             return m_kind == KIND_FLOAT;
@@ -125,6 +130,16 @@ namespace tempearly
         inline bool IsFunction() const
         {
             return m_kind == KIND_OBJECT && m_data.o->IsFunction();
+        }
+
+        inline bool IsIterator() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsIterator();
+        }
+
+        inline bool IsList() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsList();
         }
 
         inline bool IsString() const
@@ -145,6 +160,22 @@ namespace tempearly
         Value Call(const Handle<Interpreter>& interpreter,
                    const String& id,
                    const std::vector<Value>& args = std::vector<Value>()) const;
+
+        /**
+         * Treats object as iterator and attempts to retrieve it's next value.
+         *
+         * \param interpreter Script interpreter
+         * \param slot        Where the next value will be inserted
+         * \return            A boolean flag indicating whether a value was
+         *                    retrieved or not, false is returned if there was
+         *                    no value to retrieve, or if an exception was thrown
+         */
+        bool GetNext(const Handle<Interpreter>& interpreter, Value& slot) const;
+
+        /**
+         * Resets value to error state.
+         */
+        void Clear();
 
         /**
          * Used by garbage collector to mark objects which this value
