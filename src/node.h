@@ -162,6 +162,24 @@ namespace tempearly
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(WhileNode);
     };
 
+    class ForNode : public Node
+    {
+    public:
+        explicit ForNode(const Handle<Node>& variable,
+                         const Handle<Node>& collection,
+                         const Handle<Node>& statement);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_variable;
+        Node* m_collection;
+        Node* m_statement;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ForNode);
+    };
+
     class BreakNode : public Node
     {
     public:

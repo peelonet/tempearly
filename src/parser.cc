@@ -1101,6 +1101,38 @@ SCAN_EXPONENT:
         return new WhileNode(condition, statement);
     }
 
+    static Handle<Node> parse_for(const Handle<Interpreter>& interpreter,
+                                  Parser* parser)
+    {
+        Handle<Node> variable;
+        Handle<Node> collection;
+        Handle<Node> statement;
+
+        if (!expect_token(interpreter, parser, Token::KW_FOR)
+            || !(variable = parse_expr(interpreter, parser)))
+        {
+            return Handle<Node>();
+        }
+        if (!variable->IsVariable())
+        {
+            interpreter->Throw(interpreter->eSyntaxError,
+                               "'for' loop requires variable");
+
+            return Handle<Node>();
+        }
+        if (!expect_token(interpreter, parser, Token::COLON)
+            || !(collection = parse_expr(interpreter, parser))
+            || !expect_token(interpreter, parser, Token::COLON)
+            || !(statement = parse_block(interpreter, parser))
+            || !expect_token(interpreter, parser, Token::KW_END)
+            || !expect_token(interpreter, parser, Token::KW_FOR))
+        {
+            return Handle<Node>();
+        }
+
+        return new ForNode(variable, collection, statement);
+    }
+
     static Handle<Node> parse_stmt(const Handle<Interpreter>& interpreter,
                                    Parser* parser)
     {
@@ -1130,7 +1162,8 @@ SCAN_EXPONENT:
             case Token::KW_WHILE:
                 return parse_while(interpreter, parser);
 
-            //TODO:case Token::KW_FOR:
+            case Token::KW_FOR:
+                return parse_for(interpreter, parser);
 
             case Token::KW_BREAK:
                 node = new BreakNode();
