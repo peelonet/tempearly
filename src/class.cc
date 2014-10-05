@@ -59,10 +59,8 @@ namespace tempearly
 
                 return true;
             }
-
-            return false;
         }
-        else if (m_base)
+        if (m_base)
         {
             return m_base->GetAttribute(id, value);
         } else {
