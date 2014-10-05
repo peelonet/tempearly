@@ -32,7 +32,6 @@ SET(
     src/class.cc
     src/cookie.cc
     src/coreobject.cc
-    src/functionobject.cc
     src/interpreter.cc
     src/memory.cc
     src/node.cc
@@ -48,6 +47,7 @@ SET(
     src/value.cc
     src/api/bool.cc
     src/api/exception.cc
+    src/api/function.cc
     src/api/iterator.cc
     src/api/list.cc
     src/api/number.cc

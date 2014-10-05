@@ -1,7 +1,7 @@
 #include <cmath>
 
-#include "functionobject.h"
 #include "interpreter.h"
+#include "api/function.h"
 
 namespace tempearly
 {

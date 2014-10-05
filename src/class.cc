@@ -1,5 +1,6 @@
-#include "functionobject.h"
 #include "interpreter.h"
+#include "api/function.h"
+#include "core/stringbuilder.h"
 
 namespace tempearly
 {
@@ -82,17 +83,106 @@ namespace tempearly
         m_attributes->Insert(id, value);
     }
 
+    namespace
+    {
+        class Method : public FunctionObject
+        {
+        public:
+            explicit Method(const Handle<Class>& cls,
+                            const Handle<Class>& declaring_class,
+                            int arity,
+                            Callback callback)
+                : FunctionObject(cls)
+                , m_declaring_class(declaring_class.Get())
+                , m_arity(arity)
+                , m_callback(callback) {}
+
+            Value Invoke(const Handle<Interpreter>& interpreter,
+                         const std::vector<Value>& args)
+            {
+                Value result;
+
+                // Arguments must not be empty.
+                if (args.empty())
+                {
+                    interpreter->Throw(interpreter->eTypeError,
+                                       "Missing method receiver");
+
+                    return Value();
+                }
+                // Test that the first argument is correct type.
+                else if (!args[0].IsInstance(interpreter, m_declaring_class))
+                {
+                    StringBuilder sb;
+
+                    sb << "Method requires a '"
+                       << m_declaring_class->GetName()
+                       << "' object but received a '"
+                       << args[0].GetClass(interpreter)->GetName();
+                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                    return Value();
+                }
+                // Test that we have correct amount of arguments.
+                else if (m_arity < 0)
+                {
+                    if (args.size() < static_cast<unsigned>(-(m_arity + 1) + 1))
+                    {
+                        StringBuilder sb;
+
+                        sb << "Method expected at least "
+                           << (-(m_arity) - 1)
+                           << " arguments, got "
+                           << args.size();
+                        interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                        return Value();
+                    }
+                }
+                else if (args.size() != static_cast<unsigned>(m_arity) + 1)
+                {
+                    StringBuilder sb;
+
+                    sb << "Method expected "
+                       << m_arity
+                       << " arguments, got "
+                       << args.size();
+                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                    return Value();
+                }
+                result = m_callback(interpreter, args);
+
+                return result;
+            }
+
+            void Mark()
+            {
+                FunctionObject::Mark();
+                if (!m_declaring_class->IsMarked())
+                {
+                    m_declaring_class->Mark();
+                }
+            }
+
+        private:
+            Class* m_declaring_class;
+            const int m_arity;
+            const Callback m_callback;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Method);
+        };
+    }
+
     void Class::AddMethod(const Handle<Interpreter>& interpreter,
                           const String& name,
                           int arity,
                           Value (*callback)(const Handle<Interpreter>&,
                                             const std::vector<Value>&))
     {
-        Value method = FunctionObject::NewMethod(interpreter,
-                                                 this,
-                                                 name,
-                                                 arity,
-                                                 callback);
+        Value method = Value::NewObject(new Method(interpreter->cFunction,
+                                                   this,
+                                                   arity,
+                                                   callback));
 
         if (!m_attributes)
         {
