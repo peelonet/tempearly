@@ -1216,7 +1216,15 @@ SCAN_EXPONENT:
             }
             else if (token.kind == Token::LBRACK)
             {
-                // TODO
+                Handle<Node> index;
+
+                parser->SkipToken();
+                if (!(index = parse_expr(interpreter, parser))
+                    || !expect_token(interpreter, parser, Token::RBRACK))
+                {
+                    return Handle<Node>();
+                }
+                node = new SubscriptNode(node, index);
             }
             else if (token.kind == Token::DOT
                     || token.kind == Token::DOT_CONDITIONAL)

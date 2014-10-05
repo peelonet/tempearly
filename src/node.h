@@ -242,6 +242,27 @@ namespace tempearly
         const Kind m_kind;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(PostfixNode);
     };
+
+    class SubscriptNode : public Node
+    {
+    public:
+        explicit SubscriptNode(const Handle<Node>& container,
+                               const Handle<Node>& index);
+
+        bool IsVariable() const;
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        bool Assign(const Handle<Interpreter>& interpreter,
+                    const Value& value) const;
+
+        void Mark();
+
+    private:
+        Node* m_container;
+        Node* m_index;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(SubscriptNode);
+    };
 }
 
 #endif /* !TEMPEARLY_NODE_H_GUARD */
