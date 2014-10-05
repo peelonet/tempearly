@@ -253,6 +253,31 @@ namespace tempearly
         }
     }
 
+    bool Value::GetNext(const Handle<Interpreter>& interpreter, Value& slot) const
+    {
+        Value result = Call(interpreter, "next");
+
+        if (interpreter->HasException())
+        {
+            const Value& exception = interpreter->GetException();
+
+            if (exception.IsInstance(interpreter, interpreter->eStopIteration))
+            {
+                interpreter->ClearException();
+            }
+
+            return false;
+        }
+        else if (result)
+        {
+            slot = result;
+        } else {
+            slot = NullValue();
+        }
+
+        return true;
+    }
+
     void Value::Clear()
     {
         if (m_kind == KIND_STRING)

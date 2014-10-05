@@ -157,6 +157,17 @@ namespace tempearly
                    const std::vector<Value>& args = std::vector<Value>()) const;
 
         /**
+         * Treats object as iterator and attempts to retrieve it's next value.
+         *
+         * \param interpreter Script interpreter
+         * \param slot        Where the next value will be inserted
+         * \return            A boolean flag indicating whether a value was
+         *                    retrieved or not, false is returned if there was
+         *                    no value to retrieve, or if an exception was thrown
+         */
+        bool GetNext(const Handle<Interpreter>& interpreter, Value& slot) const;
+
+        /**
          * Resets value to error state.
          */
         void Clear();
