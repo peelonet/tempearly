@@ -1,6 +1,7 @@
 #include "interpreter.h"
 #include "node.h"
 #include "utils.h"
+#include "api/list.h"
 
 namespace tempearly
 {
@@ -680,5 +681,88 @@ namespace tempearly
                            + "' is not defined");
 
         return false;
+    }
+
+    ListNode::ListNode(const std::vector<Handle<Node> >& elements)
+        : m_elements(elements.begin(), elements.end()) {}
+
+    bool ListNode::IsVariable() const
+    {
+        if (m_elements.empty())
+        {
+            return false;
+        }
+        for (std::size_t i = 0; i < m_elements.size(); ++i)
+        {
+            if (!m_elements[i]->IsVariable())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    Result ListNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        std::vector<Value> vector;
+        Handle<ListObject> list;
+        
+        vector.reserve(m_elements.size());
+        for (std::size_t i = 0; i < m_elements.size(); ++i)
+        {
+            Value value = m_elements[i]->Evaluate(interpreter);
+
+            if (value)
+            {
+                vector.push_back(value);
+            } else {
+                return Result(Result::KIND_ERROR);
+            }
+        }
+        list = new ListObject(interpreter->cList, vector);
+
+        return Result(Result::KIND_SUCCESS, Value::NewObject(list));
+    }
+
+    bool ListNode::Assign(const Handle<Interpreter>& interpreter,
+                          const Value& value) const
+    {
+        Value iterator = value.Call(interpreter, "__iter__");
+        Value element;
+        std::size_t index = 0;
+
+        if (!iterator)
+        {
+            return false;
+        }
+        while (iterator.GetNext(interpreter, element))
+        {
+            if (index < m_elements.size())
+            {
+                if (!m_elements[index++]->Assign(interpreter, element))
+                {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+        }
+
+        return !interpreter->HasException();
+    }
+
+    void ListNode::Mark()
+    {
+        Node::Mark();
+        for (std::size_t i = 0; i < m_elements.size(); ++i)
+        {
+            Node* node = m_elements[i];
+
+            if (!node->IsMarked())
+            {
+                node->Mark();
+            }
+        }
     }
 }
