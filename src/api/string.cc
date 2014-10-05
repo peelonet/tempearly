@@ -25,6 +25,28 @@ namespace tempearly
         return Value::NewBool(!args[0].AsString().empty());
     }
 
+    /**
+     * String#__cmp__(other) => Int
+     *
+     * Compares two strings lexicographically against each other.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_cmp)
+    {
+        const Value& operand = args[1];
+
+        if (operand.IsString())
+        {
+            const String& a = args[0].AsString();
+            const String& b = operand.AsString();
+
+            return Value::NewInt(a.compare(b));
+        }
+        interpreter->Throw(interpreter->eTypeError,
+                           "Values are not comparable");
+
+        return Value();
+    }
+
     void init_string(Interpreter* i)
     {
         i->cString = i->AddClass("String", i->cObject);
@@ -33,5 +55,7 @@ namespace tempearly
 
         // Conversion methods.
         i->cString->AddMethod(i, "__bool__", 0, str_bool);
+
+        i->cString->AddMethod(i, "__cmp__", 1, str_cmp);
     }
 }
