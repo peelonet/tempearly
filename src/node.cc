@@ -588,4 +588,97 @@ namespace tempearly
             m_index->Mark();
         }
     }
+
+    AssignNode::AssignNode(const Handle<Node>& variable,
+                           const Handle<Node>& value)
+        : m_variable(variable.Get())
+        , m_value(value.Get()) {}
+
+    Result AssignNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value value = m_value->Evaluate(interpreter);
+
+        if (value && m_variable->Assign(interpreter, value))
+        {
+            return Result(Result::KIND_SUCCESS, value);
+        } else {
+            return Result(Result::KIND_ERROR);
+        }
+    }
+
+    void AssignNode::Mark()
+    {
+        Node::Mark();
+        if (!m_variable->IsMarked())
+        {
+            m_variable->Mark();
+        }
+        if (!m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
+    }
+
+    IdentifierNode::IdentifierNode(const String& id)
+        : m_id(id) {}
+
+    bool IdentifierNode::IsVariable() const
+    {
+        return true;
+    }
+
+    Result IdentifierNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value value;
+
+        for (Handle<Scope> scope = interpreter->GetScope();
+             scope;
+             scope = scope->GetParent())
+        {
+            if (scope->GetVariable(m_id, value))
+            {
+                return Result(Result::KIND_SUCCESS, value);
+            }
+        }
+        interpreter->Throw(interpreter->eNameError,
+                           "Name '"
+                           + m_id
+                           + "' is not defined");
+
+        return Result(Result::KIND_ERROR);
+    }
+
+    bool IdentifierNode::Assign(const Handle<Interpreter>& interpreter,
+                                const Value& value) const
+    {
+        Handle<Scope> scope;
+
+        // First go through the scope chain and see if some scope already has
+        // the variable.
+        for (scope = interpreter->GetScope(); scope; scope = scope->GetParent())
+        {
+            if (scope->HasVariable(m_id))
+            {
+                scope->SetVariable(m_id, value);
+
+                return true;
+            }
+        }
+
+        // If no scope has variable with given identifier, create a new variable
+        // at the topmost scope.
+        if ((scope = interpreter->GetScope()))
+        {
+            scope->SetVariable(m_id, value);
+
+            return true;
+        }
+
+        interpreter->Throw(interpreter->eNameError,
+                           "Name '"
+                           + m_id
+                           + "' is not defined");
+
+        return false;
+    }
 }
