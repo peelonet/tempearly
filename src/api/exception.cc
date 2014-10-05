@@ -23,6 +23,7 @@ namespace tempearly
 
         i->eAttributeError = i->AddClass("AttributeError", i->cException);
         i->eNameError = i->AddClass("NameError", i->cException);
+        i->eStateError = i->AddClass("StateError", i->cException);
         i->eStopIteration = i->AddClass("StopIteration", i->cException);
         i->eSyntaxError = i->AddClass("SyntaxError", i->cException);
         i->eTypeError = i->AddClass("TypeError", i->cException);

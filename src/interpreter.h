@@ -107,6 +107,7 @@ namespace tempearly
         Handle<Class> eArithmeticError;
         Handle<Class> eAttributeError;
         Handle<Class> eNameError;
+        Handle<Class> eStateError;
         Handle<Class> eStopIteration;
         Handle<Class> eSyntaxError;
         Handle<Class> eTypeError;
