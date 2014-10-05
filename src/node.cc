@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "node.h"
+#include "utils.h"
 
 namespace tempearly
 {
@@ -17,11 +18,24 @@ namespace tempearly
             } else {
                 return Value::NullValue();
             }
-        } else {
-            // TODO: throw exception
-
-            return Value();
         }
+        else if (result.Is(Result::KIND_BREAK))
+        {
+            interpreter->Throw(interpreter->eSyntaxError,
+                               "Unexpected `break'");
+        }
+        else if (result.Is(Result::KIND_CONTINUE))
+        {
+            interpreter->Throw(interpreter->eSyntaxError,
+                               "Unexpected `continue'");
+        }
+        else if (result.Is(Result::KIND_RETURN))
+        {
+            interpreter->Throw(interpreter->eSyntaxError,
+                               "Unexpected `return'");
+        }
+
+        return Value();
     }
 
     bool Node::Assign(const Handle<Interpreter>& interpreter,
@@ -66,7 +80,7 @@ namespace tempearly
             {
                 if (m_escape)
                 {
-                    // TODO: html escape the string
+                    string = Utils::XmlEscape(string);
                 }
                 interpreter->response->Write(string);
 
