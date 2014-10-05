@@ -53,12 +53,15 @@ namespace tempearly
         bool HasHeader(const String& name) const;
 
         /**
-         * Retrieves an response header with the given name and returns it's
-         * value if such exists. Otherwise an empty string is returned.
+         * Retrieves an response header with the given name and assigns it's
+         * value to the given slot.
          *
          * \param name Name of the response header to retrieve
+         * \param slot Where value of the header is assigned to
+         * \return     A boolean flag indicating whether header with given
+         *             name exists in the response or not
          */
-        String GetHeader(const String& name) const;
+        bool GetHeader(const String& name, String& slot) const;
 
         /**
          * Sets value of an response value. Existing headers with same name are
