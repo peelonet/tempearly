@@ -238,6 +238,16 @@ namespace tempearly
         }
 
         /**
+         * Tests for lower case letter.
+         */
+        static bool IsLower(rune c);
+
+        /**
+         * Tests for upper case letter.
+         */
+        static bool IsUpper(rune c);
+
+        /**
          * Converts given character into lower case.
          */
         static rune ToLower(rune c);
