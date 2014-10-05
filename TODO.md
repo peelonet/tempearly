@@ -3,7 +3,7 @@
 - Garbage collector
 - Builtin support for SQLite
 - Unicode strings
-- Interfaces/mixins for classes.
+- Interfaces/mixins for classes
 
 # API
 
@@ -11,6 +11,7 @@
 - Hash sets
 - Regular expressions
 - Database connectivity
+- Date/time
 
 # Server APIs
 
