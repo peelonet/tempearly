@@ -285,4 +285,55 @@ namespace tempearly
             return buffer;
         }
     }
+
+    String Utils::XmlEscape(const String& string)
+    {
+        if (string.find('&') != String::npos
+            || string.find('<') != String::npos
+            || string.find('>') != String::npos
+            || string.find('"') != String::npos
+            || string.find('\'') != String::npos)
+        {
+            String result;
+
+            result.reserve(string.length() + 16);
+            for (std::size_t i = 0; i < string.length(); ++i)
+            {
+                const char c = string[i];
+
+                switch (c)
+                {
+                    case '&':
+                        result.append("&amp;");
+                        break;
+
+                    case '<':
+                        result.append("&lt;");
+                        break;
+
+                    case '>':
+                        result.append("&gt;");
+                        break;
+
+                    case '"':
+                        result.append("&quot;");
+                        break;
+
+                    case '\'':
+                        result.append("&#39;");
+                        break;
+
+                    case '\r':
+                        break;
+
+                    default:
+                        result.append(1, c);
+                }
+            }
+
+            return result;
+        }
+
+        return string;
+    }
 }

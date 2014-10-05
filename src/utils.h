@@ -36,6 +36,11 @@ namespace tempearly
 
         static String ToString(double number);
 
+        /**
+         * Escapes XML entities from given string.
+         */
+        static String XmlEscape(const String& string);
+
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Utils);
     };
