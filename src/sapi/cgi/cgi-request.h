@@ -21,9 +21,11 @@ namespace tempearly
 
     private:
         void ReadEnvironmentVariables();
+        void ReadParameters();
 
     private:
         Dictionary<std::vector<String> > m_parameters;
+        bool m_parameters_read;
         /** Request method ("GET", "POST", etc.). */
         String m_method;
         /** Requested URI. */

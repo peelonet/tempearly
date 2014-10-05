@@ -17,16 +17,13 @@ namespace tempearly
     static void cgi_getenv_bool(const char*, bool&);
 
     CgiRequest::CgiRequest()
-        : m_server_port(-1)
+        : m_parameters_read(false)
+        , m_server_port(-1)
         , m_content_length(0)
         , m_using_https(false)
     {
         ReadEnvironmentVariables();
-
-        if (!m_query_string.IsEmpty())
-        {
-            Utils::ParseQueryString(m_query_string, m_parameters);
-        }
+        ReadParameters();
 
         // On Win32, use binary read to avoid CRLF conversion.
 #if defined(_WIN32)
@@ -91,6 +88,33 @@ namespace tempearly
         cgi_getenv_str("REFERRER", m_referrer);
         cgi_getenv_str("HTTP_COOKIE", m_cookie);
         cgi_getenv_bool("HTTPS", m_using_https);
+    }
+
+    void CgiRequest::ReadParameters()
+    {
+        if (m_parameters_read)
+        {
+            return;
+        }
+        m_parameters_read = true;
+        Utils::ParseQueryString(m_query_string, m_parameters);
+        // TODO: Process multipart requests
+        if (m_method == "POST"
+            && m_content_type == "application/x-www-form-urlencoded"
+            && m_content_length > 0)
+        {
+            char* buffer = new char[m_content_length];
+            std::size_t read = std::fread(static_cast<void*>(buffer),
+                                          sizeof(char),
+                                          m_content_length,
+                                          stdin);
+
+            if (read > 0)
+            {
+                Utils::ParseQueryString(buffer, m_parameters);
+            }
+            delete[] buffer;
+        }
     }
 
     static void cgi_getenv_str(const char* name, String& slot)
