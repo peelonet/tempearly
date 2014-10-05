@@ -48,6 +48,12 @@ namespace tempearly
         return false;
     }
 
+    bool Node::AssignLocal(const Handle<Interpreter>& interpreter,
+                           const Value& value) const
+    {
+        return Assign(interpreter, value);
+    }
+
     EmptyNode::EmptyNode() {}
 
     Result EmptyNode::Execute(const Handle<Interpreter>& interpreter) const
@@ -226,6 +232,76 @@ namespace tempearly
         if (!m_condition->IsMarked())
         {
             m_condition->Mark();
+        }
+        if (!m_statement->IsMarked())
+        {
+            m_statement->Mark();
+        }
+    }
+
+    ForNode::ForNode(const Handle<Node>& variable,
+                     const Handle<Node>& collection,
+                     const Handle<Node>& statement)
+        : m_variable(variable.Get())
+        , m_collection(collection.Get())
+        , m_statement(statement.Get()) {}
+
+    Result ForNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value collection = m_collection->Evaluate(interpreter);
+        Value iterator;
+        Value element;
+
+        if (!collection || !(iterator = collection.Call(interpreter, "__iter__")))
+        {
+            return Result(Result::KIND_ERROR);
+        }
+        interpreter->PushScope(interpreter->GetScope());
+        while (iterator.GetNext(interpreter, element))
+        {
+            if (m_variable->AssignLocal(interpreter, element))
+            {
+                Result result = m_statement->Execute(interpreter);
+
+                switch (result.GetKind())
+                {
+                    case Result::KIND_SUCCESS:
+                    case Result::KIND_CONTINUE:
+                        break;
+
+                    case Result::KIND_BREAK:
+                        interpreter->PopScope();
+                        return Result();
+
+                    default:
+                        interpreter->PopScope();
+                        return result;
+                }
+            } else {
+                interpreter->PopScope();
+
+                return Result(Result::KIND_ERROR);
+            }
+        }
+        interpreter->PopScope();
+        if (interpreter->HasException())
+        {
+            return Result(Result::KIND_ERROR);
+        } else {
+            return Result();
+        }
+    }
+
+    void ForNode::Mark()
+    {
+        Node::Mark();
+        if (!m_variable->IsMarked())
+        {
+            m_variable->Mark();
+        }
+        if (!m_collection->IsMarked())
+        {
+            m_collection->Mark();
         }
         if (!m_statement->IsMarked())
         {
@@ -669,6 +745,26 @@ namespace tempearly
         // If no scope has variable with given identifier, create a new variable
         // at the topmost scope.
         if ((scope = interpreter->GetScope()))
+        {
+            scope->SetVariable(m_id, value);
+
+            return true;
+        }
+
+        interpreter->Throw(interpreter->eNameError,
+                           "Name '"
+                           + m_id
+                           + "' is not defined");
+
+        return false;
+    }
+
+    bool IdentifierNode::AssignLocal(const Handle<Interpreter>& interpreter,
+                                     const Value& value) const
+    {
+        Handle<Scope> scope = interpreter->GetScope();
+
+        if (scope)
         {
             scope->SetVariable(m_id, value);
 

@@ -49,6 +49,22 @@ namespace tempearly
         virtual bool Assign(const Handle<Interpreter>& interpreter,
                             const Value& value) const;
 
+        /**
+         * Same as Assign, but uses current local variable scope, instead of
+         * scope chain.
+         *
+         * Default implementation simply calls Assign. Override this method
+         * only when it makes sense.
+         *
+         * \param interpreter Script interpreter
+         * \param value Value to assign
+         * \return Boolean flag indicating whether operation was
+         * successfull or not, if false it means that an
+         * exception was thrown
+         */
+         virtual bool AssignLocal(const Handle<Interpreter>& interpreter,
+                                  const Value& value) const;
+
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Node);
     };
@@ -144,6 +160,24 @@ namespace tempearly
         Node* m_condition;
         Node* m_statement;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(WhileNode);
+    };
+
+    class ForNode : public Node
+    {
+    public:
+        explicit ForNode(const Handle<Node>& variable,
+                         const Handle<Node>& collection,
+                         const Handle<Node>& statement);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_variable;
+        Node* m_collection;
+        Node* m_statement;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ForNode);
     };
 
     class BreakNode : public Node
@@ -361,6 +395,9 @@ namespace tempearly
 
         bool Assign(const Handle<Interpreter>& interpreter,
                     const Value& value) const;
+
+        bool AssignLocal(const Handle<Interpreter>& interpreter,
+                         const Value& value) const;
 
     private:
         const String m_id;
