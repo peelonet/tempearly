@@ -299,6 +299,24 @@ namespace tempearly
         }
     }
 
+    bool Value::AsBool(const Handle<Interpreter>& interpreter, bool& slot) const
+    {
+        if (m_kind == KIND_BOOL)
+        {
+            slot = m_data.i != 0;
+
+            return true;
+        }
+        std::stringstream ss;
+
+        ss << "'Bool' required instead of '"
+           << GetClass(interpreter)->GetName()
+           << "'";
+        interpreter->Throw(interpreter->eTypeError, ss.str());
+
+        return false;
+    }
+
     i64 Value::AsInt() const
     {
         if (m_kind == KIND_INT)

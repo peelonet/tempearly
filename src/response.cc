@@ -15,16 +15,18 @@ namespace tempearly
         return m_headers.Find(name);
     }
 
-    String Response::GetHeader(const String& name) const
+    bool Response::GetHeader(const String& name, String& slot) const
     {
         const Dictionary<String>::Entry* entry = m_headers.Find(name);
 
         if (entry)
         {
-            return entry->value;
-        } else {
-            return String();
+            slot = entry->value;
+
+            return true;
         }
+        
+        return false;
     }
 
     void Response::SetHeader(const String& name, const String& value)

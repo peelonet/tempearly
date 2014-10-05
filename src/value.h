@@ -194,6 +194,8 @@ namespace tempearly
             return m_data.i != 0;
         }
 
+        bool AsBool(const Handle<Interpreter>& interpreter, bool& slot) const;
+
         i64 AsInt() const;
 
         bool AsInt(const Handle<Interpreter>& interpreter, i64& slot) const;
