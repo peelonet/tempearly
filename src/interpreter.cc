@@ -11,6 +11,8 @@ namespace tempearly
     void init_list(Interpreter*);
     void init_number(Interpreter*);
     void init_object(Interpreter*);
+    void init_request(Interpreter*);
+    void init_response(Interpreter*);
     void init_string(Interpreter*);
     void init_void(Interpreter*);
 
@@ -33,6 +35,9 @@ namespace tempearly
         init_iterator(this);
         init_list(this);
         init_exception(this);
+
+        init_request(this);
+        init_response(this);
     }
 
     bool Interpreter::Include(const String& filename)
