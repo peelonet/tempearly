@@ -61,9 +61,33 @@ namespace
             );
         }
 
+        void SendException(const Handle<ExceptionObject>& exception)
+        {
+            if (m_committed)
+            {
+                std::fprintf(
+                    stdout,
+                    "<p><strong>ERROR:</strong> %s</p>",
+                    exception->GetMessage().c_str()
+                );
+            } else {
+                m_committed = true;
+                std::fprintf(
+                    stdout,
+                    "Status: 500\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n"
+                );
+                std::fflush(stdout);
+                std::fprintf(
+                    stdout,
+                    "ERROR:\n%s\n",
+                    exception->GetMessage().c_str()
+                );
+                std::fflush(stdout);
+            }
+        }
+
     private:
         bool m_committed;
-        int m_status;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CgiResponse);
     };
 }
@@ -79,7 +103,7 @@ int main(int argc, char** argv)
         interpreter->Initialize();
         if (!interpreter->Include(argv[1]))
         {
-            // TODO: print out exception info
+            interpreter->response->SendException(interpreter->GetException());
         }
     }
 

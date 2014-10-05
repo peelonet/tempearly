@@ -259,9 +259,9 @@ namespace tempearly
 
         if (interpreter->HasException())
         {
-            const Value& exception = interpreter->GetException();
+            Handle<ExceptionObject> exception = interpreter->GetException();
 
-            if (exception.IsInstance(interpreter, interpreter->eStopIteration))
+            if (exception->IsInstance(interpreter, interpreter->eStopIteration))
             {
                 interpreter->ClearException();
             }

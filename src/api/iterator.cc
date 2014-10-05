@@ -171,7 +171,7 @@ namespace tempearly
         {
             return Value::NewBool(true);
         }
-        else if (interpreter->GetException().IsInstance(interpreter, interpreter->eStopIteration))
+        else if (interpreter->GetException()->IsInstance(interpreter, interpreter->eStopIteration))
         {
             interpreter->ClearException();
 

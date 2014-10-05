@@ -6,6 +6,7 @@
 namespace tempearly
 {
     void init_bool(Interpreter*);
+    void init_exception(Interpreter*);
     void init_iterator(Interpreter*);
     void init_list(Interpreter*);
     void init_number(Interpreter*);
@@ -31,6 +32,7 @@ namespace tempearly
         init_void(this);
         init_iterator(this);
         init_list(this);
+        init_exception(this);
     }
 
     bool Interpreter::Include(const String& filename)
@@ -79,9 +81,18 @@ namespace tempearly
 
     void Interpreter::Throw(const Handle<Class>& cls, const String& message)
     {
-        // TODO: Construct exception object.
-        std::fprintf(stderr, "ERROR: %s\n", message.c_str());
-        std::abort();
+        if (cls)
+        {
+            Handle<ExceptionObject> exception = new ExceptionObject(cls);
+
+            exception->SetAttribute("message", Value::NewString(message));
+            m_exception = exception.Get();
+        } else {
+            std::fprintf(stderr,
+                         "%s (fatal internal error)\n",
+                         message.c_str());
+            std::abort();
+        }
     }
 
     void Interpreter::PushScope(const Handle<Scope>& parent)
@@ -132,7 +143,10 @@ namespace tempearly
         {
             globals->Mark();
         }
-        m_exception.Mark();
+        if (m_exception && !m_exception->IsMarked())
+        {
+            m_exception->Mark();
+        }
         if (m_scope && !m_scope->IsMarked())
         {
             m_scope->Mark();

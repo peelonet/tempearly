@@ -5,6 +5,7 @@
 #include "request.h"
 #include "response.h"
 #include "scope.h"
+#include "api/exception.h"
 
 namespace tempearly
 {
@@ -20,24 +21,29 @@ namespace tempearly
         Handle<Class> AddClass(const String& name,
                                const Handle<Class>& base);
 
+        /**
+         * Returns true if this interpreter has an uncaught exception.
+         */
         inline bool HasException() const
         {
             return !!m_exception;
         }
 
-        inline const Value& GetException() const
+        /**
+         * Returns currently uncaught exception or NULL handle if there isn't
+         * any.
+         */
+        inline Handle<ExceptionObject> GetException() const
         {
             return m_exception;
         }
 
-        inline void SetException(const Value& exception)
-        {
-            m_exception = exception;
-        }
-
+        /**
+         * Clears current exception if such exists.
+         */
         inline void ClearException()
         {
-            m_exception.Clear();
+            m_exception = 0;
         }
 
         /**
@@ -87,6 +93,7 @@ namespace tempearly
 
         Handle<Class> cBool;
         Handle<Class> cClass;
+        Handle<Class> cException;
         Handle<Class> cFloat;
         Handle<Class> cFunction;
         Handle<Class> cInt;
@@ -97,6 +104,7 @@ namespace tempearly
         Handle<Class> cString;
         Handle<Class> cVoid;
 
+        Handle<Class> eArithmeticError;
         Handle<Class> eAttributeError;
         Handle<Class> eNameError;
         Handle<Class> eStopIteration;
@@ -107,7 +115,7 @@ namespace tempearly
 
     private:
         /** Current uncaught exception. */
-        Value m_exception;
+        ExceptionObject* m_exception;
         /** Current local variable scope. */
         Handle<Scope> m_scope;
         /** Shared instance of empty iterator. */
