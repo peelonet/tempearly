@@ -48,6 +48,12 @@ namespace tempearly
         return false;
     }
 
+    bool Node::AssignLocal(const Handle<Interpreter>& interpreter,
+                           const Value& value) const
+    {
+        return Assign(interpreter, value);
+    }
+
     EmptyNode::EmptyNode() {}
 
     Result EmptyNode::Execute(const Handle<Interpreter>& interpreter) const
@@ -669,6 +675,26 @@ namespace tempearly
         // If no scope has variable with given identifier, create a new variable
         // at the topmost scope.
         if ((scope = interpreter->GetScope()))
+        {
+            scope->SetVariable(m_id, value);
+
+            return true;
+        }
+
+        interpreter->Throw(interpreter->eNameError,
+                           "Name '"
+                           + m_id
+                           + "' is not defined");
+
+        return false;
+    }
+
+    bool IdentifierNode::AssignLocal(const Handle<Interpreter>& interpreter,
+                                     const Value& value) const
+    {
+        Handle<Scope> scope = interpreter->GetScope();
+
+        if (scope)
         {
             scope->SetVariable(m_id, value);
 

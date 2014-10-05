@@ -49,6 +49,22 @@ namespace tempearly
         virtual bool Assign(const Handle<Interpreter>& interpreter,
                             const Value& value) const;
 
+        /**
+         * Same as Assign, but uses current local variable scope, instead of
+         * scope chain.
+         *
+         * Default implementation simply calls Assign. Override this method
+         * only when it makes sense.
+         *
+         * \param interpreter Script interpreter
+         * \param value Value to assign
+         * \return Boolean flag indicating whether operation was
+         * successfull or not, if false it means that an
+         * exception was thrown
+         */
+         virtual bool AssignLocal(const Handle<Interpreter>& interpreter,
+                                  const Value& value) const;
+
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Node);
     };
@@ -361,6 +377,9 @@ namespace tempearly
 
         bool Assign(const Handle<Interpreter>& interpreter,
                     const Value& value) const;
+
+        bool AssignLocal(const Handle<Interpreter>& interpreter,
+                         const Value& value) const;
 
     private:
         const String m_id;
