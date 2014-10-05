@@ -15,10 +15,15 @@ namespace tempearly
             return m_method;
         }
 
+        bool HasParameter(const String& id) const;
+
+        bool GetParameter(const String& id, String& value) const;
+
     private:
         void ReadEnvironmentVariables();
 
     private:
+        Dictionary<std::vector<String> > m_parameters;
         /** Request method ("GET", "POST", etc.). */
         String m_method;
         /** Requested URI. */

@@ -23,6 +23,11 @@ namespace tempearly
     {
         ReadEnvironmentVariables();
 
+        if (!m_query_string.empty())
+        {
+            Utils::ParseQueryString(m_query_string, m_parameters);
+        }
+
         // On Win32, use binary read to avoid CRLF conversion.
 #if defined(_WIN32)
 # if defined(__BORLANDC__)
@@ -31,6 +36,27 @@ namespace tempearly
         setmode(_fileno(stdin), _O_BINARY);
 # endif
 #endif
+    }
+
+    bool CgiRequest::HasParameter(const String& id) const
+    {
+        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+
+        return e && !e->value.empty();
+    }
+
+    bool CgiRequest::GetParameter(const String& id, String& value) const
+    {
+        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+
+        if (e && !e->value.empty())
+        {
+            value = e->value.front();
+
+            return true;
+        }
+
+        return false;
     }
 
     void CgiRequest::ReadEnvironmentVariables()
