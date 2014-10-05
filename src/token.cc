@@ -67,6 +67,8 @@ namespace tempearly
             case KW_BREAK: return "`break'";
             case KW_CONTINUE: return "`continue'";
             case KW_DO: return "`do'";
+            case KW_ELSE: return "`else'";
+            case KW_END: return "`end'";
             case KW_FALSE: return "`false'";
             case KW_FOR: return "`for'";
             case KW_IF: return "`if'";

@@ -77,6 +77,8 @@ namespace tempearly
             KW_BREAK,
             KW_CONTINUE,
             KW_DO,
+            KW_ELSE,
+            KW_END,
             KW_FALSE,
             KW_FOR,
             KW_IF,

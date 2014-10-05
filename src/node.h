@@ -98,6 +98,76 @@ namespace tempearly
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ExpressionNode);
     };
 
+    class BlockNode : public Node
+    {
+    public:
+        explicit BlockNode(const std::vector<Handle<Node> >& nodes);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        const std::vector<Node*> m_nodes;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(BlockNode);
+    };
+
+    class IfNode : public Node
+    {
+    public:
+        explicit IfNode(const Handle<Node>& condition,
+                        const Handle<Node>& then_statement,
+                        const Handle<Node>& else_statement = Handle<Node>());
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_condition;
+        Node* m_then_statement;
+        Node* m_else_statement;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(IfNode);
+    };
+
+    class WhileNode : public Node
+    {
+    public:
+        explicit WhileNode(const Handle<Node>& condition,
+                           const Handle<Node>& statement);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_condition;
+        Node* m_statement;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(WhileNode);
+    };
+
+    class BreakNode : public Node
+    {
+    public:
+        explicit BreakNode();
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+    private:
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(BreakNode);
+    };
+
+    class ContinueNode : public Node
+    {
+    public:
+        explicit ContinueNode();
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+    private:
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ContinueNode);
+    };
+
     class ValueNode : public Node
     {
     public:

@@ -86,6 +86,152 @@ namespace tempearly
         }
     }
 
+    BlockNode::BlockNode(const std::vector<Handle<Node> >& nodes)
+        : m_nodes(nodes.begin(), nodes.end()) {}
+
+    Result BlockNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        {
+            Result result = m_nodes[i]->Execute(interpreter);
+
+            if (!result.Is(Result::KIND_SUCCESS))
+            {
+                return result;
+            }
+        }
+
+        return Result();
+    }
+
+    void BlockNode::Mark()
+    {
+        Node::Mark();
+        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        {
+            Node* node = m_nodes[i];
+
+            if (!node->IsMarked())
+            {
+                node->Mark();
+            }
+        }
+    }
+
+    IfNode::IfNode(const Handle<Node>& condition,
+                   const Handle<Node>& then_statement,
+                   const Handle<Node>& else_statement)
+        : m_condition(condition.Get())
+        , m_then_statement(then_statement.Get())
+        , m_else_statement(else_statement.Get()) {}
+
+    Result IfNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value condition = m_condition->Evaluate(interpreter);
+        bool b;
+
+        if (!condition || !condition.ToBool(interpreter, b))
+        {
+            return Result(Result::KIND_ERROR);
+        }
+        else if (b)
+        {
+            return m_then_statement->Execute(interpreter);
+        }
+        else if (m_else_statement)
+        {
+            return m_else_statement->Execute(interpreter);
+        } else {
+            return Result();
+        }
+    }
+
+    void IfNode::Mark()
+    {
+        Node::Mark();
+        if (!m_condition->IsMarked())
+        {
+            m_condition->Mark();
+        }
+        if (!m_then_statement->IsMarked())
+        {
+            m_then_statement->Mark();
+        }
+        if (m_else_statement && !m_else_statement->IsMarked())
+        {
+            m_else_statement->Mark();
+        }
+    }
+
+    WhileNode::WhileNode(const Handle<Node>& condition,
+                         const Handle<Node>& statement)
+        : m_condition(condition.Get())
+        , m_statement(statement.Get()) {}
+
+    Result WhileNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value condition = m_condition->Evaluate(interpreter);
+        bool b;
+
+        if (!condition || !condition.ToBool(interpreter, b))
+        {
+            return Result(Result::KIND_ERROR);
+        }
+        while (b)
+        {
+            Result result = m_statement->Execute(interpreter);
+
+            switch (result.GetKind())
+            {
+                case Result::KIND_SUCCESS:
+                    break;
+
+                case Result::KIND_BREAK:
+                    return Result();
+
+                case Result::KIND_CONTINUE:
+                    break;
+
+                default:
+                    return result;
+            }
+            if (!(condition = m_condition->Evaluate(interpreter))
+                || !condition.ToBool(interpreter, b))
+            {
+                return Result(Result::KIND_ERROR);
+            }
+        }
+
+        return Result();
+    }
+
+    void WhileNode::Mark()
+    {
+        Node::Mark();
+        if (!m_condition->IsMarked())
+        {
+            m_condition->Mark();
+        }
+        if (!m_statement->IsMarked())
+        {
+            m_statement->Mark();
+        }
+    }
+
+    BreakNode::BreakNode() {}
+
+    Result BreakNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        return Result(Result::KIND_BREAK);
+    }
+
+    ContinueNode::ContinueNode() {}
+
+    Result ContinueNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        return Result(Result::KIND_CONTINUE);
+    }
+
     ValueNode::ValueNode(const Value& value)
         : m_value(value) {}
 

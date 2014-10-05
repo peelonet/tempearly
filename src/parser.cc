@@ -18,6 +18,8 @@ namespace tempearly
         m_keywords.Insert("break", Token::KW_BREAK);
         m_keywords.Insert("continue", Token::KW_CONTINUE);
         m_keywords.Insert("do", Token::KW_DO);
+        m_keywords.Insert("else", Token::KW_ELSE);
+        m_keywords.Insert("end", Token::KW_END);
         m_keywords.Insert("false", Token::KW_FALSE);
         m_keywords.Insert("for", Token::KW_FOR);
         m_keywords.Insert("if", Token::KW_IF);
@@ -980,6 +982,120 @@ SCAN_EXPONENT:
         return true;
     }
 
+    static Handle<Node> parse_block(const Handle<Interpreter>& interpreter,
+                                    Parser* parser)
+    {
+        std::vector<Handle<Node> > nodes;
+
+        if (parser->ReadToken(Token::CLOSE_TAG))
+        {
+            for (;;)
+            {
+                bool should_continue = false;
+
+                if (!parse_text_block(interpreter, parser, nodes, should_continue))
+                {
+                    return Handle<Node>();
+                }
+                else if (should_continue)
+                {
+                    if (parser->PeekToken(Token::KW_END)
+                        || parser->PeekToken(Token::KW_ELSE))
+                    {
+                        break;
+                    }
+                    else if (!parse_script_block(interpreter, parser, nodes, should_continue))
+                    {
+                        return Handle<Node>();
+                    }
+                    else if (!should_continue)
+                    {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        } else {
+            while (!parser->PeekToken(Token::KW_END)
+                    && !parser->PeekToken(Token::KW_ELSE))
+            {
+                Handle<Node> statement = parse_stmt(interpreter, parser);
+
+                if (!statement)
+                {
+                    return Handle<Node>();
+                }
+                nodes.push_back(statement);
+            }
+        }
+        switch (nodes.size())
+        {
+            case 0:
+                return new EmptyNode();
+
+            case 1:
+                return nodes[0];
+
+            default:
+                return new BlockNode(nodes);
+        }
+    }
+
+    static Handle<Node> parse_if(const Handle<Interpreter>& interpreter,
+                                 Parser* parser)
+    {
+        Handle<Node> condition;
+        Handle<Node> then_statement;
+        Handle<Node> else_statement;
+
+        if (!expect_token(interpreter, parser, Token::KW_IF)
+            || !(condition = parse_expr(interpreter, parser))
+            || !expect_token(interpreter, parser, Token::COLON)
+            || !(then_statement = parse_block(interpreter, parser)))
+        {
+            return Handle<Node>();
+        }
+        if (parser->ReadToken(Token::KW_ELSE))
+        {
+            if (parser->PeekToken(Token::KW_IF))
+            {
+                else_statement = parse_if(interpreter, parser);
+            }
+            else if (!expect_token(interpreter, parser, Token::COLON)
+                    || !(else_statement = parse_block(interpreter, parser))
+                    || !expect_token(interpreter, parser, Token::KW_END)
+                    || !expect_token(interpreter, parser, Token::KW_IF))
+            {
+                return Handle<Node>();
+            }
+        }
+        else if (!expect_token(interpreter, parser, Token::KW_END)
+                || !expect_token(interpreter, parser, Token::KW_IF))
+        {
+            return Handle<Node>();
+        }
+
+        return new IfNode(condition, then_statement, else_statement);
+    }
+
+    static Handle<Node> parse_while(const Handle<Interpreter>& interpreter,
+                                    Parser* parser)
+    {
+        Handle<Node> condition;
+        Handle<Node> statement;
+
+        if (!expect_token(interpreter, parser, Token::KW_IF)
+            || !(condition = parse_expr(interpreter, parser))
+            || !expect_token(interpreter, parser, Token::COLON)
+            || !(statement = parse_block(interpreter, parser)))
+        {
+            return Handle<Node>();
+        }
+
+        return new WhileNode(condition, statement);
+    }
+
     static Handle<Node> parse_stmt(const Handle<Interpreter>& interpreter,
                                    Parser* parser)
     {
@@ -990,35 +1106,47 @@ SCAN_EXPONENT:
         {
             case Token::ERROR:
                 interpreter->Throw(interpreter->eSyntaxError, token.text);
-                break;
+                return Handle<Node>();
 
             case Token::END_OF_INPUT:
                 interpreter->Throw(
                     interpreter->eSyntaxError,
                     "Unexpected end of input; Missing statement"
                 );
-                break;
+                return Handle<Node>();
 
             case Token::SEMICOLON:
                 parser->SkipToken();
-                node = new EmptyNode();
+                return new EmptyNode();
+
+            case Token::KW_IF:
+                return parse_if(interpreter, parser);
+
+            case Token::KW_WHILE:
+                return parse_while(interpreter, parser);
+
+            //TODO:case Token::KW_FOR:
+
+            case Token::KW_BREAK:
+                node = new BreakNode();
                 break;
 
-            case Token::KW_IF: // TODO
-            case Token::KW_WHILE: // TODO
-            case Token::KW_FOR: // TODO
+            case Token::KW_CONTINUE:
+                node = new ContinueNode();
+                break;
 
-            case Token::KW_BREAK: // TODO
-            case Token::KW_CONTINUE: // TODO
-            case Token::KW_RETURN: // TODO
-            case Token::KW_THROW: // TODO
+            //TODO:case Token::KW_RETURN:
+            //TODO:case Token::KW_THROW:
 
             default:
                 node = parse_expr(interpreter, parser);
-                // TODO: read semicolon
         }
-
-        return node;
+        if (expect_token(interpreter, parser, Token::SEMICOLON))
+        {
+            return node;
+        } else {
+            return Handle<Node>();
+        }
     }
 
     static Handle<Node> parse_primary(const Handle<Interpreter>& interpreter,
