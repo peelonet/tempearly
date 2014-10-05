@@ -15,5 +15,8 @@
 
 # Server APIs
 
+- Process multipart HTTP requests.
+- Parse request parameters (especially POSTed ones) only when requested in the
+  script.
 - FastCGI
 - Apache 2.x
