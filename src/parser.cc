@@ -1091,7 +1091,9 @@ SCAN_EXPONENT:
         if (!expect_token(interpreter, parser, Token::KW_IF)
             || !(condition = parse_expr(interpreter, parser))
             || !expect_token(interpreter, parser, Token::COLON)
-            || !(statement = parse_block(interpreter, parser)))
+            || !(statement = parse_block(interpreter, parser))
+            || !expect_token(interpreter, parser, Token::KW_END)
+            || !expect_token(interpreter, parser, Token::KW_WHILE))
         {
             return Handle<Node>();
         }
