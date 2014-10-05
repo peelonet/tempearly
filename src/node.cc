@@ -200,6 +200,11 @@ namespace tempearly
         , m_id(id)
         , m_null_safe(null_safe) {}
 
+    bool AttributeNode::IsVariable() const
+    {
+        return true;
+    }
+
     Result AttributeNode::Execute(const Handle<Interpreter>& interpreter) const
     {
         Value value = m_receiver->Evaluate(interpreter);
@@ -217,6 +222,23 @@ namespace tempearly
             return Result(Result::KIND_SUCCESS, value);
         } else {
             return Result(Result::KIND_ERROR);
+        }
+    }
+
+    bool AttributeNode::Assign(const Handle<Interpreter>& interpreter,
+                               const Value& value) const
+    {
+        Value receiver = m_receiver->Evaluate(interpreter);
+
+        if (!receiver)
+        {
+            return false;
+        }
+        else if (m_null_safe && receiver.IsNull())
+        {
+            return true;
+        } else {
+            return receiver.SetAttribute(m_id, value);
         }
     }
 

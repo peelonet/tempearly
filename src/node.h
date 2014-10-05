@@ -165,7 +165,12 @@ namespace tempearly
                                const String& id,
                                bool null_safe = false);
 
+        bool IsVariable() const;
+
         Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        bool Assign(const Handle<Interpreter>& interpreter,
+                    const Value& value) const;
 
         void Mark();
 
