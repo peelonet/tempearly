@@ -1544,7 +1544,7 @@ SCAN_EXPONENT:
                 }
                 node = new CallNode(
                     node,
-                    kind == Token::ADD ? "__add_" : "__sub__",
+                    kind == Token::ADD ? "__add__" : "__sub__",
                     std::vector<Handle<Node> >(1, operand)
                 );
             } else {
