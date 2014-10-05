@@ -12,6 +12,11 @@ namespace tempearly
 
         virtual ~Request();
 
+        /**
+         * Returns request method (GET, POST, etc.).
+         */
+        virtual String GetMethod() const = 0;
+
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Request);
     };

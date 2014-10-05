@@ -58,6 +58,8 @@ SET(
 
 ADD_EXECUTABLE(
     tempearly-cgi
-    src/sapi-cgi.cc
+    src/sapi/cgi/cgi-request.cc
+    src/sapi/cgi/cgi-response.cc
+    src/sapi/cgi/main.cc
     ${INTERPRETER_SOURCES}
 )
