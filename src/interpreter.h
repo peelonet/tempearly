@@ -43,6 +43,30 @@ namespace tempearly
          */
         void Throw(const Handle<Class>& cls, const String& message);
 
+        /**
+         * Returns current local variable scope.
+         */
+        inline Handle<Scope> GetScope() const
+        {
+            return m_scope;
+        }
+
+        /**
+         * Inserts new local variable scope into the scope chain.
+         *
+         * \param parent Optional parent scope in scope chain
+         */
+        void PushScope(const Handle<Scope>& parent = Handle<Scope>());
+
+        /**
+         * Removes topmost local variable scope from the scope chain.
+         */
+        void PopScope();
+
+        /**
+         * Used by garbage collector to mark all objects used by the
+         * interpreter.
+         */
         void Mark();
 
         Handle<Request> request;
@@ -62,6 +86,7 @@ namespace tempearly
         Handle<Class> cVoid;
 
         Handle<Class> eAttributeError;
+        Handle<Class> eNameError;
         Handle<Class> eSyntaxError;
         Handle<Class> eTypeError;
         Handle<Class> eValueError;
@@ -70,6 +95,8 @@ namespace tempearly
     private:
         /** Current uncaught exception. */
         Value m_exception;
+        /** Current local variable scope. */
+        Handle<Scope> m_scope;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Interpreter);
     };
 }

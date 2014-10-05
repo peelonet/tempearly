@@ -44,7 +44,12 @@ namespace tempearly
 
     bool Class::HasAttribute(const String& id) const
     {
-        return m_attributes && m_attributes->Find(id);
+        if (m_attributes && m_attributes->Find(id))
+        {
+            return true;
+        } else {
+            return m_base && m_base->HasAttribute(id);
+        }
     }
 
     bool Class::GetAttribute(const String& id, Value& value) const

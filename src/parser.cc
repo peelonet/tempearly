@@ -84,8 +84,8 @@ namespace tempearly
             switch (c)
             {
                 case '\r':
-                    ++m_token.position.line;
-                    m_token.position.column = 0;
+                    ++m_position.line;
+                    m_position.column = 0;
                     m_seen_cr = true;
                     break;
 
@@ -94,13 +94,13 @@ namespace tempearly
                     {
                         m_seen_cr = false;
                     } else {
-                        ++m_token.position.line;
-                        m_token.position.column = 0;
+                        ++m_position.line;
+                        m_position.column = 0;
                     }
                     break;
 
                 default:
-                    ++m_token.position.column;
+                    ++m_position.column;
                     if (m_seen_cr)
                     {
                         m_seen_cr = false;
@@ -164,7 +164,7 @@ namespace tempearly
 
     Parser::TokenDescriptor Parser::ReadToken()
     {
-        TokenDescriptor token = m_token;
+        TokenDescriptor token;
         int c;
 
         if (!m_pushback_tokens.empty())
@@ -176,8 +176,8 @@ namespace tempearly
         }
 READ_NEXT_CHAR:
         c = ReadChar();
-        token.position.line = m_token.position.line;
-        token.position.column = m_token.position.column;
+        token.position.line = m_position.line;
+        token.position.column = m_position.column;
         switch (c)
         {
             // End of input.
@@ -291,6 +291,9 @@ READ_NEXT_CHAR:
                 else if (ReadChar('>'))
                 {
                     token.kind = Token::CLOSE_TAG;
+                    // Eat possible new line following the close tag.
+                    ReadChar('\r');
+                    ReadChar('\n');
                 } else {
                     token.kind = Token::MOD;
                 }
@@ -1224,7 +1227,10 @@ SCAN_EXPONENT:
 
             //TODO:case Token::LBRACK:
             //TODO:case Token::LBRACE:
-            //TODO:case Token::IDENTIFIER:
+
+            case Token::IDENTIFIER:
+                node = new IdentifierNode(token.text);
+                break;
             
             default:
                 interpreter->Throw(
@@ -1810,7 +1816,19 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
-        // TODO
+        else if (parser->ReadToken(Token::CONDITIONAL))
+        {
+            Handle<Node> then_node;
+            Handle<Node> else_node;
+
+            if (!(then_node = parse_expr(interpreter, parser))
+                || !expect_token(interpreter, parser, Token::COLON)
+                || !(else_node = parse_expr(interpreter, parser)))
+            {
+                return Handle<Node>();
+            }
+            node = new IfNode(node, then_node, else_node);
+        }
 
         return node;
     }
@@ -1841,8 +1859,110 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
-        // TODO
+        switch (parser->PeekToken().kind)
+        {
+            case Token::ERROR:
+                interpreter->Throw(interpreter->eSyntaxError,
+                                   parser->PeekToken().text);
+                return Handle<Node>();
 
-        return node;
+            case Token::ASSIGN:
+            {
+                Handle<Node> operand;
+
+                parser->SkipToken();
+                if (!(operand = parse_expr(interpreter, parser)))
+                {
+                    return Handle<Node>();
+                }
+                else if (!node->IsVariable())
+                {
+                    interpreter->Throw(interpreter->eSyntaxError,
+                                       "Missing variable expression before '='");
+
+                    return Handle<Node>();
+                }
+
+                return new AssignNode(node, operand);
+            }
+
+            case Token::ASSIGN_AND:
+            case Token::ASSIGN_OR:
+            {
+                const Token::Kind kind = parser->ReadToken().kind;
+                Handle<Node> operand = parse_expr(interpreter, parser);
+
+                if (!operand)
+                {
+                    return Handle<Node>();
+                }
+                else if (!node->IsVariable())
+                {
+                    std::stringstream ss;
+
+                    ss << "Missing variable expression before "
+                       << Token::What(kind);
+                    interpreter->Throw(interpreter->eSyntaxError, ss.str());
+
+                    return Handle<Node>();
+                }
+                else if (kind == Token::ASSIGN_AND)
+                {
+                    return new AssignNode(node, new AndNode(node, operand));
+                } else {
+                    return new AssignNode(node, new OrNode(node, operand));
+                }
+            }
+
+            case Token::ASSIGN_BIT_AND:
+            case Token::ASSIGN_BIT_OR:
+            case Token::ASSIGN_BIT_XOR:
+            case Token::ASSIGN_LSH:
+            case Token::ASSIGN_RSH:
+            case Token::ASSIGN_ADD:
+            case Token::ASSIGN_SUB:
+            case Token::ASSIGN_MUL:
+            case Token::ASSIGN_DIV:
+            case Token::ASSIGN_MOD:
+            {
+                const Token::Kind kind = parser->ReadToken().kind;
+                Handle<Node> operand = parse_expr(interpreter, parser);
+
+                if (!operand)
+                {
+                    return Handle<Node>();
+                }
+                else if (!node->IsVariable())
+                {
+                    std::stringstream ss;
+
+                    ss << "Missing variable expression before "
+                       << Token::What(kind);
+                    interpreter->Throw(interpreter->eSyntaxError, ss.str());
+
+                    return Handle<Node>();
+                }
+
+                return new AssignNode(
+                    node,
+                    new CallNode(
+                        node,
+                        kind == Token::ASSIGN_BIT_AND ? "__and__" :
+                        kind == Token::ASSIGN_BIT_OR  ? "__or__"  :
+                        kind == Token::ASSIGN_BIT_XOR ? "__xor__" :
+                        kind == Token::ASSIGN_LSH     ? "__lsh__" :
+                        kind == Token::ASSIGN_RSH     ? "__rsh__" :
+                        kind == Token::ASSIGN_ADD     ? "__add__" :
+                        kind == Token::ASSIGN_SUB     ? "__sub__" :
+                        kind == Token::ASSIGN_MUL     ? "__mul__" :
+                        kind == Token::ASSIGN_DIV     ? "__div__" :
+                                                        "__mod__"
+                    )
+                );
+            }
+
+            default:
+                return node;
+        }
     }
 }

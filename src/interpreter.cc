@@ -40,7 +40,13 @@ namespace tempearly
             parser->Close();
             if (script)
             {
-                return script->Execute(this);
+                bool result;
+
+                PushScope(globals);
+                result = script->Execute(this);
+                PopScope();
+
+                return result;
             }
         } else {
             // TODO: throw exception
@@ -68,17 +74,35 @@ namespace tempearly
 
     void Interpreter::Throw(const Handle<Class>& cls, const String& message)
     {
+        // TODO: Construct exception object.
         std::fprintf(stderr, "ERROR: %s\n", message.c_str());
         std::abort();
+    }
+
+    void Interpreter::PushScope(const Handle<Scope>& parent)
+    {
+        m_scope = new Scope(m_scope, parent);
+    }
+
+    void Interpreter::PopScope()
+    {
+        if (m_scope)
+        {
+            m_scope = m_scope->GetPrevious();
+        }
     }
 
     void Interpreter::Mark()
     {
         CountedObject::Mark();
-        m_exception.Mark();
         if (globals && !globals->IsMarked())
         {
             globals->Mark();
+        }
+        m_exception.Mark();
+        if (m_scope && !m_scope->IsMarked())
+        {
+            m_scope->Mark();
         }
     }
 }

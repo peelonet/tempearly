@@ -333,6 +333,39 @@ namespace tempearly
         Node* m_index;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(SubscriptNode);
     };
+
+    class AssignNode : public Node
+    {
+    public:
+        explicit AssignNode(const Handle<Node>& variable,
+                            const Handle<Node>& value);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_variable;
+        Node* m_value;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(AssignNode);
+    };
+
+    class IdentifierNode : public Node
+    {
+    public:
+        explicit IdentifierNode(const String& id);
+
+        bool IsVariable() const;
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        bool Assign(const Handle<Interpreter>& interpreter,
+                    const Value& value) const;
+
+    private:
+        const String m_id;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(IdentifierNode);
+    };
 }
 
 #endif /* !TEMPEARLY_NODE_H_GUARD */

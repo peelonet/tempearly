@@ -67,8 +67,8 @@ namespace tempearly
         std::queue<int> m_pushback_chars;
         std::queue<TokenDescriptor> m_pushback_tokens;
         bool m_seen_cr;
-        /** Current token scanned from the stream. */
-        TokenDescriptor m_token;
+        /** Current position in source code. */
+        SourcePosition m_position;
         std::string m_buffer;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Parser);
     };
