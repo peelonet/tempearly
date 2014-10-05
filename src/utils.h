@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_UTILS_H_GUARD
 #define TEMPEARLY_UTILS_H_GUARD
 
-#include "tempearly.h"
+#include "dictionary.h"
 
 namespace tempearly
 {
@@ -40,6 +40,23 @@ namespace tempearly
          * Escapes XML entities from given string.
          */
         static String XmlEscape(const String& string);
+
+        /**
+         * Attempts to decode URL entities from given string.
+         *
+         * \param string String to decode
+         * \param slot   Where the resulting decoded string is assigned to
+         * \return       A boolean flag indicating whether decoding was
+         *               successfull or not
+         */
+        static bool UrlDecode(const String& string, String& slot);
+
+        /**
+         * Parses given given string as query string and inserts named values
+         * extracted from it to the given dictionary.
+         */
+        static void ParseQueryString(const String& string,
+                                     Dictionary<std::vector<String> >& dictionary);
 
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Utils);

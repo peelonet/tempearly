@@ -394,6 +394,24 @@ namespace tempearly
         return true;
     }
 
+    bool Value::AsString(const Handle<Interpreter>& interpreter, String& slot) const
+    {
+        if (m_kind == KIND_STRING)
+        {
+            slot = *m_data.s;
+
+            return true;
+        }
+        std::stringstream ss;
+
+        ss << "'String' required instead of '"
+           << GetClass(interpreter)->GetName()
+           << "'";
+        interpreter->Throw(interpreter->eTypeError, ss.str());
+
+        return false;
+    }
+
     bool Value::ToBool(const Handle<Interpreter>& interpreter, bool& value) const
     {
         switch (m_kind)

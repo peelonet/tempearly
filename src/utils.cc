@@ -336,4 +336,118 @@ namespace tempearly
 
         return string;
     }
+
+    bool Utils::UrlDecode(const String& string, String& slot)
+    {
+        String::size_type index = 0;
+        bool encoded = false;
+
+        // First check if the string has any encoding.
+        while (!encoded && index < string.length())
+        {
+            encoded = string[index] == '+' || string[index] == '%';
+            ++index;
+        }
+        if (!encoded)
+        {
+            slot = string;
+
+            return true;
+        }
+        --index;
+
+        // Start decoding from first encoded characters.
+        String result;
+
+        result.reserve(string.length());
+        result.append(string.substr(0, index));
+
+        for (String::size_type i = index; i < string.length(); ++i)
+        {
+            if (string[i] == '+')
+            {
+                result.append(1, ' ');
+            }
+            else if (string[i] == '%')
+            {
+                char byte = 0;
+
+                if (string.length() - i < 2)
+                {
+                    return false; // Malformed query string
+                }
+                for (String::size_type j = 0; j < 2; ++j)
+                {
+                    const char code = string[i + j + 1];
+
+                    if (0x30 <= code && code <= 0x39)
+                    {
+                        byte = byte * 16 + code - 0x30;
+                    }
+                    else if (0x41 <= code && code <= 0x46)
+                    {
+                        byte = byte * 16 + code - 0x37;
+                    }
+                    else if (0x61 <= code && code <= 0x66)
+                    {
+                        byte = byte * 16 + code - 0x57;
+                    } else {
+                        return false;
+                    }
+                }
+                result.append(1, byte);
+                i += 2;
+            } else {
+                result.append(1, string[i]);
+            }
+        }
+
+        slot = result;
+
+        return true;
+    }
+
+    void Utils::ParseQueryString(const String& string,
+                                 Dictionary<std::vector<String> >& dictionary)
+    {
+        String::size_type current_pos = 0;
+        String name;
+        String value;
+
+        while (current_pos < string.length())
+        {
+            String::size_type pos = string.find('=', current_pos);
+
+            if (pos == String::npos)
+            {
+                return;
+            }
+
+            name = string.substr(current_pos, pos);
+            current_pos = pos + 1;
+            pos = string.find('&', current_pos);
+
+            if (pos == String::npos)
+            {
+                value = string.substr(current_pos);
+                current_pos = string.length();
+            } else {
+                value = string.substr(current_pos, pos);
+                current_pos = pos + 1;
+            }
+
+            if (UrlDecode(name, name) && UrlDecode(value, value))
+            {
+                const Dictionary<std::vector<String> >::Entry* e = dictionary.Find(name);
+                std::vector<String> vector;
+
+                if (e)
+                {
+                    vector.insert(vector.begin(), e->value.begin(), e->value.end());
+                }
+                vector.push_back(value);
+                dictionary.Insert(name, vector);
+            }
+        }
+    }
 }

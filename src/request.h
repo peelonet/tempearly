@@ -17,6 +17,10 @@ namespace tempearly
          */
         virtual String GetMethod() const = 0;
 
+        virtual bool HasParameter(const String& id) const = 0;
+
+        virtual bool GetParameter(const String& id, String& value) const = 0;
+
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Request);
     };
