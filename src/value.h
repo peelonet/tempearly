@@ -207,6 +207,8 @@ namespace tempearly
             return *m_data.s;
         }
 
+        bool AsString(const Handle<Interpreter>& interpreter, String& slot) const;
+
         inline Handle<CoreObject> AsObject() const
         {
             return m_data.o;
