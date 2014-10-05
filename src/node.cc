@@ -200,6 +200,11 @@ namespace tempearly
         , m_id(id)
         , m_null_safe(null_safe) {}
 
+    bool AttributeNode::IsVariable() const
+    {
+        return true;
+    }
+
     Result AttributeNode::Execute(const Handle<Interpreter>& interpreter) const
     {
         Value value = m_receiver->Evaluate(interpreter);
@@ -217,6 +222,23 @@ namespace tempearly
             return Result(Result::KIND_SUCCESS, value);
         } else {
             return Result(Result::KIND_ERROR);
+        }
+    }
+
+    bool AttributeNode::Assign(const Handle<Interpreter>& interpreter,
+                               const Value& value) const
+    {
+        Value receiver = m_receiver->Evaluate(interpreter);
+
+        if (!receiver)
+        {
+            return false;
+        }
+        else if (m_null_safe && receiver.IsNull())
+        {
+            return true;
+        } else {
+            return receiver.SetAttribute(m_id, value);
         }
     }
 
@@ -346,6 +368,64 @@ namespace tempearly
         if (!m_variable->IsMarked())
         {
             m_variable->Mark();
+        }
+    }
+
+    SubscriptNode::SubscriptNode(const Handle<Node>& container,
+                                 const Handle<Node>& index)
+        : m_container(container.Get())
+        , m_index(index.Get()) {}
+
+    bool SubscriptNode::IsVariable() const
+    {
+        return true;
+    }
+
+    Result SubscriptNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value container;
+        Value index;
+        Value result;
+
+        if (!(container = m_container->Evaluate(interpreter))
+            || !(index = m_index->Evaluate(interpreter))
+            || !(result = container.Call(interpreter, "__getitem__", std::vector<Value>(1, index))))
+        {
+            return Result(Result::KIND_ERROR);
+        } else {
+            return Result(Result::KIND_SUCCESS, result);
+        }
+    }
+
+    bool SubscriptNode::Assign(const Handle<Interpreter>& interpreter,
+                               const Value& value) const
+    {
+        Value container;
+        Value index;
+        std::vector<Value> args;
+
+        if (!(container = m_container->Evaluate(interpreter))
+            || !(index = m_index->Evaluate(interpreter)))
+        {
+            return false;
+        }
+        args.reserve(2);
+        args.push_back(index);
+        args.push_back(value);
+
+        return container.Call(interpreter, "__setitem__", args);
+    }
+
+    void SubscriptNode::Mark()
+    {
+        Node::Mark();
+        if (!m_container->IsMarked())
+        {
+            m_container->Mark();
+        }
+        if (!m_index->IsMarked())
+        {
+            m_index->Mark();
         }
     }
 }

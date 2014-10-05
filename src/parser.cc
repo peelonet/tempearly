@@ -1149,6 +1149,39 @@ SCAN_EXPONENT:
         }
     }
 
+    static Handle<Node> parse_selection(const Handle<Interpreter>& interpreter,
+                                        Parser* parser,
+                                        const Handle<Node>& node,
+                                        bool safe)
+    {
+        const Parser::TokenDescriptor token = parser->ReadToken();
+
+        if (token.kind != Token::IDENTIFIER)
+        {
+            std::stringstream ss;
+
+            ss << "Unexpected "
+               << Token::What(token.kind)
+               << "; Missing identifier";
+            interpreter->Throw(interpreter->eSyntaxError, ss.str());
+
+            return Handle<Node>();
+        }
+        else if (parser->PeekToken(Token::LPAREN))
+        {
+            std::vector<Handle<Node> > args;
+
+            if (parse_args(interpreter, parser, args))
+            {
+                return new CallNode(node, token.text, args, safe);
+            } else {
+                return Handle<Node>();
+            }
+        } else {
+            return new AttributeNode(node, token.text, safe);
+        }
+    }
+
     /**
      * primary-expression
      * postfix-expression "(" expression... ")"
@@ -1183,12 +1216,26 @@ SCAN_EXPONENT:
             }
             else if (token.kind == Token::LBRACK)
             {
-                // TODO
+                Handle<Node> index;
+
+                parser->SkipToken();
+                if (!(index = parse_expr(interpreter, parser))
+                    || !expect_token(interpreter, parser, Token::RBRACK))
+                {
+                    return Handle<Node>();
+                }
+                node = new SubscriptNode(node, index);
             }
             else if (token.kind == Token::DOT
                     || token.kind == Token::DOT_CONDITIONAL)
             {
-                // TODO
+                const bool safe = token.kind == Token::DOT_CONDITIONAL;
+
+                parser->SkipToken();
+                if (!(node = parse_selection(interpreter, parser, node, safe)))
+                {
+                    return Handle<Node>();
+                }
             }
             else if (token.kind == Token::INCREMENT
                     || token.kind == Token::DECREMENT)
