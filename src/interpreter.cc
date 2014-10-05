@@ -1,11 +1,13 @@
 #include "class.h"
 #include "interpreter.h"
 #include "parser.h"
+#include "api/iterator.h"
 
 namespace tempearly
 {
     void init_bool(Interpreter*);
     void init_iterator(Interpreter*);
+    void init_list(Interpreter*);
     void init_number(Interpreter*);
     void init_object(Interpreter*);
     void init_string(Interpreter*);
@@ -28,6 +30,7 @@ namespace tempearly
         init_string(this);
         init_void(this);
         init_iterator(this);
+        init_list(this);
     }
 
     bool Interpreter::Include(const String& filename)
@@ -94,6 +97,34 @@ namespace tempearly
         }
     }
 
+    namespace
+    {
+        class EmptyIterator : public IteratorObject
+        {
+        public:
+            explicit EmptyIterator(const Handle<Class>& cls)
+                : IteratorObject(cls) {}
+
+            Result Generate(const Handle<Interpreter>& interpreter)
+            {
+                return Result(Result::KIND_BREAK);
+            }
+
+        private:
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(EmptyIterator);
+        };
+    }
+
+    Handle<IteratorObject> Interpreter::GetEmptyIterator()
+    {
+        if (!m_empty_iterator)
+        {
+            m_empty_iterator = new EmptyIterator(cIterator);
+        }
+
+        return m_empty_iterator;
+    }
+
     void Interpreter::Mark()
     {
         CountedObject::Mark();
@@ -105,6 +136,10 @@ namespace tempearly
         if (m_scope && !m_scope->IsMarked())
         {
             m_scope->Mark();
+        }
+        if (m_empty_iterator && !m_empty_iterator->IsMarked())
+        {
+            m_empty_iterator->Mark();
         }
     }
 }

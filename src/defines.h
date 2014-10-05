@@ -49,6 +49,7 @@ namespace tempearly
     class CoreObject;
     class FunctionObject;
     class Interpreter;
+    class IteratorObject;
     class ListObject;
     class MapObject;
     class Node;

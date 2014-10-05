@@ -132,6 +132,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsIterator();
         }
 
+        inline bool IsList() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsList();
+        }
+
         inline bool IsString() const
         {
             return m_kind == KIND_STRING;

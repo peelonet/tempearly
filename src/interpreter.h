@@ -69,6 +69,11 @@ namespace tempearly
         void PopScope();
 
         /**
+         * Returns shared instance of empty iterator.
+         */
+        Handle<IteratorObject> GetEmptyIterator();
+
+        /**
          * Used by garbage collector to mark all objects used by the
          * interpreter.
          */
@@ -86,6 +91,7 @@ namespace tempearly
         Handle<Class> cFunction;
         Handle<Class> cInt;
         Handle<Class> cIterator;
+        Handle<Class> cList;
         Handle<Class> cNum;
         Handle<Class> cObject;
         Handle<Class> cString;
@@ -104,6 +110,8 @@ namespace tempearly
         Value m_exception;
         /** Current local variable scope. */
         Handle<Scope> m_scope;
+        /** Shared instance of empty iterator. */
+        IteratorObject* m_empty_iterator;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Interpreter);
     };
 }
