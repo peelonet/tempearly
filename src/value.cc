@@ -94,14 +94,7 @@ namespace tempearly
 
     Value::~Value()
     {
-        if (m_kind == KIND_STRING)
-        {
-            delete m_data.s;
-        }
-        else if (m_kind == KIND_OBJECT)
-        {
-            m_data.o->DecReferenceCounter();
-        }
+        Clear();
     }
 
     const Value& Value::NullValue()
@@ -118,14 +111,7 @@ namespace tempearly
 
     Value& Value::operator=(const Value& that)
     {
-        if (m_kind == KIND_STRING)
-        {
-            delete m_data.s;
-        }
-        else if (m_kind == KIND_OBJECT)
-        {
-            m_data.o->DecReferenceCounter();
-        }
+        Clear();
         switch (m_kind = that.m_kind)
         {
             case KIND_BOOL:
@@ -265,6 +251,19 @@ namespace tempearly
 
             return Value();
         }
+    }
+
+    void Value::Clear()
+    {
+        if (m_kind == KIND_STRING)
+        {
+            delete m_data.s;
+        }
+        else if (m_kind == KIND_OBJECT)
+        {
+            m_data.o->DecReferenceCounter();
+        }
+        m_kind = KIND_ERROR;
     }
 
     void Value::Mark() const

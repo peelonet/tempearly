@@ -127,6 +127,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsFunction();
         }
 
+        inline bool IsIterator() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsIterator();
+        }
+
         inline bool IsString() const
         {
             return m_kind == KIND_STRING;
@@ -145,6 +150,11 @@ namespace tempearly
         Value Call(const Handle<Interpreter>& interpreter,
                    const String& id,
                    const std::vector<Value>& args = std::vector<Value>()) const;
+
+        /**
+         * Resets value to error state.
+         */
+        void Clear();
 
         /**
          * Used by garbage collector to mark objects which this value

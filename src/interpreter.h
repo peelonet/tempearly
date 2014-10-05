@@ -35,6 +35,11 @@ namespace tempearly
             m_exception = exception;
         }
 
+        inline void ClearException()
+        {
+            m_exception.Clear();
+        }
+
         /**
          * Throws an exception and sets this interpreter into exception state.
          *
@@ -80,6 +85,7 @@ namespace tempearly
         Handle<Class> cFloat;
         Handle<Class> cFunction;
         Handle<Class> cInt;
+        Handle<Class> cIterator;
         Handle<Class> cNum;
         Handle<Class> cObject;
         Handle<Class> cString;
@@ -87,6 +93,7 @@ namespace tempearly
 
         Handle<Class> eAttributeError;
         Handle<Class> eNameError;
+        Handle<Class> eStopIteration;
         Handle<Class> eSyntaxError;
         Handle<Class> eTypeError;
         Handle<Class> eValueError;
