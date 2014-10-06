@@ -8,7 +8,7 @@ Meant for small scripts/hacks/CGI-applications, not for large web sites.
 
 ## Compilation
 
-Requires CMake[1] and C++-compiler.
+Requires [CMake](1) and C++-compiler.
 
 ```bash
 mkdir build
