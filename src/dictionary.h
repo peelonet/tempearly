@@ -98,8 +98,8 @@ namespace tempearly
                 next = current->next;
                 current->id.~String();
                 current->value.~T();
-                current = next;
                 std::free(static_cast<void*>(current));
+                current = next;
             }
             delete[] m_bucket;
         }
