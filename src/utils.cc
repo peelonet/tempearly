@@ -402,32 +402,29 @@ namespace tempearly
     void Utils::ParseQueryString(const String& string,
                                  Dictionary<std::vector<String> >& dictionary)
     {
-        std::size_t current_pos = 0;
+        std::size_t current_index = 0;
         String name;
         String value;
 
-        while (current_pos < string.GetLength())
+        while (current_index < string.GetLength())
         {
-            std::size_t pos = string.IndexOf('=', current_pos);
+            std::size_t index = string.IndexOf('=', current_index);
 
-            if (pos == String::npos)
+            if (index == String::npos)
             {
                 return;
             }
-
-            name = string.SubString(current_pos, pos);
-            current_pos = pos + 1;
-            pos = string.IndexOf('&', current_pos);
-
-            if (pos == String::npos)
+            name = string.SubString(current_index, index - current_index);
+            current_index = index + 1;
+            index = string.IndexOf('&', current_index);
+            if (index == String::npos)
             {
-                value = string.SubString(current_pos);
-                current_pos = string.GetLength();
+                value = string.SubString(current_index);
+                current_index = string.GetLength();
             } else {
-                value = string.SubString(current_pos, pos);
-                current_pos = pos + 1;
+                value = string.SubString(current_index, index - current_index);
+                current_index = index + 1;
             }
-
             if (UrlDecode(name, name) && UrlDecode(value, value))
             {
                 const Dictionary<std::vector<String> >::Entry* e = dictionary.Find(name);
