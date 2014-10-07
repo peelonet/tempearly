@@ -3,12 +3,12 @@
 namespace tempearly
 {
     CountedObject::CountedObject()
-        : m_marked(false)
+        : m_flags(0)
         , m_reference_counter(0) {}
 
     void CountedObject::Mark()
     {
-        m_marked = true;
+        SetFlag(FLAG_MARKED);
     }
 
     void* CountedObject::operator new(std::size_t size)

@@ -8,14 +8,45 @@ namespace tempearly
     class CountedObject
     {
     public:
+        enum Flag
+        {
+            FLAG_MARKED = 2,
+            FLAG_FINALIZING = 4,
+            FLAG_INSPECTING = 8
+        };
+
         explicit CountedObject();
+
+        /**
+         * Returns true if object has been marked with specified flag.
+         */
+        inline bool HasFlag(Flag flag) const
+        {
+            return (m_flags & flag) != 0;
+        }
+
+        /**
+         * Sets the specified flag on this object.
+         */
+        inline void SetFlag(Flag flag)
+        {
+            m_flags |= flag;
+        }
+
+        /**
+         * Unsets the specified flag on this object.
+         */
+        inline void UnsetFlag(Flag flag)
+        {
+            m_flags &= ~flag;
+        }
 
         /**
          * Returns true if this object has been marked by the garbage collector.
          */
         inline bool IsMarked() const
         {
-            return m_marked;
+            return (m_flags & FLAG_MARKED) != 0;
         }
 
         /**
@@ -46,8 +77,8 @@ namespace tempearly
         void operator delete(void*);
 
     private:
-        /** Whether the object has been marked or not. */
-        bool m_marked;
+        /** Contains various flags for this object. */
+        unsigned int m_flags;
         /** Reference counter. */
         unsigned int m_reference_counter;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CountedObject);
