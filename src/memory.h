@@ -17,6 +17,8 @@ namespace tempearly
 
         explicit CountedObject();
 
+        virtual ~CountedObject();
+
         /**
          * Returns true if object has been marked with specified flag.
          */
@@ -58,9 +60,18 @@ namespace tempearly
         virtual void Mark();
 
         /**
+         * Returns the number of references this object has, including handles
+         * and references from values.
+         */
+        inline unsigned int GetReferenceCount()
+        {
+            return m_reference_counter;
+        }
+
+        /**
          * Increments internal reference counter of the object.
          */
-        inline void IncReferenceCounter()
+        inline void IncReferenceCount()
         {
             ++m_reference_counter;
         }
@@ -68,7 +79,7 @@ namespace tempearly
         /**
          * Decrements internal reference counter of the object.
          */
-        inline void DecReferenceCounter()
+        inline void DecReferenceCount()
         {
             --m_reference_counter;
         }
@@ -109,7 +120,7 @@ namespace tempearly
         {
             if (m_pointer)
             {
-                m_pointer->IncReferenceCounter();
+                m_pointer->IncReferenceCount();
             }
         }
 
@@ -122,7 +133,7 @@ namespace tempearly
         {
             if (m_pointer)
             {
-                m_pointer->IncReferenceCounter();
+                m_pointer->IncReferenceCount();
             }
         }
 
@@ -134,7 +145,7 @@ namespace tempearly
         {
             if (m_pointer)
             {
-                m_pointer->DecReferenceCounter();
+                m_pointer->DecReferenceCount();
             }
         }
 

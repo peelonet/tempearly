@@ -27,7 +27,7 @@ namespace tempearly
                 break;
 
             case KIND_OBJECT:
-                (m_data.o = that.m_data.o)->IncReferenceCounter();
+                (m_data.o = that.m_data.o)->IncReferenceCount();
                 break;
 
             default:
@@ -83,7 +83,7 @@ namespace tempearly
         {
             value.m_kind = KIND_OBJECT;
             value.m_data.o = object.Get();
-            value.m_data.o->IncReferenceCounter();
+            value.m_data.o->IncReferenceCount();
         } else {
             value.m_kind = KIND_NULL;
         }
@@ -127,7 +127,7 @@ namespace tempearly
                 break;
 
             case KIND_OBJECT:
-                (m_data.o = that.m_data.o)->IncReferenceCounter();
+                (m_data.o = that.m_data.o)->IncReferenceCount();
                 break;
 
             default:
@@ -285,7 +285,7 @@ namespace tempearly
         }
         else if (m_kind == KIND_OBJECT)
         {
-            m_data.o->DecReferenceCounter();
+            m_data.o->DecReferenceCount();
         }
         m_kind = KIND_ERROR;
     }
