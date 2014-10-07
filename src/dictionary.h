@@ -105,6 +105,14 @@ namespace tempearly
         }
 
         /**
+         * Returns true if the dictionary is empty.
+         */
+        inline bool IsEmpty() const
+        {
+            return !m_front;
+        }
+
+        /**
          * Returns pointer to the first entry in the dictionary, or NULL if the
          * dictionary is empty.
          */
