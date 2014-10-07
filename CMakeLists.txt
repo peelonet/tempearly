@@ -1,6 +1,18 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(tempearly C CXX)
 
+OPTION(
+    TEMPEARLY_ENABLE_CGI_SAPI
+    "Enable CGI SAPI"
+    ON
+)
+
+OPTION(
+    TEMPEARLY_ENABLE_HTTPD_SAPI
+    "Enable builtin HTTP server SAPI"
+    OFF
+)
+
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFileCXX)
 
@@ -61,10 +73,24 @@ SET(
     src/core/stringbuilder.cc
 )
 
-ADD_EXECUTABLE(
-    tempearly-cgi
-    src/sapi/cgi/cgi-request.cc
-    src/sapi/cgi/cgi-response.cc
-    src/sapi/cgi/main.cc
-    ${INTERPRETER_SOURCES}
-)
+IF (TEMPEARLY_ENABLE_CGI_SAPI)
+    ADD_EXECUTABLE(
+        tempearly-cgi
+        src/sapi/cgi/cgi-request.cc
+        src/sapi/cgi/cgi-response.cc
+        src/sapi/cgi/main.cc
+        ${INTERPRETER_SOURCES}
+    )
+ENDIF()
+
+IF (TEMPEARLY_ENABLE_HTTPD_SAPI)
+    ADD_EXECUTABLE(
+        tempearly-httpd
+        src/sapi/httpd/httpd-request.cc
+        src/sapi/httpd/httpd-response.cc
+        src/sapi/httpd/main.cc
+        src/sapi/httpd/server.cc
+        src/sapi/httpd/socket.cc
+        ${INTERPRETER_SOURCES}
+    )
+ENDIF()
