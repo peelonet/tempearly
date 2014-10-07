@@ -17,7 +17,9 @@ namespace tempearly
     void init_string(Interpreter*);
     void init_void(Interpreter*);
 
-    Interpreter::Interpreter() {}
+    Interpreter::Interpreter()
+        : m_exception(0)
+        , m_empty_iterator(0) {}
 
     void Interpreter::Initialize()
     {
