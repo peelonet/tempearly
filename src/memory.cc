@@ -174,8 +174,6 @@ namespace tempearly
     CountedObject::~CountedObject() {}
 
     void CountedObject::Mark()
-
-    void CountedObject::Mark()
     {
         SetFlag(FLAG_MARKED);
     }

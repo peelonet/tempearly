@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_SAPI_CGI_RESPONSE_H_GUARD
 #define TEMPEARLY_SAPI_CGI_RESPONSE_H_GUARD
 
-#include "response.h"
+#include "sapi/response.h"
 
 namespace tempearly
 {
