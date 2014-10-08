@@ -206,4 +206,9 @@ namespace tempearly
             }
         }
     }
+
+    void init_class(Interpreter* i)
+    {
+        i->cClass = i->AddClass("Class", i->cObject);
+    }
 }

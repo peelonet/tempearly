@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_CLASS_H_GUARD
-#define TEMPEARLY_CLASS_H_GUARD
+#ifndef TEMPEARLY_API_CLASS_H_GUARD
+#define TEMPEARLY_API_CLASS_H_GUARD
 
 #include "coreobject.h"
 
@@ -56,4 +56,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_CLASS_H_GUARD */
+#endif /* !TEMPEARLY_API_CLASS_H_GUARD */

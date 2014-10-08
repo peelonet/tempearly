@@ -1,4 +1,3 @@
-#include "class.h"
 #include "interpreter.h"
 #include "parser.h"
 #include "api/iterator.h"
@@ -7,7 +6,9 @@
 namespace tempearly
 {
     void init_bool(Interpreter*);
+    void init_class(Interpreter*);
     void init_exception(Interpreter*);
+    void init_function(Interpreter*);
     void init_iterator(Interpreter*);
     void init_list(Interpreter*);
     void init_number(Interpreter*);
@@ -38,6 +39,8 @@ namespace tempearly
         init_iterator(this);
         init_list(this);
         init_exception(this);
+        init_class(this);
+        init_function(this);
 
         init_request(this);
         init_response(this);
