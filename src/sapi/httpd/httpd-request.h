@@ -1,8 +1,8 @@
 #ifndef TEMPEARLY_SAPI_HTTPD_HTTPD_REQUEST_H_GUARD
 #define TEMPEARLY_SAPI_HTTPD_HTTPD_REQUEST_H_GUARD
 
-#include "dictionary.h"
-#include "request.h"
+#include "core/dictionary.h"
+#include "sapi/request.h"
 
 namespace tempearly
 {

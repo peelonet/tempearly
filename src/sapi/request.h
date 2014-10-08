@@ -1,5 +1,5 @@
-#ifndef TEMPERALY_REQUEST_H_GUARD
-#define TEMPERALY_REQUEST_H_GUARD
+#ifndef TEMPERALY_SAPI_REQUEST_H_GUARD
+#define TEMPERALY_SAPI_REQUEST_H_GUARD
 
 #include "memory.h"
 
@@ -26,4 +26,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPERALY_REQUEST_H_GUARD */
+#endif /* !TEMPERALY_SAPI_REQUEST_H_GUARD */

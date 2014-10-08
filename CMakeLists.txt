@@ -42,15 +42,12 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/src)
 SET(
     INTERPRETER_SOURCES
     src/class.cc
-    src/cookie.cc
     src/coreobject.cc
     src/interpreter.cc
     src/memory.cc
     src/node.cc
     src/object.cc
     src/parser.cc
-    src/request.cc
-    src/response.cc
     src/result.cc
     src/scope.cc
     src/script.cc
@@ -72,6 +69,9 @@ SET(
     src/core/filename.cc
     src/core/string.cc
     src/core/stringbuilder.cc
+    src/http/cookie.cc
+    src/sapi/request.cc
+    src/sapi/response.cc
 )
 
 IF (TEMPEARLY_ENABLE_CGI_SAPI)

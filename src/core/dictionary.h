@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_DICTIONARY_H_GUARD
-#define TEMPEARLY_DICTIONARY_H_GUARD
+#ifndef TEMPEARLY_CORE_DICTIONARY_H_GUARD
+#define TEMPEARLY_CORE_DICTIONARY_H_GUARD
 
 #include "core/string.h"
 
@@ -199,4 +199,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_DICTIONARY_H_GUARD */
+#endif /* !TEMPEARLY_CORE_DICTIONARY_H_GUARD */

@@ -3,7 +3,6 @@
 
 #include <sys/stat.h>
 
-#include "dictionary.h"
 #include "interpreter.h"
 #include "core/bytestring.h"
 #include "core/stringbuilder.h"
