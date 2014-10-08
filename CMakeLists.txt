@@ -69,6 +69,7 @@ SET(
     src/api/string.cc
     src/api/void.cc
     src/core/bytestring.cc
+    src/core/filename.cc
     src/core/string.cc
     src/core/stringbuilder.cc
 )
