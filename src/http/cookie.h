@@ -1,30 +1,30 @@
-#ifndef TEMPEARLY_COOKIE_H_GUARD
-#define TEMPEARLY_COOKIE_H_GUARD
+#ifndef TEMPEARLY_HTTP_COOKIE_H_GUARD
+#define TEMPEARLY_HTTP_COOKIE_H_GUARD
 
 #include "core/string.h"
 
 namespace tempearly
 {
-    class Cookie
+    class HttpCookie
     {
     public:
-        Cookie(const String& name = String(),
-               const String& value = String(),
-               const String& comment = String(),
-               const String& domain = String(),
-               unsigned long max_age = 0,
-               const String& path = String(),
-               bool secure = false);
+        HttpCookie(const String& name = String(),
+                   const String& value = String(),
+                   const String& comment = String(),
+                   const String& domain = String(),
+                   unsigned long max_age = 0,
+                   const String& path = String(),
+                   bool secure = false);
 
-        Cookie(const Cookie& that);
+        HttpCookie(const HttpCookie& that);
 
-        static bool Parse(const String& source, Cookie& cookie);
+        static bool Parse(const String& source, HttpCookie& cookie);
 
-        Cookie& assign(const Cookie& that);
+        HttpCookie& Assign(const HttpCookie& that);
 
-        inline Cookie& operator=(const Cookie& that)
+        inline HttpCookie& operator=(const HttpCookie& that)
         {
-            return assign(that);
+            return Assign(that);
         }
 
         inline const String& GetName() const
@@ -68,4 +68,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_COOKIE_H_GUARD */
+#endif /* !TEMPEARLY_HTTP_COOKIE_H_GUARD */

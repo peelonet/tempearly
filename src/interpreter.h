@@ -2,10 +2,10 @@
 #define TEMPEARLY_INTERPRETER_H_GUARD
 
 #include "class.h"
-#include "request.h"
-#include "response.h"
 #include "scope.h"
 #include "api/exception.h"
+#include "sapi/request.h"
+#include "sapi/response.h"
 
 namespace tempearly
 {

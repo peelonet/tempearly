@@ -1,7 +1,7 @@
-#ifndef TEMPEARLY_RESPONSE_H_GUARD
-#define TEMPEARLY_RESPONSE_H_GUARD
+#ifndef TEMPEARLY_SAPI_RESPONSE_H_GUARD
+#define TEMPEARLY_SAPI_RESPONSE_H_GUARD
 
-#include "dictionary.h"
+#include "core/dictionary.h"
 
 namespace tempearly
 {
@@ -90,4 +90,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_RESPONSE_H_GUARD */
+#endif /* !TEMPEARLY_SAPI_RESPONSE_H_GUARD */

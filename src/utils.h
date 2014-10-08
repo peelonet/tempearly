@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_UTILS_H_GUARD
 #define TEMPEARLY_UTILS_H_GUARD
 
-#include "dictionary.h"
+#include "core/dictionary.h"
 
 namespace tempearly
 {

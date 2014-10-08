@@ -1,14 +1,14 @@
-#include "cookie.h"
+#include "http/cookie.h"
 
 namespace tempearly
 {
-    Cookie::Cookie(const String& name,
-                   const String& value,
-                   const String& comment,
-                   const String& domain,
-                   unsigned long max_age,
-                   const String& path,
-                   bool secure)
+    HttpCookie::HttpCookie(const String& name,
+                           const String& value,
+                           const String& comment,
+                           const String& domain,
+                           unsigned long max_age,
+                           const String& path,
+                           bool secure)
         : m_name(name)
         , m_value(value)
         , m_comment(comment)
@@ -17,7 +17,16 @@ namespace tempearly
         , m_path(path)
         , m_secure(secure) {}
 
-    bool Cookie::Parse(const String& source, Cookie& cookie)
+    HttpCookie::HttpCookie(const HttpCookie& that)
+        : m_name(that.m_name)
+        , m_value(that.m_value)
+        , m_comment(that.m_comment)
+        , m_domain(that.m_domain)
+        , m_max_age(that.m_max_age)
+        , m_path(that.m_path)
+        , m_secure(that.m_secure) {}
+
+    bool HttpCookie::Parse(const String& source, HttpCookie& cookie)
     {
         // Find the '=' separating the name and value.
         std::size_t pos = source.IndexOf('=');
@@ -52,7 +61,7 @@ namespace tempearly
         return true;
     }
 
-    Cookie& Cookie::assign(const Cookie& that)
+    HttpCookie& HttpCookie::Assign(const HttpCookie& that)
     {
         m_name = that.m_name;
         m_value = that.m_value;

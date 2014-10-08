@@ -1,7 +1,6 @@
 #ifndef TEMPEARLY_SCOPE_H_GUARD
 #define TEMPEARLY_SCOPE_H_GUARD
 
-#include "dictionary.h"
 #include "value.h"
 
 namespace tempearly
