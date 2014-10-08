@@ -150,6 +150,14 @@ namespace tempearly
     void Interpreter::Mark()
     {
         CountedObject::Mark();
+        if (request && !request->IsMarked())
+        {
+            request->Mark();
+        }
+        if (response && !response->IsMarked())
+        {
+            response->Mark();
+        }
         if (globals && !globals->IsMarked())
         {
             globals->Mark();

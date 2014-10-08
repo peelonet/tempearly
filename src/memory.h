@@ -1,6 +1,8 @@
 #ifndef TEMPEARLY_MEMORY_H_GUARD
 #define TEMPEARLY_MEMORY_H_GUARD
 
+#include <new>
+
 #include "tempearly.h"
 
 namespace tempearly
@@ -65,7 +67,7 @@ namespace tempearly
          */
         inline unsigned int GetReferenceCount()
         {
-            return m_reference_counter;
+            return m_reference_count;
         }
 
         /**
@@ -73,7 +75,7 @@ namespace tempearly
          */
         inline void IncReferenceCount()
         {
-            ++m_reference_counter;
+            ++m_reference_count;
         }
 
         /**
@@ -81,17 +83,17 @@ namespace tempearly
          */
         inline void DecReferenceCount()
         {
-            --m_reference_counter;
+            --m_reference_count;
         }
 
-        void* operator new(std::size_t);
-        void operator delete(void*);
+        static void* operator new(std::size_t);
+        static void operator delete(void*);
 
     private:
         /** Contains various flags for this object. */
         unsigned int m_flags;
         /** Reference counter. */
-        unsigned int m_reference_counter;
+        unsigned int m_reference_count;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CountedObject);
     };
 
@@ -147,6 +149,27 @@ namespace tempearly
             {
                 m_pointer->DecReferenceCount();
             }
+        }
+
+        /**
+         * Replaces object with given object pointer.
+         */
+        template< class U >
+        Handle& operator=(U* pointer)
+        {
+            if (m_pointer != pointer)
+            {
+                if (m_pointer)
+                {
+                    m_pointer->DecReferenceCount();
+                }
+                if ((m_pointer = pointer))
+                {
+                    m_pointer->IncReferenceCount();
+                }
+            }
+
+            return *this;
         }
 
         /**
