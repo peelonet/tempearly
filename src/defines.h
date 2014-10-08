@@ -50,6 +50,7 @@ namespace tempearly
     class Class;
     class CoreObject;
     class ExceptionObject;
+    class Filename;
     class FunctionObject;
     class Interpreter;
     class IteratorObject;
