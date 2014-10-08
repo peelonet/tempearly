@@ -29,6 +29,12 @@ namespace tempearly
         Filename& operator=(const Filename& that);
 
         /**
+         * Returns extension from filename or empty string if filename does not
+         * have an extension.
+         */
+        String GetExtension() const;
+
+        /**
          * Returns true if given character is filename separator.
          */
         static bool IsSeparator(rune r);

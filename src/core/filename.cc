@@ -30,6 +30,22 @@ namespace tempearly
         return *this;
     }
 
+    String Filename::GetExtension() const
+    {
+        if (!m_path.empty())
+        {
+            const String& filename = m_path[m_path.size() - 1];
+            std::size_t index = filename.IndexOf('.');
+
+            if (index != String::npos && index > 0)
+            {
+                return filename.SubString(index + 1);
+            }
+        }
+
+        return String();
+    }
+
     bool Filename::IsSeparator(rune r)
     {
         return r == '/' || r == '\\';
