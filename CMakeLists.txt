@@ -41,7 +41,6 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 SET(
     INTERPRETER_SOURCES
-    src/class.cc
     src/coreobject.cc
     src/interpreter.cc
     src/memory.cc
@@ -55,6 +54,7 @@ SET(
     src/utils.cc
     src/value.cc
     src/api/bool.cc
+    src/api/class.cc
     src/api/exception.cc
     src/api/function.cc
     src/api/iterator.cc

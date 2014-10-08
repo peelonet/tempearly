@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_OBJECT_H_GUARD
 #define TEMPEARLY_OBJECT_H_GUARD
 
-#include "class.h"
+#include "api/class.h"
 
 namespace tempearly
 {

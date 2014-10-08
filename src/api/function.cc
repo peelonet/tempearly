@@ -57,4 +57,24 @@ namespace tempearly
     {
         return Value::NewObject(new CurryFunction(interpreter->cFunction, this, args));
     }
+
+    /**
+     * Function#__call__(args...)
+     *
+     * Invokes function with given arguments.
+     */
+    TEMPEARLY_NATIVE_METHOD(func_call)
+    {
+        return args[0].As<FunctionObject>()->Invoke(
+            interpreter,
+            std::vector<Value>(args.begin() + 1, args.end())
+        );
+    }
+
+    void init_function(Interpreter* i)
+    {
+        i->cFunction = i->AddClass("Function", i->cObject);
+
+        i->cFunction->AddMethod(i, "__call__", -1, func_call);
+    }
 }

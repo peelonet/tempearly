@@ -1,7 +1,6 @@
 #ifndef TEMPEARLY_INTERPRETER_H_GUARD
 #define TEMPEARLY_INTERPRETER_H_GUARD
 
-#include "class.h"
 #include "scope.h"
 #include "api/exception.h"
 #include "sapi/request.h"
