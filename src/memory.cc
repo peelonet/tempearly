@@ -6,6 +6,8 @@ namespace tempearly
         : m_flags(0)
         , m_reference_counter(0) {}
 
+    CountedObject::~CountedObject() {}
+
     void CountedObject::Mark()
     {
         SetFlag(FLAG_MARKED);
