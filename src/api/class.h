@@ -8,6 +8,9 @@ namespace tempearly
     class Class : public CoreObject
     {
     public:
+        typedef Value (*MethodCallback)(const Handle<Interpreter>&,
+                                        const std::vector<Value>&);
+
         explicit Class(const Handle<Class>& base);
 
         virtual ~Class();
@@ -39,8 +42,12 @@ namespace tempearly
         void AddMethod(const Handle<Interpreter>& interpreter,
                        const String& name,
                        int arity,
-                       Value(*callback)(const Handle<Interpreter>&,
-                                        const std::vector<Value>&));
+                       MethodCallback callback);
+
+        void AddStaticMethod(const Handle<Interpreter>& interpreter,
+                             const String& name,
+                             int arity,
+                             MethodCallback callback);
 
         void Mark();
 

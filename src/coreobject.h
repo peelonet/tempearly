@@ -51,6 +51,11 @@ namespace tempearly
             return false;
         }
 
+        virtual bool IsStaticMethod() const
+        {
+            return false;
+        }
+
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CoreObject);
     };

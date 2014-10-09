@@ -176,13 +176,107 @@ namespace tempearly
     void Class::AddMethod(const Handle<Interpreter>& interpreter,
                           const String& name,
                           int arity,
-                          Value (*callback)(const Handle<Interpreter>&,
-                                            const std::vector<Value>&))
+                          MethodCallback callback)
     {
-        Value method = Value::NewObject(new Method(interpreter->cFunction,
-                                                   this,
-                                                   arity,
-                                                   callback));
+        Value method = Value::NewObject(new Method(
+            interpreter->cFunction,
+            this,
+            arity,
+            callback
+        ));
+
+        if (!m_attributes)
+        {
+            m_attributes = new AttributeMap();
+        }
+        m_attributes->Insert(name, method);
+    }
+
+    namespace
+    {
+        class StaticMethod : public FunctionObject
+        {
+        public:
+            explicit StaticMethod(const Handle<Class>& cls,
+                                  const Handle<Class>& declaring_class,
+                                  int arity,
+                                  Callback callback)
+                : FunctionObject(cls)
+                , m_declaring_class(declaring_class.Get())
+                , m_arity(arity)
+                , m_callback(callback) {}
+
+            Value Invoke(const Handle<Interpreter>& interpreter,
+                         const std::vector<Value>& args)
+            {
+                Value result;
+
+                // Test that we have correct amount of arguments.
+                if (m_arity < 0)
+                {
+                    if (args.size() < static_cast<unsigned>(-(m_arity + 1)))
+                    {
+                        StringBuilder sb;
+
+                        sb << "Method expected at least "
+                           << (-(m_arity) - 1)
+                           << " arguments, got "
+                           << args.size();
+                        interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                        return Value();
+                    }
+                }
+                else if (args.size() != static_cast<unsigned>(m_arity))
+                {
+                    StringBuilder sb;
+
+                    sb << "Method expected "
+                       << m_arity
+                       << " arguments, got "
+                       << args.size();
+                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                    return Value();
+                }
+                result = m_callback(interpreter, args);
+
+                return result;
+            }
+
+            bool IsStaticMethod() const
+            {
+                return true;
+            }
+
+            void Mark()
+            {
+                FunctionObject::Mark();
+                if (!m_declaring_class->IsMarked())
+                {
+                    m_declaring_class->Mark();
+                }
+            }
+
+        private:
+            Class* m_declaring_class;
+            const int m_arity;
+            const Callback m_callback;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(StaticMethod);
+        };
+    }
+
+    void Class::AddStaticMethod(const Handle<Interpreter>& interpreter,
+                                const String& name,
+                                int arity,
+                                MethodCallback callback)
+    {
+        Value method = Value::NewObject(new StaticMethod(
+            interpreter->cFunction,
+            this,
+            arity,
+            callback
+        ));
 
         if (!m_attributes)
         {
