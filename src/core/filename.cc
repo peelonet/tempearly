@@ -30,6 +30,16 @@ namespace tempearly
         return *this;
     }
 
+    Filename& Filename::operator=(const String& source)
+    {
+        m_filename.Clear();
+        m_root.Clear();
+        m_path.clear();
+        parse(source, m_filename, m_root, m_path);
+
+        return *this;
+    }
+
     String Filename::GetExtension() const
     {
         if (!m_path.empty())
@@ -44,6 +54,22 @@ namespace tempearly
         }
 
         return String();
+    }
+
+    std::size_t Filename::GetSize() const
+    {
+        struct stat st;
+
+        if (m_filename.IsEmpty())
+        {
+            return 0;
+        }
+        if (::stat(m_filename.Encode().c_str(), &st) < 0)
+        {
+            return 0;
+        } else {
+            return st.st_size;
+        }
     }
 
     bool Filename::IsSeparator(rune r)

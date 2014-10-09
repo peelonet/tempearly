@@ -29,10 +29,22 @@ namespace tempearly
         Filename& operator=(const Filename& that);
 
         /**
+         * Assignment operator which replaces filename data with filename
+         * parsed from the given string.
+         */
+        Filename& operator=(const String& source);
+
+        /**
          * Returns extension from filename or empty string if filename does not
          * have an extension.
          */
         String GetExtension() const;
+
+        /**
+         * Returns size of the file in bytes, or 0 if the file does not exist
+         * or it's empty.
+         */
+        std::size_t GetSize() const;
 
         /**
          * Returns true if given character is filename separator.
