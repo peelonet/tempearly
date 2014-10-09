@@ -11,13 +11,13 @@ namespace tempearly
     class Random
     {
     public:
-        bool NextBool();
+        static bool NextBool();
 
-        double NextDouble();
+        static double NextDouble();
 
-        u64 NextU64();
+        static u64 NextU64();
 
-        i64 NextI64();
+        static i64 NextI64();
 
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Random);
