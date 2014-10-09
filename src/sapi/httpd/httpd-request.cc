@@ -7,12 +7,14 @@ namespace tempearly
 {
     HttpServerRequest::HttpServerRequest(const Handle<Socket>& socket,
                                          HttpMethod::Kind method,
+                                         const String& path,
                                          const String& query_string,
                                          const Dictionary<String>& headers,
                                          const byte* data,
                                          std::size_t data_size)
         : m_socket(socket.Get())
         , m_method(method)
+        , m_path(path)
         , m_headers(headers)
     {
         if (!query_string.IsEmpty())
@@ -30,6 +32,11 @@ namespace tempearly
     HttpMethod::Kind HttpServerRequest::GetMethod() const
     {
         return m_method;
+    }
+
+    String HttpServerRequest::GetPath() const
+    {
+        return m_path;
     }
 
     bool HttpServerRequest::HasParameter(const String& id) const

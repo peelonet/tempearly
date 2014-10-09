@@ -12,6 +12,8 @@ namespace tempearly
 
         HttpMethod::Kind GetMethod() const;
 
+        String GetPath() const;
+
         bool HasParameter(const String& id) const;
 
         bool GetParameter(const String& id, String& value) const;

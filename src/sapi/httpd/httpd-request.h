@@ -13,12 +13,15 @@ namespace tempearly
     public:
         explicit HttpServerRequest(const Handle<Socket>& socket,
                                    HttpMethod::Kind method,
+                                   const String& path,
                                    const String& query_string,
                                    const Dictionary<String>& headers,
                                    const byte* data,
                                    std::size_t data_size);
 
         HttpMethod::Kind GetMethod() const;
+
+        String GetPath() const;
 
         bool HasParameter(const String& id) const;
 
@@ -37,6 +40,7 @@ namespace tempearly
     private:
         Socket* m_socket;
         const HttpMethod::Kind m_method;
+        const String m_path;
         Dictionary<String> m_headers;
         Dictionary<std::vector<String> > m_parameters;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(HttpServerRequest);
