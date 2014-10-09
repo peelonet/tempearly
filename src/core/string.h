@@ -1,6 +1,10 @@
 #ifndef TEMPEARLY_CORE_STRING_H_GUARD
 #define TEMPEARLY_CORE_STRING_H_GUARD
 
+#if defined(_WIN32)
+# include <string> // For std::wstring
+#endif
+
 #include "memory.h"
 
 namespace tempearly
@@ -123,6 +127,19 @@ namespace tempearly
          * Returns UTF-8 encoded form of the string.
          */
         ByteString Encode() const;
+
+#if defined(_WIN32)
+        /**
+         * Returns UTF-16LE version of the string which is suitable to be used
+         * for Windows API calls.
+         */
+        std::wstring Widen() const;
+
+        /**
+         * Narrows UTF-16LE encoded wide char string into Unicode string.
+         */
+        static String Narrow(const wchar_t* input);
+#endif
 
         /**
          * Calculates hash code for the string. This is usually done only once,

@@ -2,6 +2,9 @@
 #define TEMPEARLY_CORE_FILENAME_H_GUARD
 
 #include "core/string.h"
+#if !defined(_WIN32)
+# include <sys/stat.h>
+#endif
 
 namespace tempearly
 {
@@ -103,10 +106,20 @@ namespace tempearly
             return Concat(string);
         }
 
+#if !defined(_WIN32)
+    private:
+        void Stat() const;
+#endif
+
     private:
         String m_filename;
         String m_root;
         std::vector<String> m_path;
+#if !defined(_WIN32)
+        mutable struct ::stat m_stat;
+        mutable bool m_stat_done;
+        mutable bool m_stat_succeeded;
+#endif
     };
 }
 

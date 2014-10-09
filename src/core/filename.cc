@@ -1,22 +1,38 @@
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include "core/bytestring.h"
 #include "core/filename.h"
 #include "core/stringbuilder.h"
+#if defined(_WIN32)
+# define UNICODE
+# include <windows.h>
+#endif
 
 namespace tempearly
 {
     static void parse(const String&, String&, String&, std::vector<String>&);
 
-    Filename::Filename() {}
+    Filename::Filename()
+#if !defined(_WIN32)
+        : m_stat_done(false)
+        , m_stat_succeeded(false)
+#endif
+        {}
 
     Filename::Filename(const Filename& that)
         : m_filename(that.m_filename)
         , m_root(that.m_root)
-        , m_path(that.m_path) {}
+        , m_path(that.m_path)
+#if !defined(_WIN32)
+        , m_stat(that.m_stat)
+        , m_stat_done(that.m_stat_done)
+        , m_stat_succeeded(that.m_stat_succeeded)
+#endif
+        {}
 
     Filename::Filename(const String& source)
+#if !defined(_WIN32)
+        : m_stat_done(false)
+        , m_stat_succeeded(false)
+#endif
     {
         parse(source, m_filename, m_root, m_path);
     }
@@ -26,6 +42,11 @@ namespace tempearly
         m_filename = that.m_filename;
         m_root = that.m_root;
         m_path = that.m_path;
+#if !defined(_WIN32)
+        m_stat = that.m_stat;
+        m_stat_done = that.m_stat_done;
+        m_stat_succeeded = that.m_stat_succeeded;
+#endif
 
         return *this;
     }
@@ -35,6 +56,10 @@ namespace tempearly
         m_filename.Clear();
         m_root.Clear();
         m_path.clear();
+#if !defined(_WIN32)
+        m_stat_done = false;
+        m_stat_succeeded = false;
+#endif
         parse(source, m_filename, m_root, m_path);
 
         return *this;
@@ -58,18 +83,17 @@ namespace tempearly
 
     std::size_t Filename::GetSize() const
     {
-        struct stat st;
-
         if (m_filename.IsEmpty())
         {
             return 0;
         }
-        if (::stat(m_filename.Encode().c_str(), &st) < 0)
-        {
-            return 0;
-        } else {
-            return st.st_size;
-        }
+#if defined(_WIN32)
+        return ::GetFileSize(m_filename.Widen().c_str(), 0);
+#else
+        Stat();
+
+        return m_stat_succeeded ? m_stat.st_size : 0;
+#endif
     }
 
     bool Filename::IsSeparator(rune r)
@@ -89,34 +113,32 @@ namespace tempearly
 
     bool Filename::IsFile() const
     {
-        struct stat st;
-
         if (IsEmpty())
         {
             return false;
         }
-        if (::stat(m_filename.Encode().c_str(), &st) < 0)
-        {
-            return false; // File does not exist
-        } else {
-            return S_ISREG(st.st_mode);
-        }
+#if defined(_WIN32)
+        return ::GetFileAttributesW(m_filename.Widen().c_str()) & FILE_ATTRIBUTE_NORMAL;
+#else
+        Stat();
+
+        return m_stat_succeeded && S_ISREG(m_stat.st_mode);
+#endif
     }
 
     bool Filename::IsDir() const
     {
-        struct stat st;
-
         if (IsEmpty())
         {
             return false;
         }
-        if (::stat(m_filename.Encode().c_str(), &st) < 0)
-        {
-            return false; // File does not exist
-        } else {
-            return S_ISDIR(st.st_mode);
-        }
+#if defined(_WIN32)
+        return ::GetFileAttributesW(m_filename.Widen().c_str()) & FILE_ATTRIBUTE_DIRECTORY;
+#else
+        Stat();
+
+        return m_stat_succeeded && S_ISDIR(m_stat.st_mode);
+#endif
     }
 
     bool Filename::Exists() const
@@ -124,9 +146,14 @@ namespace tempearly
         if (IsEmpty())
         {
             return false;
-        } else {
-            return !::access(m_filename.Encode().c_str(), F_OK);
         }
+#if defined(_WIN32)
+        return ::PathFileExists(m_filename.Widen().c_str());
+#else
+        Stat();
+
+        return m_stat_succeeded;
+#endif
     }
 
     FILE* Filename::Open(const char* mode) const
@@ -157,6 +184,18 @@ namespace tempearly
             return m_filename + "/" + string;
         }
     }
+
+#if !defined(_WIN32)
+    void Filename::Stat() const
+    {
+        if (m_stat_done)
+        {
+            return;
+        }
+        m_stat_succeeded = ::stat(m_filename.Encode().c_str(), &m_stat) >= 0;
+        m_stat_done = true;
+    }
+#endif
 
     static void append(const String& input, std::vector<String>& path)
     {

@@ -1,5 +1,3 @@
-#include <sys/stat.h>
-
 #include "utils.h"
 #include "core/bytestring.h"
 #include "core/filename.h"

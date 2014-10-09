@@ -1,8 +1,6 @@
 #include <cstring>
 #include <vector>
 
-#include <sys/stat.h>
-
 #include "interpreter.h"
 #include "core/filename.h"
 #include "core/bytestring.h"
