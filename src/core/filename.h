@@ -35,6 +35,12 @@ namespace tempearly
         String GetExtension() const;
 
         /**
+         * Returns size of the file in bytes, or 0 if the file does not exist
+         * or it's empty.
+         */
+        std::size_t GetSize() const;
+
+        /**
          * Returns true if given character is filename separator.
          */
         static bool IsSeparator(rune r);

@@ -46,6 +46,22 @@ namespace tempearly
         return String();
     }
 
+    std::size_t Filename::GetSize() const
+    {
+        struct stat st;
+
+        if (m_filename.IsEmpty())
+        {
+            return 0;
+        }
+        if (::stat(m_filename.Encode().c_str(), &st) < 0)
+        {
+            return 0;
+        } else {
+            return st.st_size;
+        }
+    }
+
     bool Filename::IsSeparator(rune r)
     {
         return r == '/' || r == '\\';
