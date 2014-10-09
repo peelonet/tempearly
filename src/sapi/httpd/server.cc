@@ -378,25 +378,6 @@ namespace tempearly
         }
     }
 
-    static void append(std::vector<String>& elements, const String& entry)
-    {
-        const std::size_t length = entry.GetLength();
-
-        if (length == 0 || (length == 1 && entry[0] == '.'))
-        {
-            return;
-        }
-        else if (length == 2 && entry[0] == '.' && entry[1] == '.')
-        {
-            if (!elements.empty())
-            {
-                elements.pop_back();
-            }
-        } else {
-            elements.push_back(entry);
-        }
-    }
-
     static String get_mime_type(const String& extension)
     {
         const Dictionary<String>::Entry* entry;

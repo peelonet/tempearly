@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "core/filename.h"
 #include "sapi/cgi/cgi-request.h"
 #include "sapi/cgi/cgi-response.h"
 
@@ -13,7 +14,7 @@ int main(int argc, char** argv)
         interpreter->request = new CgiRequest();
         interpreter->response = new CgiResponse();
         interpreter->Initialize();
-        if (!interpreter->Include(argv[1]))
+        if (!interpreter->Include(Filename(argv[1])))
         {
             interpreter->response->SendException(interpreter->GetException());
         }
