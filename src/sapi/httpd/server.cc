@@ -65,10 +65,10 @@ namespace tempearly
 
     static void serve(const Handle<Socket>& socket, const Filename& root_path)
     {
-        HttpRequestData data;
+        HttpRequestData request;
         byte buffer[HTTPD_MAX_REQUEST_SIZE];
         std::size_t buffer_size;
-        byte* data_begin;
+        byte* data;
         Filename path;
 
         if (!socket->Receive(buffer, HTTPD_MAX_REQUEST_SIZE, buffer_size))
@@ -77,7 +77,7 @@ namespace tempearly
             return;
         }
 
-        if (!(data_begin = parse_request(buffer, buffer_size, data)))
+        if (!(data = parse_request(buffer, buffer_size, request)))
         {
             send_error(socket,
                        "400 Bad Request",
@@ -86,17 +86,17 @@ namespace tempearly
         }
 
         std::fprintf(stdout, "%s %s\n",
-                     HttpMethod::ToString(data.method).Encode().c_str(),
-                     data.path.Encode().c_str());
+                     HttpMethod::ToString(request.method).Encode().c_str(),
+                     request.path.Encode().c_str());
 
-        path = root_path + data.path;
+        path = root_path + request.path;
 
         if (!path.Exists())
         {
             send_error(socket,
                        "404 Not Found",
                        "The requested URL "
-                       + data.path
+                       + request.path
                        + " was not found on this server.");
         }
         else if (path.IsDir())
@@ -105,17 +105,17 @@ namespace tempearly
 
             if (index.Exists() && !index.IsDir())
             {
-                send_script(socket, data, index, data_begin, buffer_size);
+                send_script(socket, request, index, data, buffer_size);
             }
             else if ((index = root_path + "index.html").Exists()
                     && !index.IsDir())
             {
-                send_file(socket, data, index, "text/html");
+                send_file(socket, request, index, "text/html");
             } else {
                 send_error(socket,
                            "403 Forbidden",
                            "You don't have permission to access "
-                           + data.path
+                           + request.path
                            + " on this server");
             }
         } else {
@@ -123,9 +123,9 @@ namespace tempearly
 
             if (extension == "tly")
             {
-                send_script(socket, data, path, data_begin, buffer_size);
+                send_script(socket, request, path, data, buffer_size);
             } else {
-                send_file(socket, data, path, get_mime_type(extension));
+                send_file(socket, request, path, get_mime_type(extension));
             }
         }
     }
@@ -190,19 +190,20 @@ namespace tempearly
     }
 
     static void send_script(const Handle<Socket>& socket,
-                            HttpRequestData& data,
+                            HttpRequestData& request_data,
                             const Filename& path,
-                            const byte* data_begin,
+                            const byte* data,
                             std::size_t data_size)
     {
         Handle<Interpreter> interpreter = new Interpreter();
 
         interpreter->request = new HttpServerRequest(
             socket,
-            data.method,
-            data.query_string,
-            data.headers,
-            data_begin,
+            request_data.method,
+            request_data.path,
+            request_data.query_string,
+            request_data.headers,
+            data,
             data_size
         );
         interpreter->response = new HttpServerResponse(socket);
@@ -214,7 +215,7 @@ namespace tempearly
         socket->Close();
     }
 
-    static bool parse_request_line(const String& line, HttpRequestData& data)
+    static bool parse_request_line(const String& line, HttpRequestData& request)
     {
         std::size_t index1;
         std::size_t index2;
@@ -224,34 +225,34 @@ namespace tempearly
             return false;
         }
 
-        if (!HttpMethod::Parse(line.SubString(0, index1++), data.method))
+        if (!HttpMethod::Parse(line.SubString(0, index1++), request.method))
         {
             return false;
         }
 
         if ((index2 = line.IndexOf(' ', index1)) == String::npos)
         {
-            data.path = line.SubString(index1);
-            data.version = HttpVersion::VERSION_09;
+            request.path = line.SubString(index1);
+            request.version = HttpVersion::VERSION_09;
         } else {
-            data.path = line.SubString(index1, index2 - index1);
-            if (!HttpVersion::Parse(line.SubString(index2 + 1), data.version))
+            request.path = line.SubString(index1, index2 - index1);
+            if (!HttpVersion::Parse(line.SubString(index2 + 1), request.version))
             {
                 return false;
             }
         }
 
         // Split query string from request path.
-        if ((index1 = data.path.IndexOf('?')))
+        if ((index1 = request.path.IndexOf('?')) != String::npos)
         {
-            data.query_string = data.path.SubString(index1 + 1);
-            data.path = data.path.SubString(0, index1);
+            request.query_string = request.path.SubString(index1 + 1);
+            request.path = request.path.SubString(0, index1);
         }
 
         return true;
     }
 
-    static bool parse_request_header(const String& line, HttpRequestData& data)
+    static bool parse_request_header(const String& line, HttpRequestData& request)
     {
         std::size_t index = line.IndexOf(':');
 
@@ -259,14 +260,14 @@ namespace tempearly
         {
             return false;
         }
-        data.headers.Insert(line.SubString(0, index), line.SubString(index + 2));
+        request.headers.Insert(line.SubString(0, index), line.SubString(index + 2));
 
         return true;
     }
 
     static byte* parse_request(byte* start,
                                std::size_t& remain,
-                               HttpRequestData& data)
+                               HttpRequestData& request)
     {
         byte* begin = start;
         byte* end = static_cast<byte*>(std::memchr(begin, '\n', remain));
@@ -285,7 +286,7 @@ namespace tempearly
         *end = '\0';
 
         // Process first line of request
-        if (!parse_request_line(reinterpret_cast<char*>(begin), data))
+        if (!parse_request_line(reinterpret_cast<char*>(begin), request))
         {
             return 0;
         }
@@ -311,7 +312,7 @@ namespace tempearly
             {
                 return start;
             }
-            else if (!parse_request_header(reinterpret_cast<char*>(begin), data))
+            else if (!parse_request_header(reinterpret_cast<char*>(begin), request))
             {
                 return 0;
             }
