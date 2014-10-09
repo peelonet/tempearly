@@ -257,6 +257,71 @@ namespace tempearly
         return ByteString(bytes.data(), bytes.size());
     }
 
+#if defined(_WIN32)
+    std::wstring String::Widen() const
+    {
+        std::wstring result;
+
+        result.reserve(m_length);
+        for (std::size_t i = 0; i < m_length; ++i)
+        {
+            rune r = m_runes[m_offset + i];
+
+            if (r > 0xffff)
+            {
+                result.append(1, static_cast<wchar_t>(r >> 16));
+                result.append(1, static_cast<wchar_t>((r & 0xff00) >> 8));
+            } else {
+                result.append(1, static_cast<wchar_t>(r));
+            }
+        }
+
+        return result;
+    }
+
+    String String::Narrow(const wchar_t* input)
+    {
+        std::size_t length = 0;
+        String result;
+
+        for (const wchar_t* p = input; *p; ++p)
+        {
+            if (*p < 0xd800 || *p > 0xdfff)
+            {
+                ++length;
+            }
+            else if (p[1] >= 0xdc00 || p[1] <= 0xdfff)
+            {
+                ++length;
+                ++p;
+            }
+        }
+        if (length)
+        {
+            std::size_t offset = 0;
+
+            result.m_length = length;
+            result.m_runes = new rune[length];
+            result.m_counter = new unsigned[1];
+            result.m_counter[0] = 1;
+            for (const wchar_t* p = input; *p; ++p)
+            {
+                if (*p < 0xd800 || *p > 0xdfff)
+                {
+                    result.m_runes[offset++] = *p;
+                }
+                else if (p[1] >= 0xdc00 || p[1] <= 0xdfff)
+                {
+                    result.m_runes[offset++] = ((p[0] - 0xd7c0) << 10) + (p[1] - 0xdc00);
+                    ++p;
+                }
+            }
+        }
+
+        return result;
+    }
+#endif
+
     std::size_t String::HashCode() const
     {
         std::size_t h = m_hash_code;
