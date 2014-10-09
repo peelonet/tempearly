@@ -235,14 +235,19 @@ namespace tempearly
 
             if (cls->GetAttribute(id, value))
             {
-                std::vector<Value> new_args(args);
-
-                new_args.insert(new_args.begin(), *this);
-                if (value.IsFunction())
+                if (value.IsStaticMethod())
                 {
-                    return value.As<FunctionObject>()->Invoke(interpreter, new_args);
+                    return value.As<FunctionObject>()->Invoke(interpreter, args);
                 } else {
-                    return value.Call(interpreter, "__call__", new_args);
+                    std::vector<Value> new_args(args);
+
+                    new_args.insert(new_args.begin(), *this);
+                    if (value.IsFunction())
+                    {
+                        return value.As<FunctionObject>()->Invoke(interpreter, new_args);
+                    } else {
+                        return value.Call(interpreter, "__call__", new_args);
+                    }
                 }
             }
             interpreter->Throw(interpreter->eAttributeError,
