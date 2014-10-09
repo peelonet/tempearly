@@ -70,6 +70,8 @@ SET(
     src/core/string.cc
     src/core/stringbuilder.cc
     src/http/cookie.cc
+    src/http/method.cc
+    src/http/version.cc
     src/sapi/request.cc
     src/sapi/response.cc
 )

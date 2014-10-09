@@ -9,7 +9,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_method)
     {
-        return Value::NewString(interpreter->request->GetMethod());
+        return Value::NewString(HttpMethod::ToString(interpreter->request->GetMethod()));
     }
 
     /**

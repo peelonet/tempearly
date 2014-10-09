@@ -35,6 +35,18 @@ namespace tempearly
 #endif
     }
 
+    HttpMethod::Kind CgiRequest::GetMethod() const
+    {
+        HttpMethod::Kind method;
+
+        if (HttpMethod::Parse(m_method, method))
+        {
+            return method;
+        } else {
+            return HttpMethod::GET;
+        }
+    }
+
     bool CgiRequest::HasParameter(const String& id) const
     {
         const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
