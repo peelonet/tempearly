@@ -1,8 +1,6 @@
 # Interpreter
 
-- Garbage collector
 - Builtin support for SQLite
-- Unicode strings
 - Interfaces/mixins for classes
 
 # API
@@ -18,5 +16,4 @@
 - Process multipart HTTP requests.
 - Parse request parameters (especially POSTed ones) only when requested in the
   script.
-- FastCGI
 - Apache 2.x
