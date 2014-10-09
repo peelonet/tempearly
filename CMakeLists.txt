@@ -27,6 +27,11 @@ IF (NOT ${TEMPEARLY_HAVE_CSTDINT})
     ENDIF()
 ENDIF()
 
+CHECK_INCLUDE_FILE_CXX(cfloat TEMPEARLY_HAVE_CFLOAT)
+IF (NOT ${TEMPEARLY_HAVE_CFLOAT})
+    CHECK_INCLUDE_FILE(float.h TEMPEARLY_HAVE_FLOAT_H)
+ENDIF()
+
 CHECK_INCLUDE_FILE_CXX(climits TEMPEARLY_HAVE_CLIMITS)
 IF (NOT ${TEMPEARLY_HAVE_CLIMITS})
     CHECK_INCLUDE_FILE(limits.h TEMPEARLY_HAVE_LIMITS_H)
@@ -67,6 +72,7 @@ SET(
     src/api/void.cc
     src/core/bytestring.cc
     src/core/filename.cc
+    src/core/random.cc
     src/core/string.cc
     src/core/stringbuilder.cc
     src/http/cookie.cc
