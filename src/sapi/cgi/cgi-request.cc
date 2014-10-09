@@ -47,6 +47,11 @@ namespace tempearly
         }
     }
 
+    String CgiRequest::GetPath() const
+    {
+        return m_path;
+    }
+
     bool CgiRequest::HasParameter(const String& id) const
     {
         const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);

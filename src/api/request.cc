@@ -13,6 +13,16 @@ namespace tempearly
     }
 
     /**
+     * Request#path() => String
+     *
+     * Returns the path which the client requested.
+     */
+    TEMPEARLY_NATIVE_METHOD(req_path)
+    {
+        return Value::NewString(interpreter->request->GetPath());
+    }
+
+    /**
      * Request#__getitem__(name) => String
      *
      * Returns request parameter with given name or null if no such parameter
@@ -43,6 +53,7 @@ namespace tempearly
         i->globals->SetVariable("request", Value::NewObject(instance));
 
         cRequest->AddMethod(i, "method", 0, req_method);
+        cRequest->AddMethod(i, "path", 0, req_path);
 
         cRequest->AddMethod(i, "__getitem__", 1, req_getitem);
     }

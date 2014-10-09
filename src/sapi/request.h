@@ -15,8 +15,17 @@ namespace tempearly
 
         /**
          * Returns request method (GET, POST, etc.).
+         *
+         * Same as the value of the CGI variable REQUEST_METHOD.
          */
         virtual HttpMethod::Kind GetMethod() const = 0;
+
+        /**
+         * Returns the requested path.
+         *
+         * Same as the value of the CGI variable REQUEST_URI.
+         */
+        virtual String GetPath() const = 0;
 
         virtual bool HasParameter(const String& id) const = 0;
 
