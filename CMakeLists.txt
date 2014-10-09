@@ -1,4 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
 PROJECT(tempearly C CXX)
 
 OPTION(
@@ -8,10 +9,18 @@ OPTION(
 )
 
 OPTION(
+    TEMPEARLY_ENABLE_FASTCGI_SAPI
+    "Enable FastCGI SAPI"
+    OFF
+)
+
+OPTION(
     TEMPEARLY_ENABLE_HTTPD_SAPI
     "Enable builtin HTTP server SAPI"
     OFF
 )
+
+SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFileCXX)
@@ -89,6 +98,21 @@ IF (TEMPEARLY_ENABLE_CGI_SAPI)
         src/sapi/cgi/cgi-response.cc
         src/sapi/cgi/main.cc
         ${INTERPRETER_SOURCES}
+    )
+ENDIF()
+
+IF (TEMPEARLY_ENABLE_FASTCGI_SAPI)
+    INCLUDE(FindFastCGI)
+    ADD_EXECUTABLE(
+        tempearly-fcgi
+        src/sapi/cgi/cgi-request.cc
+        src/sapi/cgi/cgi-response.cc
+        src/sapi/fastcgi/main.cc
+        ${INTERPRETER_SOURCES}
+    )
+    TARGET_LINK_LIBRARIES(
+        tempearly-fcgi
+        ${FASTCGI_LIBRARY}
     )
 ENDIF()
 
