@@ -2,16 +2,16 @@
 
 #include "utils.h"
 #include "core/bytestring.h"
+#include "core/filename.h"
 #include "sapi/httpd/socket.h"
 
 using namespace tempearly;
 
 namespace tempearly
 {
-    extern void httpd_loop(const Handle<Socket>&, const String&);
+    extern void httpd_loop(const Handle<Socket>&, const Filename&);
 }
 
-static bool parse_directory(const String&, String&);
 static bool parse_host_and_port(const String&, String&, int&);
 
 static const char* httpd_usage = "usage: %s [port] [directory]";
@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     Handle<Socket> socket;
     String host = "0.0.0.0";
     int port = 8000;
-    String path = ".";
+    Filename root(".");
 
     if (argc > 3)
     {
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     else if (argc > 2)
     {
         if (!parse_host_and_port(argv[1], host, port)
-            || !parse_directory(argv[2], path))
+            || !(root = argv[2]).IsDir())
         {
             std::fprintf(stderr, httpd_usage, argv[0]);
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     socket = new Socket();
     if (!socket->Create(port, SOCK_STREAM, host) || !socket->Listen(25))
     {
-        std::fprintf(stderr, "couldn't initialize server: %s",
+        std::fprintf(stderr, "couldn't initialize server: %s\n",
                      socket->GetErrorMessage().Encode().c_str());
 
         return EXIT_FAILURE;
@@ -61,23 +61,9 @@ int main(int argc, char** argv)
                  host.Encode().c_str(),
                  port);
 
-    tempearly::httpd_loop(socket, path);
+    tempearly::httpd_loop(socket, root);
 
     return EXIT_SUCCESS;
-}
-
-static bool parse_directory(const String& input, String& slot)
-{
-    struct stat st;
-
-    if (stat(input.Encode().c_str(), &st) >= 0 && S_ISDIR(st.st_mode))
-    {
-        slot = input;
-
-        return true;
-    }
-
-    return false;
 }
 
 static bool parse_host_and_port(const String& input, String& host, int& port)

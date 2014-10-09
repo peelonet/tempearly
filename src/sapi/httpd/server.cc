@@ -4,8 +4,8 @@
 #include <sys/stat.h>
 
 #include "interpreter.h"
+#include "core/filename.h"
 #include "core/bytestring.h"
-#include "core/stringbuilder.h"
 #include "sapi/httpd/httpd-request.h"
 #include "sapi/httpd/httpd-response.h"
 #include "sapi/httpd/socket.h"
@@ -74,21 +74,24 @@ namespace tempearly
 
     static byte* parse_request(byte*, std::size_t&, HttpRequestData&);
     static void send_error(const Handle<Socket>&, const char*, const String&);
-    static void send_file(const Handle<Socket>&, HttpRequestData&, const ByteString&, std::size_t, const String&);
-    static void send_script(const Handle<Socket>&, HttpRequestData&, const String&, const byte*, std::size_t);
-    static String normalize(const String&, const String&, String&);
+    static void send_file(const Handle<Socket>&,
+                          HttpRequestData&,
+                          const Filename&,
+                          const String&);
+    static void send_script(const Handle<Socket>&,
+                            HttpRequestData&,
+                            const Filename&,
+                            const byte*,
+                            std::size_t);
     static String get_mime_type(const String&);
 
-    static void serve(const Handle<Socket>& socket, const String& root_path)
+    static void serve(const Handle<Socket>& socket, const Filename& root_path)
     {
         HttpRequestData data;
         byte buffer[HTTPD_MAX_REQUEST_SIZE];
         std::size_t buffer_size;
         byte* data_begin;
-        struct stat st;
-        String path;
-        ByteString path_encoded;
-        String extension;
+        Filename path;
 
         if (!socket->Receive(buffer, HTTPD_MAX_REQUEST_SIZE, buffer_size))
         {
@@ -108,10 +111,9 @@ namespace tempearly
                      data.method.Encode().c_str(),
                      data.path.Encode().c_str());
 
-        path = normalize(root_path, data.path, extension);
-        path_encoded = path.Encode();
+        path = root_path + data.path;
 
-        if (::stat(path_encoded.c_str(), &st) < 0)
+        if (!path.Exists())
         {
             send_error(socket,
                        "404 Not Found",
@@ -119,33 +121,39 @@ namespace tempearly
                        + data.path
                        + " was not found on this server.");
         }
-        else if (S_ISDIR(st.st_mode))
+        else if (path.IsDir())
         {
-            // TODO: Look for index file.
-            send_error(socket,
-                       "403 Forbidden",
-                       "You don't have permission to access "
-                       + data.path
-                       + " on this server");
-        }
-        else if (extension == "tly")
-        {
-            send_script(socket,
-                        data,
-                        path,
-                        data_begin,
-                        buffer_size);
+            Filename index = root_path + "index.tly";
+
+            if (index.Exists() && !index.IsDir())
+            {
+                send_script(socket, data, index, data_begin, buffer_size);
+            }
+            else if ((index = root_path + "index.html").Exists()
+                    && !index.IsDir())
+            {
+                send_file(socket, data, index, "text/html");
+            } else {
+                send_error(socket,
+                           "403 Forbidden",
+                           "You don't have permission to access "
+                           + data.path
+                           + " on this server");
+            }
         } else {
-            send_file(socket,
-                      data,
-                      path_encoded,
-                      st.st_size,
-                      get_mime_type(extension));
+            const String extension = path.GetExtension();
+
+            if (extension == "tly")
+            {
+                send_script(socket, data, path, data_begin, buffer_size);
+            } else {
+                send_file(socket, data, path, get_mime_type(extension));
+            }
         }
     }
 
     void httpd_loop(const Handle<Socket>& server_socket,
-                    const String& root_path)
+                    const Filename& root_path)
     {
         for (;;)
         {
@@ -172,41 +180,40 @@ namespace tempearly
     }
 
     static void send_file(const Handle<Socket>& socket,
-                          HttpRequestData& data,
-                          const ByteString& path,
-                          std::size_t size,
+                          HttpRequestData& request,
+                          const Filename& path,
                           const String& mime_type)
     {
-        FILE* fp = std::fopen(path.c_str(), "rb");
-        char buffer[4096];
-        std::size_t read;
-
-        if (!fp)
+        FILE* handle = path.Open("rb");
+        
+        if (handle)
         {
+            char buffer[4096];
+            std::size_t read;
+
+            socket->Printf("HTTP/1.0 200 OK\r\n");
+            socket->Printf("Content-Type: %s\r\n", mime_type.Encode().c_str());
+            socket->Printf("Content-Length: %ld\r\n\r\n", path.GetSize());
+            while ((read = std::fread(buffer, 1, sizeof(buffer), handle)) > 0)
+            {
+                if (!socket->Send(buffer, read))
+                {
+                    break;
+                }
+            }
+            socket->Close();
+        } else {
             send_error(socket,
                        "403 Forbidden",
                        "You don't have permission to access "
-                       + data.path
+                       + request.path
                        + " on this server");
-            return;
         }
-        socket->Printf("HTTP/1.0 200 OK\r\n");
-        socket->Printf("Content-Type: %s\r\n", mime_type.Encode().c_str());
-        socket->Printf("Content-Length: %ld\r\n\r\n", size);
-        while ((read = std::fread(buffer, 1, sizeof(buffer), fp)) > 0)
-        {
-            if (!socket->Send(buffer, read))
-            {
-                break;
-            }
-        }
-        std::fclose(fp);
-        socket->Close();
     }
 
     static void send_script(const Handle<Socket>& socket,
                             HttpRequestData& data,
-                            const String& path,
+                            const Filename& path,
                             const byte* data_begin,
                             std::size_t data_size)
     {
@@ -388,64 +395,6 @@ namespace tempearly
         } else {
             elements.push_back(entry);
         }
-    }
-
-    static String normalize(const String& root,
-                            const String& path,
-                            String& extension)
-    {
-        std::vector<String> elements;
-        std::size_t begin = 0;
-        std::size_t end = 0;
-        StringBuilder result;
-
-        elements.push_back(root);
-        for (std::size_t i = 0; i < path.GetLength(); ++i)
-        {
-            if (path[i] == '/' || path[i] == '\\')
-            {
-                if (begin - end > 0)
-                {
-                    append(elements, path.SubString(begin, end - begin));
-                }
-                begin = end = i + 1;
-            } else {
-                ++end;
-            }
-        }
-        if (begin - end > 0)
-        {
-            append(elements, path.SubString(begin, end - begin));
-        }
-
-        // Extract extension from last component of the path.
-        if (!elements.empty())
-        {
-            const String& filename = elements[elements.size() - 1];
-            std::size_t index = filename.IndexOf('.');
-
-            if (index != String::npos && index > 0)
-            {
-                extension = filename.SubString(index + 1);
-            }
-        }
-
-        // Build the path again.
-        result.Reserve(path.GetLength());
-        for (std::size_t i = 0; i < elements.size(); ++i)
-        {
-            if (!result.IsEmpty())
-            {
-#if defined(_WIN32)
-                result << '\\';
-#else
-                result << '/';
-#endif
-            }
-            result << elements[i];
-        }
-
-        return result.ToString();
     }
 
     static String get_mime_type(const String& extension)

@@ -30,6 +30,16 @@ namespace tempearly
         return *this;
     }
 
+    Filename& Filename::operator=(const String& source)
+    {
+        m_filename.Clear();
+        m_root.Clear();
+        m_path.clear();
+        parse(source, m_filename, m_root, m_path);
+
+        return *this;
+    }
+
     String Filename::GetExtension() const
     {
         if (!m_path.empty())

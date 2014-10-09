@@ -29,6 +29,12 @@ namespace tempearly
         Filename& operator=(const Filename& that);
 
         /**
+         * Assignment operator which replaces filename data with filename
+         * parsed from the given string.
+         */
+        Filename& operator=(const String& source);
+
+        /**
          * Returns extension from filename or empty string if filename does not
          * have an extension.
          */
