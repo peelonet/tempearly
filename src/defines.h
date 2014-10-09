@@ -49,6 +49,8 @@ namespace tempearly
     class ByteString;
     class Class;
     class CoreObject;
+    class Date;
+    class DateTime;
     class ExceptionObject;
     class Filename;
     class FunctionObject;
@@ -66,6 +68,7 @@ namespace tempearly
     class Script;
     class String;
     class StringBuilder;
+    class Time;
     class Token;
     class Value;
 }

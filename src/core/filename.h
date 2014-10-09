@@ -50,6 +50,11 @@ namespace tempearly
         std::size_t GetSize() const;
 
         /**
+         * Returns the date and time when the file was last modified.
+         */
+        DateTime GetLastModified() const;
+
+        /**
          * Returns true if given character is filename separator.
          */
         static bool IsSeparator(rune r);
