@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "api/iterator.h"
 #include "core/bytestring.h"
+#include "core/filename.h"
 
 namespace tempearly
 {
@@ -46,13 +47,13 @@ namespace tempearly
         init_response(this);
     }
 
-    bool Interpreter::Include(const String& filename)
+    bool Interpreter::Include(const Filename& filename)
     {
-        FILE* stream = std::fopen(filename.Encode().c_str(), "rb");
+        FILE* handle = filename.Open("rb");
 
-        if (stream)
+        if (handle)
         {
-            Handle<Parser> parser = new Parser(stream);
+            Handle<Parser> parser = new Parser(handle);
             Handle<Script> script = parser->Compile(this);
 
             parser->Close();

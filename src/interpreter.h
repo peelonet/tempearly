@@ -15,7 +15,7 @@ namespace tempearly
 
         void Initialize();
 
-        bool Include(const String& filename);
+        bool Include(const Filename& filename);
 
         Handle<Class> AddClass(const String& name,
                                const Handle<Class>& base);
