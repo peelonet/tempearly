@@ -2,6 +2,7 @@
 #define TEMPERALY_SAPI_REQUEST_H_GUARD
 
 #include "memory.h"
+#include "http/method.h"
 
 namespace tempearly
 {
@@ -15,7 +16,7 @@ namespace tempearly
         /**
          * Returns request method (GET, POST, etc.).
          */
-        virtual String GetMethod() const = 0;
+        virtual HttpMethod::Kind GetMethod() const = 0;
 
         virtual bool HasParameter(const String& id) const = 0;
 

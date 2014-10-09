@@ -6,6 +6,8 @@
 #include "interpreter.h"
 #include "core/filename.h"
 #include "core/bytestring.h"
+#include "http/method.h"
+#include "http/version.h"
 #include "sapi/httpd/httpd-request.h"
 #include "sapi/httpd/httpd-response.h"
 #include "sapi/httpd/socket.h"
@@ -16,32 +18,12 @@
 
 namespace tempearly
 {
-    enum HttpMethod
-    {
-        HTTP_METHOD_GET,
-        HTTP_METHOD_HEAD,
-        HTTP_METHOD_POST,
-        HTTP_METHOD_PUT,
-        HTTP_METHOD_DELETE,
-        HTTP_METHOD_TRACE,
-        HTTP_METHOD_OPTIONS,
-        HTTP_METHOD_CONNECT,
-        HTTP_METHOD_PATCH
-    };
-
-    enum HttpVersion
-    {
-        HTTP_VERSION_09,
-        HTTP_VERSION_10,
-        HTTP_VERSION_11
-    };
-
     struct HttpRequestData
     {
-        String method;
+        HttpMethod::Kind method;
         String path;
         String query_string;
-        HttpVersion version;
+        HttpVersion::Kind version;
         Dictionary<String> headers;
     };
 
@@ -68,8 +50,6 @@ namespace tempearly
         { 0, 0 }
     };
 
-    static Dictionary<HttpMethod> http_method_map;
-    static Dictionary<HttpVersion> http_version_map;
     static Dictionary<String> mime_type_map;
 
     static byte* parse_request(byte*, std::size_t&, HttpRequestData&);
@@ -108,7 +88,7 @@ namespace tempearly
         }
 
         std::fprintf(stdout, "%s %s\n",
-                     data.method.Encode().c_str(),
+                     HttpMethod::ToString(data.method).Encode().c_str(),
                      data.path.Encode().c_str());
 
         path = root_path + data.path;
@@ -236,44 +216,6 @@ namespace tempearly
         socket->Close();
     }
 
-    static bool is_valid_http_method(const String& string)
-    {
-        if (http_method_map.IsEmpty())
-        {
-            http_method_map.Insert("GET", HTTP_METHOD_GET);
-            http_method_map.Insert("HEAD", HTTP_METHOD_HEAD);
-            http_method_map.Insert("POST", HTTP_METHOD_POST);
-            http_method_map.Insert("PUT", HTTP_METHOD_PUT);
-            http_method_map.Insert("DELETE", HTTP_METHOD_DELETE);
-            http_method_map.Insert("TRACE", HTTP_METHOD_TRACE);
-            http_method_map.Insert("OPTIONS", HTTP_METHOD_OPTIONS);
-            http_method_map.Insert("CONNECT", HTTP_METHOD_CONNECT);
-            http_method_map.Insert("PATCH", HTTP_METHOD_PATCH);
-        }
-
-        return http_method_map.Find(string);
-    }
-
-    static bool parse_http_version(const String& string, HttpVersion& version)
-    {
-        const Dictionary<HttpVersion>::Entry* entry;
-
-        if (http_version_map.IsEmpty())
-        {
-            http_version_map.Insert("HTTP/0.9", HTTP_VERSION_09);
-            http_version_map.Insert("HTTP/1.0", HTTP_VERSION_10);
-            http_version_map.Insert("HTTP/1.1", HTTP_VERSION_11);
-        }
-        if ((entry = http_version_map.Find(string)))
-        {
-            version = entry->value;
-
-            return true;
-        }
-
-        return false;
-    }
-
     static bool parse_request_line(const String& line, HttpRequestData& data)
     {
         std::size_t index1;
@@ -284,7 +226,7 @@ namespace tempearly
             return false;
         }
 
-        if (!is_valid_http_method(data.method = line.SubString(0, index1++)))
+        if (!HttpMethod::Parse(line.SubString(0, index1++), data.method))
         {
             return false;
         }
@@ -292,10 +234,10 @@ namespace tempearly
         if ((index2 = line.IndexOf(' ', index1)) == String::npos)
         {
             data.path = line.SubString(index1);
-            data.version = HTTP_VERSION_09;
+            data.version = HttpVersion::VERSION_09;
         } else {
             data.path = line.SubString(index1, index2 - index1);
-            if (!parse_http_version(line.SubString(index2 + 1), data.version))
+            if (!HttpVersion::Parse(line.SubString(index2 + 1), data.version))
             {
                 return false;
             }

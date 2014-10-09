@@ -6,7 +6,7 @@
 namespace tempearly
 {
     HttpServerRequest::HttpServerRequest(const Handle<Socket>& socket,
-                                         const String& method,
+                                         HttpMethod::Kind method,
                                          const String& query_string,
                                          const Dictionary<String>& headers,
                                          const byte* data,
@@ -19,7 +19,7 @@ namespace tempearly
         {
             Utils::ParseQueryString(query_string, m_parameters);
         }
-        if (m_method == "POST"
+        if (m_method == HttpMethod::POST
             && GetContentType() == "application/x-www-form-urlencoded"
             && GetContentLength() > 0)
         {
@@ -27,7 +27,7 @@ namespace tempearly
         }
     }
 
-    String HttpServerRequest::GetMethod() const
+    HttpMethod::Kind HttpServerRequest::GetMethod() const
     {
         return m_method;
     }

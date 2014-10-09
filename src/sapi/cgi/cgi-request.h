@@ -10,10 +10,7 @@ namespace tempearly
     public:
         explicit CgiRequest();
 
-        String GetMethod() const
-        {
-            return m_method;
-        }
+        HttpMethod::Kind GetMethod() const;
 
         bool HasParameter(const String& id) const;
 
