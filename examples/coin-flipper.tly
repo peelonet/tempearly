@@ -1,0 +1,45 @@
+<%
+if request.is_ajax():
+    response["Content-Type"] = "application/json";
+    if Bool.rand():
+        image = "http://www.eurocoins.co.uk/images/2002eurozone2eurorev240.jpg";
+    else:
+        image = "http://www.eurocoins.co.uk/images/2002finland2euroobv240.jpg";
+    end if
+    response.write('{"image": "' + image + '"}');
+else:
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coin flipper example</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Coin flipper example</h1>
+        <div>
+            <button class="btn btn-lg btn-primary">Flip coin</button>
+        </div>
+        <img width="240" height="240">
+    </div>
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script>
+        $("button").on("click", function()
+        {
+            $("img").fadeOut(function()
+            {
+                $.ajax({
+                    url: "${request.path()}",
+                    success: function(data)
+                    {
+                        $("img").attr("src", data.image).fadeIn();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+<% end if %>
