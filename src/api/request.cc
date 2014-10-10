@@ -23,6 +23,18 @@ namespace tempearly
     }
 
     /**
+     * Request#is_ajax() => Bool
+     *
+     * Returns true if the request was made with XMLHttpRequest or not. Notice
+     * that this might not be reliable as some CGI environments might not
+     * support this method.
+     */
+    TEMPEARLY_NATIVE_METHOD(req_is_ajax)
+    {
+        return Value::NewBool(interpreter->request->IsAjax());
+    }
+
+    /**
      * Request#__getitem__(name) => String
      *
      * Returns request parameter with given name or null if no such parameter
@@ -54,6 +66,7 @@ namespace tempearly
 
         cRequest->AddMethod(i, "method", 0, req_method);
         cRequest->AddMethod(i, "path", 0, req_path);
+        cRequest->AddMethod(i, "is_ajax", 0, req_is_ajax);
 
         cRequest->AddMethod(i, "__getitem__", 1, req_getitem);
     }

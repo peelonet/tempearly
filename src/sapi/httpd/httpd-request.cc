@@ -39,6 +39,18 @@ namespace tempearly
         return m_path;
     }
 
+    bool HttpServerRequest::IsAjax() const
+    {
+        String value;
+
+        if (GetHeader("X-Requested-With", value))
+        {
+            return value.EqualsIgnoreCase("xmlhttprequest");
+        } else {
+            return false;
+        }
+    }
+
     bool HttpServerRequest::HasParameter(const String& id) const
     {
         const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);

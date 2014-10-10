@@ -27,6 +27,12 @@ namespace tempearly
          */
         virtual String GetPath() const = 0;
 
+        /**
+         * Attempts to find out whether the request was made with
+         * XMLHttpRequest or not.
+         */
+        virtual bool IsAjax() const = 0;
+
         virtual bool HasParameter(const String& id) const = 0;
 
         virtual bool GetParameter(const String& id, String& value) const = 0;
