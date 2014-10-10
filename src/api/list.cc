@@ -157,6 +157,12 @@ namespace tempearly
         }
     }
 
+    static Handle<Object> list_alloc(const Handle<Interpreter>& interpreter,
+                                     const Handle<Class>& cls)
+    {
+        return new ListObject(cls);
+    }
+
     /**
      * List#__init__(object...)
      *
@@ -296,6 +302,8 @@ namespace tempearly
     void init_list(Interpreter* i)
     {
         i->cList = i->AddClass("List", i->cObject);
+
+        i->cList->SetAllocator(list_alloc);
 
         i->cList->AddMethod(i, "__init__", -1, list_init);
 
