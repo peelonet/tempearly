@@ -1,4 +1,5 @@
 #include "core/bytestring.h"
+#include "core/datetime.h"
 #include "core/filename.h"
 #include "core/stringbuilder.h"
 #if defined(_WIN32)
@@ -94,6 +95,38 @@ namespace tempearly
 
         return m_stat_succeeded ? m_stat.st_size : 0;
 #endif
+    }
+
+    DateTime Filename::GetLastModified() const
+    {
+#if defined(_WIN32)
+        WIN32_FILE_ATTRIBUTE_DATA data = {0};
+
+        if (::GetFileAttributesExW(m_filename.Widen().c_str(), GetFileExInfoStandard, &data))
+        {
+            SYSTEMTIME st;
+
+            ::FileTimeToSystemTime(&data.ftLastWriteTime, &st);
+
+            return DateTime(
+                st.wYear,
+                static_cast<Date::Month>(st.wMonth),
+                st.wDay,
+                st.wHour,
+                st.wMinute,
+                st.wSecond
+            );
+        }
+#else
+        Stat();
+
+        if (m_stat_succeeded)
+        {
+            return DateTime(m_stat.st_mtime);
+        }
+#endif
+
+        return DateTime();
     }
 
     bool Filename::IsSeparator(rune r)
