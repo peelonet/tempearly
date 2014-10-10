@@ -1248,7 +1248,22 @@ SCAN_EXPONENT:
                 node = new ContinueNode();
                 break;
 
-            //TODO:case Token::KW_RETURN:
+            case Token::KW_RETURN:
+            {
+                Handle<Node> value;
+
+                parser->SkipToken();
+                if (!parser->PeekToken(Token::SEMICOLON))
+                {
+                    if (!(value = parse_expr(interpreter, parser)))
+                    {
+                        return Handle<Node>();
+                    }
+                }
+                node = new ReturnNode(value);
+                break;
+            }
+
             //TODO:case Token::KW_THROW:
 
             default:
