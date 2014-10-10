@@ -9,7 +9,7 @@
 
 namespace tempearly
 {
-    static void cgi_getenv_str(const char*, String&);
+    static bool cgi_getenv_str(const char*, String&);
 
     template< typename T >
     static void cgi_getenv_int(const char*, T&);
@@ -50,6 +50,18 @@ namespace tempearly
     String CgiRequest::GetPath() const
     {
         return m_path;
+    }
+
+    bool CgiRequest::IsAjax() const
+    {
+        String value;
+
+        if (cgi_getenv_str("HTTP_X_REQUESTED_WITH", value))
+        {
+            return value.EqualsIgnoreCase("xmlhttprequest");
+        } else {
+            return false;
+        }
     }
 
     bool CgiRequest::HasParameter(const String& id) const
@@ -134,14 +146,18 @@ namespace tempearly
         }
     }
 
-    static void cgi_getenv_str(const char* name, String& slot)
+    static bool cgi_getenv_str(const char* name, String& slot)
     {
         char* value = std::getenv(name);
 
         if (value && *value)
         {
             slot = value;
+
+            return true;
         }
+
+        return false;
     }
 
     template< typename T >

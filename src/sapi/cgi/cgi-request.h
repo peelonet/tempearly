@@ -14,6 +14,8 @@ namespace tempearly
 
         String GetPath() const;
 
+        bool IsAjax() const;
+
         bool HasParameter(const String& id) const;
 
         bool GetParameter(const String& id, String& value) const;
