@@ -282,6 +282,23 @@ namespace tempearly
         return true;
     }
 
+    bool Value::GetHash(const Handle<Interpreter>& interpreter, i64& slot) const
+    {
+        Value result = Call(interpreter, "__hash__");
+
+        if (result.m_kind == KIND_INT)
+        {
+            slot = result.m_data.i;
+
+            return true;
+        }
+        interpreter->Throw(interpreter->eTypeError,
+                           "Cannot generate hash code for "
+                           + GetClass(interpreter)->GetName());
+
+        return false;
+    }
+
     void Value::Clear()
     {
         if (m_kind == KIND_STRING)

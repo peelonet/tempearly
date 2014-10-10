@@ -142,6 +142,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsList();
         }
 
+        inline bool IsSet() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsSet();
+        }
+
         inline bool IsStaticMethod() const
         {
             return m_kind == KIND_OBJECT && m_data.o->IsStaticMethod();
@@ -176,6 +181,19 @@ namespace tempearly
          *                    no value to retrieve, or if an exception was thrown
          */
         bool GetNext(const Handle<Interpreter>& interpreter, Value& slot) const;
+
+        /**
+         * Attempts to generate hash code for the value. This is done by
+         * invoking method "__hash__" and converting it's result into
+         * integer.
+         *
+         * \param interpreter Script interpreter
+         * \param slot        Where the resulting hash code is assigned to
+         * \return            A boolean flag indicating whether the operation
+         *                    was successfull or whether an exception was
+         *                    thrown
+         */
+        bool GetHash(const Handle<Interpreter>& interpreter, i64& slot) const;
 
         /**
          * Resets value to error state.
