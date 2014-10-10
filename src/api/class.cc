@@ -6,6 +6,7 @@ namespace tempearly
 {
     Class::Class(const Handle<Class>& base)
         : m_base(base.Get())
+        , m_allocator(m_base ? m_base->m_allocator : 0)
         , m_attributes(0) {}
 
     Class::~Class()
@@ -301,8 +302,89 @@ namespace tempearly
         }
     }
 
+    /**
+     * Class#alloc() => Object
+     *
+     * Allocates new instance of the class. Returned object must be instance of
+     * the class.
+     *
+     * Throws: TypeError - If new instance cannot be allocated for some reason.
+     */
+    TEMPEARLY_NATIVE_METHOD(class_alloc)
+    {
+        Handle<Class> cls = args[0].As<Class>();
+        Class::Allocator allocator = cls->GetAllocator();
+        Handle<Object> instance;
+
+        if (allocator)
+        {
+            if (!(instance = allocator(interpreter, cls)))
+            {
+                interpreter->Throw(interpreter->eTypeError,
+                                   "Cannot allocate instance of "
+                                   + cls->GetName());
+
+                return Value();
+            }
+        } else {
+            instance = new Object(cls);
+        }
+
+        return Value::NewObject(instance);
+    }
+
+    /**
+     * Class#__call__(arguments...) => Object
+     *
+     * Allocates new instance of the class and initializes it with the given
+     * arguments.
+     *
+     * Throws: TypeError - If new instance cannot be allocated for some reason.
+     */
+    TEMPEARLY_NATIVE_METHOD(class_call)
+    {
+        Value instance = args[0].Call(interpreter, "alloc");
+
+        if (instance)
+        {
+            std::vector<Value> new_args(args.begin() + 1, args.end());
+
+            if (instance.Call(interpreter, "__init__", new_args))
+            {
+                return instance;
+            }
+        }
+
+        return Value();
+    }
+
+    /**
+     * Class#__str__() => String
+     *
+     * Returns textual description of the class which is usually name of the
+     * class.
+     */
+    TEMPEARLY_NATIVE_METHOD(class_str)
+    {
+        Value name;
+
+        if (args[0].As<Class>()->GetAttribute("__name__", name) && name.IsString())
+        {
+            return name;
+        } else {
+            return Value::NewString("<anonymous type>");
+        }
+    }
+
     void init_class(Interpreter* i)
     {
         i->cClass = i->AddClass("Class", i->cObject);
+
+        i->cClass->AddMethod(i, "alloc", 0, class_alloc);
+
+        i->cClass->AddMethod(i, "__call__", -1, class_call);
+
+        // Conversion methods
+        i->cClass->AddMethod(i, "__str__", 0, class_str);
     }
 }
