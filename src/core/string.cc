@@ -379,6 +379,42 @@ namespace tempearly
         return result;
     }
 
+    String String::Trim() const
+    {
+        std::size_t i, j;
+
+        for (i = 0; i < m_length; ++i)
+        {
+            if (!std::isspace(m_runes[m_offset + i]))
+            {
+                break;
+            }
+        }
+        for (j = m_length; j != 0; --j)
+        {
+            if (!std::isspace(m_runes[m_offset + j - 1]))
+            {
+                break;
+            }
+        }
+        if (i == 0 && j == m_length)
+        {
+            return *this;
+        } else {
+            String result;
+
+            result.m_offset = m_offset + i;
+            result.m_length = j - i;
+            result.m_runes = m_runes;
+            if ((result.m_counter = m_counter))
+            {
+                ++m_counter[0];
+            }
+
+            return result;
+        }
+    }
+
     bool String::Equals(const String& that) const
     {
         if (m_runes == that.m_runes)

@@ -159,6 +159,11 @@ namespace tempearly
         String SubString(std::size_t pos = 0, std::size_t count = npos) const;
 
         /**
+         * Strips whitespace from beginning and end of the string.
+         */
+        String Trim() const;
+
+        /**
          * Tests whether contents of two strings are equal.
          *
          * \param that Other string to compare with
