@@ -5,6 +5,10 @@
 
 namespace tempearly
 {
+    /**
+     * Immutable string like container for binary data. Ensured to be always
+     * null terminated to ensure it's with C functions and structs.
+     */
     class ByteString
     {
     public:
@@ -15,6 +19,8 @@ namespace tempearly
 
         /**
          * Constructs copy of existing byte string.
+         *
+         * \param that Existing byte string to construct copy of
          */
         ByteString(const ByteString& that);
 
@@ -43,7 +49,15 @@ namespace tempearly
          *
          * \param that Other binary string to copy content from
          */
-        ByteString& operator=(const ByteString& that);
+        ByteString& Assign(const ByteString& that);
+
+        /**
+         * Assignment operator.
+         */
+        inline ByteString& operator=(const ByteString& that)
+        {
+            return Assign(that);
+        }
 
         /**
          * Returns true if the binary string is empty.
@@ -101,9 +115,87 @@ namespace tempearly
             return m_bytes;
         }
 
+        /**
+         * Returns C like string pointer to the byte data.
+         */
         inline const char* c_str() const
         {
             return reinterpret_cast<const char*>(m_bytes);
+        }
+
+        /**
+         * Tests whether contents of two byte strings are equal.
+         *
+         * \param that Other byte string to compare with
+         */
+        bool Equals(const ByteString& that) const;
+
+        /**
+         * Equality operator.
+         */
+        inline bool operator==(const ByteString& that) const
+        {
+            return Equals(that);
+        }
+
+        /**
+         * Non-equality operator.
+         */
+        inline bool operator!=(const ByteString& that) const
+        {
+            return !Equals(that);
+        }
+
+        /**
+         * Compares contents of two byte strings lexicographically.
+         *
+         * \param that Other byte string to compare with
+         */
+        int Compare(const ByteString& that) const;
+
+        /**
+         * Comparison operator.
+         */
+        inline bool operator<(const ByteString& that) const
+        {
+            return Compare(that) < 0;
+        }
+
+        /**
+         * Comparison operator.
+         */
+        inline bool operator>(const ByteString& that) const
+        {
+            return Compare(that) > 0;
+        }
+
+        /**
+         * Comparison operator.
+         */
+        inline bool operator<=(const ByteString& that) const
+        {
+            return Compare(that) <= 0;
+        }
+
+        /**
+         * Comparison operator.
+         */
+        inline bool operator>=(const ByteString& that) const
+        {
+            return Compare(that) >= 0;
+        }
+
+        /**
+         * Concatenates contents of two byte strings.
+         */
+        ByteString Concat(const ByteString& that) const;
+
+        /**
+         * Concatenation operator.
+         */
+        inline ByteString operator+(const ByteString& that) const
+        {
+            return Concat(that);
         }
 
     private:
