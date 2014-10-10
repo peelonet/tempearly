@@ -323,6 +323,35 @@ namespace tempearly
         return Result(Result::KIND_CONTINUE);
     }
 
+    ReturnNode::ReturnNode(const Handle<Node>& value)
+        : m_value(value.Get()) {}
+
+    Result ReturnNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        if (m_value)
+        {
+            Value value = m_value->Evaluate(interpreter);
+
+            if (value)
+            {
+                return Result(Result::KIND_RETURN, value);
+            } else {
+                return Result(Result::KIND_ERROR);
+            }
+        }
+
+        return Result(Result::KIND_RETURN);
+    }
+
+    void ReturnNode::Mark()
+    {
+        Node::Mark();
+        if (m_value && !m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
+    }
+
     ValueNode::ValueNode(const Value& value)
         : m_value(value) {}
 

@@ -202,6 +202,20 @@ namespace tempearly
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ContinueNode);
     };
 
+    class ReturnNode : public Node
+    {
+    public:
+        explicit ReturnNode(const Handle<Node>& value = Handle<Node>());
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_value;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ReturnNode);
+    };
+
     class ValueNode : public Node
     {
     public:

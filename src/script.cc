@@ -29,9 +29,7 @@ namespace tempearly
                     break;
 
                 case Result::KIND_RETURN:
-                    interpreter->Throw(interpreter->eSyntaxError,
-                                       "Unexpected `return'");
-                    break;
+                    return true;
 
                 default:
                     break;
