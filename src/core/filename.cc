@@ -11,6 +11,12 @@ namespace tempearly
 {
     static void parse(const String&, String&, String&, std::vector<String>&);
 
+#if defined(_WIN32)
+    const rune Filename::kSeparator = '\\';
+#else
+    const rune Filename::kSeparator = '/';
+#endif
+
     Filename::Filename()
 #if !defined(_WIN32)
         : m_stat_done(false)
@@ -271,11 +277,7 @@ namespace tempearly
         {
             if (i > 0 && !Filename::IsSeparator(sb.GetBack()))
             {
-#if defined(_WIN32)
-                sb << '\\';
-#else
-                sb << '/';
-#endif
+                sb << Filename::kSeparator;
             }
             sb << path[i];
         }

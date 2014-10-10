@@ -12,6 +12,11 @@ namespace tempearly
     {
     public:
         /**
+         * Platform specific filename separator.
+         */
+        static const rune kSeparator;
+
+        /**
          * Constructs empty filename.
          */
         Filename();
