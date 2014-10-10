@@ -51,6 +51,11 @@ namespace tempearly
             return false;
         }
 
+        virtual bool IsSet() const
+        {
+            return false;
+        }
+
         virtual bool IsStaticMethod() const
         {
             return false;
