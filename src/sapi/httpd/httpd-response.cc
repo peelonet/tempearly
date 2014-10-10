@@ -1,7 +1,7 @@
 #include "api/exception.h"
 #include "core/bytestring.h"
+#include "net/socket.h"
 #include "sapi/httpd/httpd-response.h"
-#include "sapi/httpd/socket.h"
 
 namespace tempearly
 {
