@@ -66,6 +66,7 @@ namespace tempearly
     class Result;
     class Scope;
     class Script;
+    class Socket;
     class String;
     class StringBuilder;
     class Time;

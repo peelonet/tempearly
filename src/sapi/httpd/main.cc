@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "core/bytestring.h"
 #include "core/filename.h"
-#include "sapi/httpd/socket.h"
+#include "net/socket.h"
 
 using namespace tempearly;
 

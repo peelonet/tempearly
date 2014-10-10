@@ -1,5 +1,5 @@
-#ifndef TEMPERALY_SAPI_SOCKET_H_GUARD
-#define TEMPEARLY_SAPI_HTTPD_SOCKET_H_GUARD
+#ifndef TEMPERALY_NET_SOCKET_H_GUARD
+#define TEMPEARLY_NET_SOCKET_H_GUARD
 
 #include "core/string.h"
 
@@ -11,8 +11,6 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#include "defines.h"
-
 namespace tempearly
 {
     /**
@@ -21,6 +19,9 @@ namespace tempearly
     class Socket : public CountedObject
     {
     public:
+        /**
+         * Constructs uninitialized socket.
+         */
         explicit Socket();
 
         virtual ~Socket();
@@ -47,16 +48,20 @@ namespace tempearly
 
         bool Receive(byte* buffer, std::size_t size, std::size_t& read);
 
+        bool Send(const ByteString& data);
+
+        bool Send(const byte* data, std::size_t size);
+
         bool Send(const char* data, std::size_t size);
 
         void Printf(const char* format, ...);
 
     private:
-        int m_fd;
+        int m_handle;
         sockaddr_in m_address;
         String m_error_message;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Socket);
     };
 }
 
-#endif /* !TEMPEARLY_SAPI_HTTPD_SOCKET_H_GUARD */
+#endif /* !TEMPEARLY_NET_SOCKET_H_GUARD */

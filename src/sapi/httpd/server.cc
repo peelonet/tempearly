@@ -6,9 +6,9 @@
 #include "core/bytestring.h"
 #include "http/method.h"
 #include "http/version.h"
+#include "net/socket.h"
 #include "sapi/httpd/httpd-request.h"
 #include "sapi/httpd/httpd-response.h"
-#include "sapi/httpd/socket.h"
 
 #if !defined(HTTPD_MAX_REQUEST_SIZE)
 # define HTTPD_MAX_REQUEST_SIZE 4096

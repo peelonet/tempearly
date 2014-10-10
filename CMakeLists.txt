@@ -90,6 +90,7 @@ SET(
     src/http/cookie.cc
     src/http/method.cc
     src/http/version.cc
+    src/net/socket.cc
     src/sapi/request.cc
     src/sapi/response.cc
 )
@@ -126,7 +127,6 @@ IF (TEMPEARLY_ENABLE_HTTPD_SAPI)
         src/sapi/httpd/httpd-response.cc
         src/sapi/httpd/main.cc
         src/sapi/httpd/server.cc
-        src/sapi/httpd/socket.cc
         ${INTERPRETER_SOURCES}
     )
 ENDIF()
