@@ -74,6 +74,7 @@ SET(
     src/api/list.cc
     src/api/number.cc
     src/api/object.cc
+    src/api/range.cc
     src/api/request.cc
     src/api/response.cc
     src/api/set.cc

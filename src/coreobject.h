@@ -51,6 +51,11 @@ namespace tempearly
             return false;
         }
 
+        virtual bool IsRange() const
+        {
+            return false;
+        }
+
         virtual bool IsSet() const
         {
             return false;

@@ -62,6 +62,7 @@ namespace tempearly
     class Object;
     class Parser;
     class Random;
+    class RangeObject;
     class Request;
     class Response;
     class Result;

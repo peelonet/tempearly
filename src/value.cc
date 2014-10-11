@@ -259,6 +259,13 @@ namespace tempearly
         }
     }
 
+    Value Value::Call(const Handle<Interpreter>& interpreter,
+                      const String& id,
+                      const Value& arg) const
+    {
+        return Call(interpreter, id, std::vector<Value>(1, arg));
+    }
+
     bool Value::GetNext(const Handle<Interpreter>& interpreter, Value& slot) const
     {
         Value result = Call(interpreter, "next");

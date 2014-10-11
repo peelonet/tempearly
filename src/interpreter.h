@@ -100,6 +100,7 @@ namespace tempearly
         Handle<Class> cList;
         Handle<Class> cNum;
         Handle<Class> cObject;
+        Handle<Class> cRange;
         Handle<Class> cSet;
         Handle<Class> cString;
         Handle<Class> cVoid;

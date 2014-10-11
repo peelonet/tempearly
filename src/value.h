@@ -142,6 +142,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsList();
         }
 
+        inline bool IsRange() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsRange();
+        }
+
         inline bool IsSet() const
         {
             return m_kind == KIND_OBJECT && m_data.o->IsSet();
@@ -170,6 +175,10 @@ namespace tempearly
         Value Call(const Handle<Interpreter>& interpreter,
                    const String& id,
                    const std::vector<Value>& args = std::vector<Value>()) const;
+
+        Value Call(const Handle<Interpreter>& interpreter,
+                   const String& id,
+                   const Value& arg) const;
 
         /**
          * Treats object as iterator and attempts to retrieve it's next value.
