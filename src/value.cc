@@ -168,6 +168,8 @@ namespace tempearly
             case KIND_OBJECT:
                 return m_data.o->GetClass(interpreter);
         }
+
+        return interpreter->cObject;
     }
 
     bool Value::HasAttribute(const String& id) const

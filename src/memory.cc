@@ -180,7 +180,7 @@ namespace tempearly
 
     void* CountedObject::operator new(std::size_t size)
     {
-        if (allocation_counter++ >= generation0.GetThreshold())
+        if (allocation_counter++ >= static_cast<std::size_t>(generation0.GetThreshold()))
         {
             generation0.Mark();
             generation1.Mark();
