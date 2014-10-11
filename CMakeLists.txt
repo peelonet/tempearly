@@ -59,7 +59,6 @@ SET(
     src/interpreter.cc
     src/memory.cc
     src/node.cc
-    src/object.cc
     src/parser.cc
     src/result.cc
     src/scope.cc

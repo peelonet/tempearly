@@ -75,6 +75,8 @@ namespace tempearly
     {
         i->cFunction = i->AddClass("Function", i->cObject);
 
+        i->cFunction->SetAllocator(Class::kNoAlloc);
+
         i->cFunction->AddMethod(i, "__call__", -1, func_call);
     }
 }

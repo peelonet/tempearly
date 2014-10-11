@@ -4,6 +4,10 @@
 
 namespace tempearly
 {
+    static Handle<CoreObject> no_alloc(const Handle<Interpreter>&, const Handle<Class>&);
+
+    const Class::Allocator Class::kNoAlloc = no_alloc;
+
     Class::Class(const Handle<Class>& base)
         : m_base(base.Get())
         , m_allocator(m_base ? m_base->m_allocator : 0)
@@ -302,6 +306,18 @@ namespace tempearly
         }
     }
 
+    static Handle<CoreObject> no_alloc(const Handle<Interpreter>& interpreter,
+                                       const Handle<Class>& cls)
+    {
+        return Handle<CoreObject>();
+    }
+
+    static Handle<CoreObject> class_alloc_callback(const Handle<Interpreter>& interpreter,
+                                                   const Handle<Class>& cls)
+    {
+        return new Class(interpreter->cObject);
+    }
+
     /**
      * Class#alloc() => Object
      *
@@ -314,7 +330,7 @@ namespace tempearly
     {
         Handle<Class> cls = args[0].As<Class>();
         Class::Allocator allocator = cls->GetAllocator();
-        Handle<Object> instance;
+        Handle<CoreObject> instance;
 
         if (allocator)
         {
@@ -379,6 +395,8 @@ namespace tempearly
     void init_class(Interpreter* i)
     {
         i->cClass = i->AddClass("Class", i->cObject);
+
+        i->cClass->SetAllocator(class_alloc_callback);
 
         i->cClass->AddMethod(i, "alloc", 0, class_alloc);
 

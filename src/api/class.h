@@ -8,10 +8,15 @@ namespace tempearly
     class Class : public CoreObject
     {
     public:
-        typedef Handle<Object> (*Allocator)(const Handle<Interpreter>&,
-                                            const Handle<Class>&);
+        typedef Handle<CoreObject> (*Allocator)(const Handle<Interpreter>&,
+                                                const Handle<Class>&);
         typedef Value (*MethodCallback)(const Handle<Interpreter>&,
                                         const std::vector<Value>&);
+
+        /**
+         * Allocator which allocates nothing.
+         */
+        static const Allocator kNoAlloc;
 
         explicit Class(const Handle<Class>& base);
 

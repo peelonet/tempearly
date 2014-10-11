@@ -1,8 +1,8 @@
 #ifndef TEMPEARLY_API_SET_H_GUARD
 #define TEMPEARLY_API_SET_H_GUARD
 
-#include "object.h"
 #include "value.h"
+#include "api/object.h"
 
 namespace tempearly
 {

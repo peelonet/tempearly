@@ -511,6 +511,7 @@ namespace tempearly
         i->cNum = i->AddClass("Num", i->cObject);
 
         i->cInt = i->AddClass("Int", i->cNum);
+        i->cInt->SetAllocator(Class::kNoAlloc);
         i->cInt->AddMethod(i, "__str__", -1, int_str);
         i->cInt->AddMethod(i, "__add__", 1, int_add);
         i->cInt->AddMethod(i, "__sub__", 1, int_sub);
@@ -529,6 +530,7 @@ namespace tempearly
         i->cInt->AddMethod(i, "__invert__", 0, int_invert);
 
         i->cFloat = i->AddClass("Float", i->cNum);
+        i->cFloat->SetAllocator(Class::kNoAlloc);
         i->cFloat->AddMethod(i, "__str__", -1, flo_str);
         i->cFloat->AddMethod(i, "__add__", 1, flo_add);
         i->cFloat->AddMethod(i, "__sub__", 1, flo_sub);

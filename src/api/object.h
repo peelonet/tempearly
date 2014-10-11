@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_OBJECT_H_GUARD
-#define TEMPEARLY_OBJECT_H_GUARD
+#ifndef TEMPEARLY_API_OBJECT_H_GUARD
+#define TEMPEARLY_API_OBJECT_H_GUARD
 
 #include "api/class.h"
 
@@ -32,4 +32,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_OBJECT_H_GUARD */
+#endif /* !TEMPEARLY_API_OBJECT_H_GUARD */
