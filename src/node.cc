@@ -2,6 +2,7 @@
 #include "node.h"
 #include "utils.h"
 #include "api/list.h"
+#include "api/range.h"
 
 namespace tempearly
 {
@@ -888,6 +889,42 @@ namespace tempearly
             {
                 node->Mark();
             }
+        }
+    }
+
+    RangeNode::RangeNode(const Handle<Node>& begin,
+                         const Handle<Node>& end,
+                         bool exclusive)
+        : m_begin(begin.Get())
+        , m_end(end.Get())
+        , m_exclusive(exclusive) {}
+
+    Result RangeNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Value begin;
+        Value end;
+        Handle<CoreObject> range;
+        
+        if (!(begin = m_begin->Evaluate(interpreter))
+            || !(end = m_end->Evaluate(interpreter)))
+        {
+            return Result(Result::KIND_ERROR);
+        }
+        range = new RangeObject(interpreter, begin, end, m_exclusive);
+
+        return Result(Result::KIND_SUCCESS, Value::NewObject(range));
+    }
+
+    void RangeNode::Mark()
+    {
+        Node::Mark();
+        if (!m_begin->IsMarked())
+        {
+            m_begin->Mark();
+        }
+        if (!m_end->IsMarked())
+        {
+            m_end->Mark();
         }
     }
 }

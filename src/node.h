@@ -436,6 +436,24 @@ namespace tempearly
         const std::vector<Node*> m_elements;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ListNode);
     };
+
+    class RangeNode : public Node
+    {
+    public:
+        explicit RangeNode(const Handle<Node>& begin,
+                           const Handle<Node>& end,
+                           bool exclusive);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_begin;
+        Node* m_end;
+        const bool m_exclusive;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(RangeNode);
+    };
 }
 
 #endif /* !TEMPEARLY_NODE_H_GUARD */

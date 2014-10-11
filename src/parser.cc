@@ -727,10 +727,9 @@ READ_NEXT_CHAR:
                 {
                     SkipChar();
 SCAN_FLOAT:
-                    m_buffer << '.';
                     if (std::isdigit(PeekChar()))
                     {
-                        m_buffer << ReadChar();
+                        m_buffer << '.' << ReadChar();
                         while (PeekChar('_') || std::isdigit(PeekChar()))
                         {
                             if ((c = ReadChar()) != '_')
@@ -773,7 +772,8 @@ SCAN_EXPONENT:
                         token.text = m_buffer.ToString();
                     } else {
                         UnreadChar('.');
-                        m_buffer.PopBack();
+                        token.kind = Token::INT;
+                        token.text = m_buffer.ToString();
                     }
                 }
                 else if (ReadChar('e') || ReadChar('E'))
@@ -1153,6 +1153,7 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
+        parser->ReadToken(Token::SEMICOLON); // Eat optional semicolon
 
         return new IfNode(condition, then_statement, else_statement);
     }
@@ -1172,6 +1173,7 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
+        parser->ReadToken(Token::SEMICOLON); // Eat optional semicolon
 
         return new WhileNode(condition, statement);
     }
@@ -1204,6 +1206,7 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
+        parser->ReadToken(Token::SEMICOLON); // Eat optional semicolon
 
         return new ForNode(variable, collection, statement);
     }
@@ -2039,7 +2042,19 @@ SCAN_EXPONENT:
         {
             return Handle<Node>();
         }
-        // TODO
+        if (parser->PeekToken(Token::DOT_DOT)
+            || parser->PeekToken(Token::DOT_DOT_DOT))
+        {
+            const bool exclusive = parser->ReadToken().kind == Token::DOT_DOT_DOT;
+            Handle<Node> operand = parse_logical_or(interpreter, parser);
+
+            if (operand)
+            {
+                return new RangeNode(node, operand, exclusive);
+            } else {
+                return Handle<Node>();
+            }
+        }
 
         return node;
     }
