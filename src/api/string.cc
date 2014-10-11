@@ -1,10 +1,74 @@
 #include "interpreter.h"
 #include "api/iterator.h"
 #include "api/list.h"
+#include "core/random.h"
 #include "core/stringbuilder.h"
 
 namespace tempearly
 {
+    /**
+     * String.__call__(arguments...) => String
+     *
+     * Constructs string from objects given as arguments.
+     *
+     *     String(1, 2, 3) => "123"
+     */
+    TEMPEARLY_NATIVE_METHOD(str_s_call)
+    {
+        StringBuilder result;
+        String slot;
+
+        for (std::size_t i = 0; i < args.size(); ++i)
+        {
+            if (!args[i].ToString(interpreter, slot))
+            {
+                return Value();
+            }
+            result << slot;
+        }
+
+        return Value::NewString(result.ToString());
+    }
+
+    /**
+     * String.rand(length) => String
+     *
+     * Generates random string which contains digits 0-9 and alphabetic
+     * characters a-z.
+     *
+     * Throws: ValueError - If length is zero or below zero.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_s_rand)
+    {
+        static const char input[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+        i64 length;
+
+        if (args[0].AsInt(interpreter, length))
+        {
+            if (length == 0)
+            {
+                interpreter->Throw(interpreter->eValueError,
+                                   "Length cannot be zero");
+            }
+            else if (length < 0)
+            {
+                interpreter->Throw(interpreter->eValueError,
+                                   "Length cannot be less than one");
+            } else {
+                StringBuilder buffer(length);
+
+                while (length-- > 0)
+                {
+                    buffer.Append(input[Random::NextU64() % 36]);
+                }
+
+                return Value::NewString(buffer.ToString());
+            }
+        }
+
+        return Value();
+    }
+
     /**
      * String#length() => Int
      *
@@ -578,6 +642,11 @@ namespace tempearly
     void init_string(Interpreter* i)
     {
         i->cString = i->AddClass("String", i->cObject);
+
+        i->cString->SetAllocator(Class::kNoAlloc);
+
+        i->cString->AddStaticMethod(i, "__call__", -1, str_s_call);
+        i->cString->AddStaticMethod(i, "rand", 1, str_s_rand);
 
         i->cString->AddMethod(i, "length", 0, str_length);
         i->cString->AddMethod(i, "lines", 0, str_lines);

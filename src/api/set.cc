@@ -108,8 +108,8 @@ namespace tempearly
         }
     }
 
-    static Handle<Object> set_alloc(const Handle<Interpreter>& interpreter,
-                                    const Handle<Class>& cls)
+    static Handle<CoreObject> set_alloc(const Handle<Interpreter>& interpreter,
+                                        const Handle<Class>& cls)
     {
         return new SetObject(cls);
     }

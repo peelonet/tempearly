@@ -64,6 +64,8 @@ namespace tempearly
 
         i->globals->SetVariable("request", Value::NewObject(instance));
 
+        cRequest->SetAllocator(Class::kNoAlloc);
+
         cRequest->AddMethod(i, "method", 0, req_method);
         cRequest->AddMethod(i, "path", 0, req_path);
         cRequest->AddMethod(i, "is_ajax", 0, req_is_ajax);

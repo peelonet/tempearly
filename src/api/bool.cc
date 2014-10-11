@@ -142,6 +142,8 @@ namespace tempearly
     {
         i->cBool = i->AddClass("Bool", i->cObject);
 
+        i->cBool->SetAllocator(Class::kNoAlloc);
+
         i->cBool->AddStaticMethod(i, "parse", 1, bool_s_parse);
         i->cBool->AddStaticMethod(i, "rand", 0, bool_s_rand);
 

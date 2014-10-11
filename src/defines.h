@@ -61,6 +61,7 @@ namespace tempearly
     class Node;
     class Object;
     class Parser;
+    class Random;
     class Request;
     class Response;
     class Result;

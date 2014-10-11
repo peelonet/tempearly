@@ -153,6 +153,8 @@ namespace tempearly
 
         i->globals->SetVariable("response", Value::NewObject(instance));
 
+        cResponse->SetAllocator(Class::kNoAlloc);
+
         cResponse->AddMethod(i, "header", -2, res_header);
         cResponse->AddMethod(i, "is_committed", 0, res_is_committed);
         cResponse->AddMethod(i, "redirect", -2, res_redirect);

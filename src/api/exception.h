@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_API_EXCEPTION_H_GUARD
 #define TEMPEARLY_API_EXCEPTION_H_GUARD
 
-#include "object.h"
+#include "api/object.h"
 
 namespace tempearly
 {

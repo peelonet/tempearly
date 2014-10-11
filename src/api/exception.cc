@@ -17,9 +17,17 @@ namespace tempearly
         }
     }
 
+    static Handle<CoreObject> ex_alloc(const Handle<Interpreter>& interpreter,
+                                       const Handle<Class>& cls)
+    {
+        return new ExceptionObject(cls);
+    }
+
     void init_exception(Interpreter* i)
     {
         i->cException = i->AddClass("Exception", i->cObject);
+
+        i->cException->SetAllocator(ex_alloc);
 
         i->eAttributeError = i->AddClass("AttributeError", i->cException);
         i->eNameError = i->AddClass("NameError", i->cException);

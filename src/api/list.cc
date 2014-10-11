@@ -157,8 +157,8 @@ namespace tempearly
         }
     }
 
-    static Handle<Object> list_alloc(const Handle<Interpreter>& interpreter,
-                                     const Handle<Class>& cls)
+    static Handle<CoreObject> list_alloc(const Handle<Interpreter>& interpreter,
+                                         const Handle<Class>& cls)
     {
         return new ListObject(cls);
     }

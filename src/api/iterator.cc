@@ -185,6 +185,8 @@ namespace tempearly
     {
         i->cIterator = i->AddClass("Iterator", i->cObject);
 
+        i->cIterator->SetAllocator(Class::kNoAlloc);
+
         i->cIterator->AddMethod(i, "__init__", -1, iter_feed);
 
         i->cIterator->AddMethod(i, "next", 0, iter_next);
