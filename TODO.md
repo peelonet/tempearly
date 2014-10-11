@@ -1,12 +1,13 @@
 # Interpreter
 
+- Modify parser so that it doesn't require `Interpreter` instance. This enables us to compile
+  and cache scripts before any requests are being made.
 - Builtin support for SQLite
 - Interfaces/mixins for classes
 
 # API
 
 - Hash maps
-- Hash sets
 - Regular expressions
 - Database connectivity
 - Date/time
