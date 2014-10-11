@@ -212,6 +212,10 @@ namespace tempearly
         {
             interpreter->response->SendException(interpreter->GetException());
         }
+        else if (!interpreter->response->IsCommitted())
+        {
+            interpreter->response->Commit();
+        }
         socket->Close();
     }
 
