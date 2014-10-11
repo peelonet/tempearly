@@ -19,8 +19,7 @@ namespace tempearly
 
     Filename::Filename()
 #if !defined(_WIN32)
-        : m_stat_done(false)
-        , m_stat_succeeded(false)
+        : m_state(STAT_NOT_DONE)
 #endif
         {}
 
@@ -30,15 +29,13 @@ namespace tempearly
         , m_path(that.m_path)
 #if !defined(_WIN32)
         , m_stat(that.m_stat)
-        , m_stat_done(that.m_stat_done)
-        , m_stat_succeeded(that.m_stat_succeeded)
+        , m_state(that.m_state)
 #endif
         {}
 
     Filename::Filename(const String& source)
 #if !defined(_WIN32)
-        : m_stat_done(false)
-        , m_stat_succeeded(false)
+        : m_state(STAT_NOT_DONE)
 #endif
     {
         parse(source, m_filename, m_root, m_path);
@@ -51,8 +48,7 @@ namespace tempearly
         m_path = that.m_path;
 #if !defined(_WIN32)
         m_stat = that.m_stat;
-        m_stat_done = that.m_stat_done;
-        m_stat_succeeded = that.m_stat_succeeded;
+        m_state = that.m_state;
 #endif
 
         return *this;
@@ -64,8 +60,7 @@ namespace tempearly
         m_root.Clear();
         m_path.clear();
 #if !defined(_WIN32)
-        m_stat_done = false;
-        m_stat_succeeded = false;
+        m_state = STAT_NOT_DONE;
 #endif
         parse(source, m_filename, m_root, m_path);
 
@@ -97,9 +92,7 @@ namespace tempearly
 #if defined(_WIN32)
         return ::GetFileSize(m_filename.Widen().c_str(), 0);
 #else
-        Stat();
-
-        return m_stat_succeeded ? m_stat.st_size : 0;
+        return Stat() ? m_stat.st_size : 0;
 #endif
     }
 
@@ -124,9 +117,7 @@ namespace tempearly
             );
         }
 #else
-        Stat();
-
-        if (m_stat_succeeded)
+        if (Stat())
         {
             return DateTime(m_stat.st_mtime);
         }
@@ -159,9 +150,7 @@ namespace tempearly
 #if defined(_WIN32)
         return ::GetFileAttributesW(m_filename.Widen().c_str()) & FILE_ATTRIBUTE_NORMAL;
 #else
-        Stat();
-
-        return m_stat_succeeded && S_ISREG(m_stat.st_mode);
+        return Stat() && S_ISREG(m_stat.st_mode);
 #endif
     }
 
@@ -174,9 +163,7 @@ namespace tempearly
 #if defined(_WIN32)
         return ::GetFileAttributesW(m_filename.Widen().c_str()) & FILE_ATTRIBUTE_DIRECTORY;
 #else
-        Stat();
-
-        return m_stat_succeeded && S_ISDIR(m_stat.st_mode);
+        return Stat() && S_ISDIR(m_stat.st_mode);
 #endif
     }
 
@@ -189,9 +176,7 @@ namespace tempearly
 #if defined(_WIN32)
         return ::PathFileExists(m_filename.Widen().c_str());
 #else
-        Stat();
-
-        return m_stat_succeeded;
+        return Stat();
 #endif
     }
 
@@ -225,14 +210,24 @@ namespace tempearly
     }
 
 #if !defined(_WIN32)
-    void Filename::Stat() const
+    bool Filename::Stat() const
     {
-        if (m_stat_done)
+        if (m_state == STAT_FAILED)
         {
-            return;
+            return false;
         }
-        m_stat_succeeded = ::stat(m_filename.Encode().c_str(), &m_stat) >= 0;
-        m_stat_done = true;
+        else if (m_state == STAT_NOT_DONE)
+        {
+            if (::stat(m_filename.Encode().c_str(), &m_stat) < 0)
+            {
+                m_state = STAT_FAILED;
+
+                return false;
+            }
+            m_state = STAT_SUCCEEDED;
+        }
+
+        return true;
     }
 #endif
 

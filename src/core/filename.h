@@ -118,7 +118,7 @@ namespace tempearly
 
 #if !defined(_WIN32)
     private:
-        void Stat() const;
+        bool Stat() const;
 #endif
 
     private:
@@ -127,8 +127,12 @@ namespace tempearly
         std::vector<String> m_path;
 #if !defined(_WIN32)
         mutable struct ::stat m_stat;
-        mutable bool m_stat_done;
-        mutable bool m_stat_succeeded;
+        mutable enum
+        {
+            STAT_NOT_DONE,
+            STAT_SUCCEEDED,
+            STAT_FAILED
+        } m_state;
 #endif
     };
 }
