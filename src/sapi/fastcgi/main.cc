@@ -27,6 +27,10 @@ int main(int argc, char** argv)
             {
                 interpreter->response->SendException(interpreter->GetException());
             }
+            else if (!interpreter->response->IsCommitted())
+            {
+                interpreter->response->Commit();
+            }
         }
     }
 
