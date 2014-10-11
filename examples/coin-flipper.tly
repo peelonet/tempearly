@@ -1,3 +1,4 @@
+#!/usr/bin/env tempearly-cgi
 <%
 if request.is_ajax():
     response["Content-Type"] = "application/json";
@@ -7,7 +8,8 @@ if request.is_ajax():
         image = "http://www.eurocoins.co.uk/images/2002finland2euroobv240.jpg";
     end if
     response.write('{"image": "' + image + '"}');
-else:
+    return;
+end if;
 %>
 <!DOCTYPE html>
 <html>
@@ -42,4 +44,3 @@ else:
     </script>
 </body>
 </html>
-<% end if %>
