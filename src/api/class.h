@@ -8,6 +8,8 @@ namespace tempearly
     class Class : public CoreObject
     {
     public:
+        typedef Handle<Object> (*Allocator)(const Handle<Interpreter>&,
+                                            const Handle<Class>&);
         typedef Value (*MethodCallback)(const Handle<Interpreter>&,
                                         const std::vector<Value>&);
 
@@ -33,6 +35,16 @@ namespace tempearly
          */
         bool IsSubclassOf(const Handle<Class>& that) const;
 
+        inline Allocator GetAllocator() const
+        {
+            return m_allocator;
+        }
+
+        inline void SetAllocator(Allocator allocator)
+        {
+            m_allocator = allocator;
+        }
+
         bool HasAttribute(const String& id) const;
 
         bool GetAttribute(const String& id, Value& value) const;
@@ -57,7 +69,11 @@ namespace tempearly
         }
 
     private:
+        /** Superclass. */
         Class* m_base;
+        /** Allocator callback. */
+        Allocator m_allocator;
+        /** Contains attributes for the class. */
         AttributeMap* m_attributes;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Class);
     };

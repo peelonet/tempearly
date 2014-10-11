@@ -16,6 +16,7 @@ namespace tempearly
     void init_object(Interpreter*);
     void init_request(Interpreter*);
     void init_response(Interpreter*);
+    void init_set(Interpreter*);
     void init_string(Interpreter*);
     void init_void(Interpreter*);
 
@@ -39,6 +40,7 @@ namespace tempearly
         init_void(this);
         init_iterator(this);
         init_list(this);
+        init_set(this);
         init_exception(this);
         init_class(this);
         init_function(this);
