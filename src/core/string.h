@@ -47,7 +47,7 @@ namespace tempearly
         /**
          * Constructs string from <i>n</i> copies of given character.
          */
-        String(rune c, std::size_t n = 1);
+        String(rune c, std::size_t n);
 
         /**
          * Destructor.
@@ -55,12 +55,31 @@ namespace tempearly
         virtual ~String();
 
         /**
-         * Assignment operator. Contents of another string is copied into this
-         * one.
-         *
-         * \param that Another string to copy contents from
+         * Copies contents of another string into this one.
          */
-        String& operator=(const String& that);
+        String& Assign(const String& that);
+
+        /**
+         * Replaces contents of the string with content copied from C string
+         * literal. The input is expected to be in UTF-8.
+         */
+        String& Assign(const char* input);
+
+        /**
+         * Assignment operator.
+         */
+        inline String& operator=(const String& that)
+        {
+            return Assign(that);
+        }
+
+        /**
+         * Assignment operator.
+         */
+        inline String& operator=(const char* input)
+        {
+            return Assign(input);
+        }
 
         /**
          * Returns true if the string is empty.

@@ -15,6 +15,12 @@ OPTION(
 )
 
 OPTION(
+    ENABLE_APACHE_SAPI
+    "Enable Apache 2.x SAPI"
+    OFF
+)
+
+OPTION(
     ENABLE_HTTPD_SAPI
     "Enable builtin HTTP server SAPI"
     OFF
@@ -122,6 +128,35 @@ IF (ENABLE_FASTCGI_SAPI)
         tempearly-fcgi
         ${FASTCGI_LIBRARY}
     )
+ENDIF()
+
+IF (ENABLE_APACHE_SAPI)
+    INCLUDE(FindAPR)
+    INCLUDE(FindAPXS)
+    ADD_LIBRARY(
+        mod_tempearly
+        MODULE
+        src/sapi/apache/mod_tempearly.cc
+        src/sapi/apache/request.cc
+        src/sapi/apache/response.cc
+        ${INTERPRETER_SOURCES}
+    )
+    INCLUDE_DIRECTORIES(
+        mod_tempearly
+        ${APR_INCLUDEDIRS}
+        ${APXS2_INCLUDEDIRS}
+    )
+    TARGET_LINK_LIBRARIES(
+        mod_tempearly
+        ${APR_LIBRARIES}
+        ${APXS2_LIBRARIES}
+    )
+    SET_TARGET_PROPERTIES(
+        mod_tempearly
+        PROPERTIES PREFIX ""
+    )
+    # FIXME: CMAKE_INSTALL_PREFIX fucks this up
+    #INSTALL_TARGETS(${APACHE_MODULE_DIR} mod_tempearly)
 ENDIF()
 
 IF (ENABLE_HTTPD_SAPI)

@@ -126,7 +126,10 @@ namespace tempearly
             return;
         }
         m_parameters_read = true;
-        Utils::ParseQueryString(m_query_string, m_parameters);
+        if (!m_query_string.IsEmpty())
+        {
+            Utils::ParseQueryString(m_query_string, m_parameters);
+        }
         // TODO: Process multipart requests
         if (m_method == "POST"
             && m_content_type == "application/x-www-form-urlencoded"
