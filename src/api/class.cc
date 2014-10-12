@@ -93,11 +93,11 @@ namespace tempearly
         class Method : public FunctionObject
         {
         public:
-            explicit Method(const Handle<Class>& cls,
+            explicit Method(const Handle<Interpreter>& interpreter,
                             const Handle<Class>& declaring_class,
                             int arity,
                             Callback callback)
-                : FunctionObject(cls)
+                : FunctionObject(interpreter)
                 , m_declaring_class(declaring_class.Get())
                 , m_arity(arity)
                 , m_callback(callback) {}
@@ -183,12 +183,10 @@ namespace tempearly
                           int arity,
                           MethodCallback callback)
     {
-        Value method = Value::NewObject(new Method(
-            interpreter->cFunction,
-            this,
-            arity,
-            callback
-        ));
+        Value method = Value::NewObject(new Method(interpreter,
+                                                   this,
+                                                   arity,
+                                                   callback));
 
         if (!m_attributes)
         {
@@ -202,11 +200,11 @@ namespace tempearly
         class StaticMethod : public FunctionObject
         {
         public:
-            explicit StaticMethod(const Handle<Class>& cls,
+            explicit StaticMethod(const Handle<Interpreter>& interpreter,
                                   const Handle<Class>& declaring_class,
                                   int arity,
                                   Callback callback)
-                : FunctionObject(cls)
+                : FunctionObject(interpreter)
                 , m_declaring_class(declaring_class.Get())
                 , m_arity(arity)
                 , m_callback(callback) {}
@@ -276,12 +274,10 @@ namespace tempearly
                                 int arity,
                                 MethodCallback callback)
     {
-        Value method = Value::NewObject(new StaticMethod(
-            interpreter->cFunction,
-            this,
-            arity,
-            callback
-        ));
+        Value method = Value::NewObject(new StaticMethod(interpreter,
+                                                         this,
+                                                         arity,
+                                                         callback));
 
         if (!m_attributes)
         {

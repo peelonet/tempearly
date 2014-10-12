@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "parser.h"
+#include "api/function.h"
 #include "api/iterator.h"
 #include "core/bytestring.h"
 #include "core/filename.h"
@@ -8,6 +9,7 @@ namespace tempearly
 {
     void init_bool(Interpreter*);
     void init_class(Interpreter*);
+    void init_core(Interpreter*);
     void init_exception(Interpreter*);
     void init_function(Interpreter*);
     void init_iterator(Interpreter*);
@@ -49,6 +51,8 @@ namespace tempearly
         init_class(this);
         init_function(this);
 
+        init_core(this);
+
         init_request(this);
         init_response(this);
     }
@@ -74,7 +78,7 @@ namespace tempearly
                 return result;
             }
         } else {
-            // TODO: throw exception
+            Throw(eImportError, "Unable to include file");
         }
 
         return false;
@@ -95,6 +99,75 @@ namespace tempearly
         }
 
         return cls;
+    }
+
+    namespace
+    {
+        class GlobalFunction : public FunctionObject
+        {
+        public:
+            explicit GlobalFunction(const Handle<Interpreter>& interpreter,
+                                    int arity,
+                                    Callback callback)
+                : FunctionObject(interpreter)
+                , m_arity(arity)
+                , m_callback(callback) {}
+
+            Value Invoke(const Handle<Interpreter>& interpreter,
+                         const std::vector<Value>& args)
+            {
+                Value result;
+
+                // Test that we have correct amount of arguments.
+                if (m_arity < 0)
+                {
+                    if (args.size() < static_cast<unsigned>(-(m_arity + 1)))
+                    {
+                        StringBuilder sb;
+
+                        sb << "Function expected at least "
+                           << (-(m_arity) - 1)
+                           << " arguments, got "
+                           << args.size();
+                        interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                        return Value();
+                    }
+                }
+                else if (args.size() != static_cast<unsigned>(m_arity))
+                {
+                    StringBuilder sb;
+
+                    sb << "Function expected "
+                       << m_arity
+                       << " arguments, got "
+                       << args.size();
+                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+
+                    return Value();
+                }
+                result = m_callback(interpreter, args);
+
+                return result;
+            }
+
+        private:
+            const int m_arity;
+            const Callback m_callback;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(GlobalFunction);
+        };
+    }
+
+    void Interpreter::AddFunction(const String& name,
+                                  int arity,
+                                  FunctionObject::Callback callback)
+    {
+        Handle<FunctionObject> function = new GlobalFunction(this, arity, callback);
+
+        if (globals)
+        {
+            globals->SetVariable(name, Value::NewObject(function));
+        }
     }
 
     void Interpreter::Throw(const Handle<Class>& cls, const String& message)

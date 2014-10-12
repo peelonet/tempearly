@@ -3,8 +3,8 @@
 
 namespace tempearly
 {
-    FunctionObject::FunctionObject(const Handle<Class>& cls)
-        : Object(cls) {}
+    FunctionObject::FunctionObject(const Handle<Interpreter>& interpreter)
+        : Object(interpreter->cFunction) {}
 
     FunctionObject::~FunctionObject() {}
 
@@ -13,10 +13,10 @@ namespace tempearly
         class CurryFunction : public FunctionObject
         {
         public:
-            explicit CurryFunction(const Handle<Class>& cls,
+            explicit CurryFunction(const Handle<Interpreter>& interpreter,
                                    FunctionObject* base,
                                    const std::vector<Value>& args)
-                : FunctionObject(cls)
+                : FunctionObject(interpreter)
                 , m_base(base)
                 , m_args(args) {}
 
@@ -55,7 +55,7 @@ namespace tempearly
     Value FunctionObject::Curry(const Handle<Interpreter>& interpreter,
                                 const std::vector<Value>& args)
     {
-        return Value::NewObject(new CurryFunction(interpreter->cFunction, this, args));
+        return Value::NewObject(new CurryFunction(interpreter, this, args));
     }
 
     /**

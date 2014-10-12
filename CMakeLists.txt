@@ -68,6 +68,7 @@ SET(
     src/value.cc
     src/api/bool.cc
     src/api/class.cc
+    src/api/core.cc
     src/api/exception.cc
     src/api/function.cc
     src/api/iterator.cc
