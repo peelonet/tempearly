@@ -1314,6 +1314,42 @@ SCAN_EXPONENT:
         return new ListNode(elements);
     }
 
+    static Handle<Node> parse_map(const Handle<Interpreter>& interpreter,
+                                  Parser* parser)
+    {
+        std::vector<Pair<Handle<Node> > > entries;
+        Handle<Node> key;
+        Handle<Node> value;
+
+        if (!parser->ReadToken(Token::RBRACE))
+        {
+            for (;;)
+            {
+                if (!(key = parse_expr(interpreter, parser))
+                    || !expect_token(interpreter, parser, Token::COLON)
+                    || !(value = parse_expr(interpreter, parser)))
+                {
+                    return Handle<Node>();
+                }
+                entries.push_back(Pair<Handle<Node> >(key, value));
+                if (parser->ReadToken(Token::COMMA))
+                {
+                    continue;
+                }
+                else if (parser->ReadToken(Token::RBRACE))
+                {
+                    break;
+                }
+                interpreter->Throw(interpreter->eSyntaxError,
+                                   "Unterminated map literal");
+
+                return Handle<Node>();
+            }
+        }
+
+        return new MapNode(entries);
+    }
+
     static Handle<Node> parse_primary(const Handle<Interpreter>& interpreter,
                                       Parser* parser)
     {
@@ -1391,7 +1427,9 @@ SCAN_EXPONENT:
                 node = parse_list(interpreter, parser);
                 break;
 
-            //TODO:case Token::LBRACE:
+            case Token::LBRACE:
+                node = parse_map(interpreter, parser);
+                break;
 
             case Token::IDENTIFIER:
                 node = new IdentifierNode(token.text);

@@ -72,6 +72,7 @@ SET(
     src/api/function.cc
     src/api/iterator.cc
     src/api/list.cc
+    src/api/map.cc
     src/api/number.cc
     src/api/object.cc
     src/api/range.cc

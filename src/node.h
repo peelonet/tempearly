@@ -2,7 +2,7 @@
 #define TEMPEARLY_NODE_H_GUARD
 
 #include "result.h"
-#include "value.h"
+#include "core/pair.h"
 
 namespace tempearly
 {
@@ -435,6 +435,20 @@ namespace tempearly
     private:
         const std::vector<Node*> m_elements;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ListNode);
+    };
+
+    class MapNode : public Node
+    {
+    public:
+        explicit MapNode(const std::vector<Pair<Handle<Node> > >& entries);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        const std::vector<Pair<Node*> > m_entries;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(MapNode);
     };
 
     class RangeNode : public Node
