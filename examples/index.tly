@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tempearly examples</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Tempearly examples</h1>
+        <ul>
+            <li><a href="/coin-flipper.tly">Coin flipper</a></li>
+            <li><a href="/form.tly">Forms</a></li>
+        </ul>
+    </div>
+</body>
+</html>
