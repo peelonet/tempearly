@@ -53,6 +53,7 @@ namespace tempearly
     class DateTime;
     class ExceptionObject;
     class Filename;
+    class FileObject;
     class FunctionObject;
     class Interpreter;
     class IteratorObject;

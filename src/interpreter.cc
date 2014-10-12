@@ -11,6 +11,7 @@ namespace tempearly
     void init_class(Interpreter*);
     void init_core(Interpreter*);
     void init_exception(Interpreter*);
+    void init_file(Interpreter*);
     void init_function(Interpreter*);
     void init_iterator(Interpreter*);
     void init_list(Interpreter*);
@@ -50,6 +51,7 @@ namespace tempearly
         init_exception(this);
         init_class(this);
         init_function(this);
+        init_file(this);
 
         init_core(this);
 

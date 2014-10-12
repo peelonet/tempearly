@@ -98,6 +98,7 @@ namespace tempearly
         Handle<Class> cBool;
         Handle<Class> cClass;
         Handle<Class> cException;
+        Handle<Class> cFile;
         Handle<Class> cFloat;
         Handle<Class> cFunction;
         Handle<Class> cInt;
@@ -115,6 +116,7 @@ namespace tempearly
         Handle<Class> eAttributeError;
         Handle<Class> eKeyError;
         Handle<Class> eImportError;
+        Handle<Class> eIOError;
         Handle<Class> eLookupError;
         Handle<Class> eNameError;
         Handle<Class> eStateError;

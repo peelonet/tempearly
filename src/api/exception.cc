@@ -30,6 +30,7 @@ namespace tempearly
         i->cException->SetAllocator(ex_alloc);
 
         i->eAttributeError = i->AddClass("AttributeError", i->cException);
+        i->eIOError = i->AddClass("IOError", i->cException);
         i->eNameError = i->AddClass("NameError", i->cException);
         i->eStateError = i->AddClass("StateError", i->cException);
         i->eStopIteration = i->AddClass("StopIteration", i->cException);

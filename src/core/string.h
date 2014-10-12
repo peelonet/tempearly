@@ -154,6 +154,11 @@ namespace tempearly
         std::size_t IndexOf(rune r, std::size_t pos = 0) const;
 
         /**
+         * Same as IndexOf, but searching is done in reversed order.
+         */
+        std::size_t LastIndexOf(rune r, std::size_t pos = npos) const;
+
+        /**
          * Returns portion of the string.
          */
         String SubString(std::size_t pos = 0, std::size_t count = npos) const;
@@ -258,6 +263,12 @@ namespace tempearly
         {
             return Concat(that);
         }
+
+        /**
+         * Constructs new string from contents of the string with given
+         * callback.
+         */
+        String Map(rune (*callback)(rune)) const;
 
         /**
          * Tests for lower case letter.

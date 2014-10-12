@@ -352,6 +352,23 @@ namespace tempearly
         return npos;
     }
 
+    std::size_t String::LastIndexOf(rune r, std::size_t pos) const
+    {
+        if (pos > m_length)
+        {
+            pos = m_length;
+        }
+        for (std::size_t i = pos; i > 0; --i)
+        {
+            if (m_runes[m_offset + i - 1] == r)
+            {
+                return i - 1;
+            }
+        }
+
+        return npos;
+    }
+
     String String::SubString(std::size_t pos, std::size_t count) const
     {
         String result;
@@ -555,6 +572,25 @@ namespace tempearly
 
             return result;
         }
+    }
+
+    String String::Map(rune (*callback)(rune)) const
+    {
+        String result;
+
+        if (m_length)
+        {
+            result.m_length = m_length;
+            result.m_runes = new rune[m_length];
+            result.m_counter = new unsigned int[1];
+            result.m_counter[0] = 1;
+            for (std::size_t i = 0; i < m_length; ++i)
+            {
+                result.m_runes[i] = callback(m_runes[m_offset + i]);
+            }
+        }
+
+        return result;
     }
 
     bool String::IsLower(rune c)
