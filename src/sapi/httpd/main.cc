@@ -98,7 +98,11 @@ int main(int argc, char** argv)
 
             return EXIT_SUCCESS;
         }
-        if (!parse_host_and_port(argv[1], host, port))
+        if (std::strchr(argv[1], '/'))
+        {
+            root = argv[1];
+        }
+        else if (!parse_host_and_port(argv[1], host, port))
         {
             std::fprintf(stderr, httpd_usage, argv[0]);
 
