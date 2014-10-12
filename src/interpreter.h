@@ -98,6 +98,7 @@ namespace tempearly
         Handle<Class> cInt;
         Handle<Class> cIterator;
         Handle<Class> cList;
+        Handle<Class> cMap;
         Handle<Class> cNum;
         Handle<Class> cObject;
         Handle<Class> cRange;
@@ -107,6 +108,8 @@ namespace tempearly
 
         Handle<Class> eArithmeticError;
         Handle<Class> eAttributeError;
+        Handle<Class> eKeyError;
+        Handle<Class> eLookupError;
         Handle<Class> eNameError;
         Handle<Class> eStateError;
         Handle<Class> eStopIteration;

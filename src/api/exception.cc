@@ -39,5 +39,8 @@ namespace tempearly
 
         i->eArithmeticError = i->AddClass("ArithmeticError", i->cException);
         i->eZeroDivisionError = i->AddClass("ZeroDivisionError", i->eArithmeticError);
+
+        i->eLookupError = i->AddClass("LookupError", i->cException);
+        i->eKeyError = i->AddClass("KeyError", i->eLookupError);
     }
 }

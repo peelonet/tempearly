@@ -51,6 +51,11 @@ namespace tempearly
             return false;
         }
 
+        virtual bool IsMap() const
+        {
+            return false;
+        }
+
         virtual bool IsRange() const
         {
             return false;

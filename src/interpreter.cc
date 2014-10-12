@@ -12,6 +12,7 @@ namespace tempearly
     void init_function(Interpreter*);
     void init_iterator(Interpreter*);
     void init_list(Interpreter*);
+    void init_map(Interpreter*);
     void init_number(Interpreter*);
     void init_object(Interpreter*);
     void init_range(Interpreter*);
@@ -41,6 +42,7 @@ namespace tempearly
         init_void(this);
         init_iterator(this);
         init_list(this);
+        init_map(this);
         init_set(this);
         init_range(this);
         init_exception(this);

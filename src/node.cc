@@ -2,6 +2,7 @@
 #include "node.h"
 #include "utils.h"
 #include "api/list.h"
+#include "api/map.h"
 #include "api/range.h"
 
 namespace tempearly
@@ -888,6 +889,50 @@ namespace tempearly
             if (!node->IsMarked())
             {
                 node->Mark();
+            }
+        }
+    }
+
+    MapNode::MapNode(const std::vector<Pair<Handle<Node> > >& entries)
+        : m_entries(entries.begin(), entries.end()) {}
+
+    Result MapNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Handle<MapObject> map = new MapObject(interpreter->cMap);
+        Value key;
+        Value value;
+        i64 hash;
+
+        for (std::size_t i = 0; i < m_entries.size(); ++i)
+        {
+            const Pair<Node*>& entry = m_entries[i];
+
+            if (!(key = entry.GetKey()->Evaluate(interpreter))
+                || !(value = entry.GetValue()->Evaluate(interpreter))
+                || !key.GetHash(interpreter, hash))
+            {
+                return Result(Result::KIND_ERROR);
+            }
+            map->Insert(hash, key, value);
+        }
+
+        return Result(Result::KIND_SUCCESS, Value::NewObject(map));
+    }
+
+    void MapNode::Mark()
+    {
+        Node::Mark();
+        for (std::size_t i = 0; i < m_entries.size(); ++i)
+        {
+            const Pair<Node*>& entry = m_entries[i];
+
+            if (!entry.GetKey()->IsMarked())
+            {
+                entry.GetKey()->Mark();
+            }
+            if (!entry.GetValue()->IsMarked())
+            {
+                entry.GetValue()->Mark();
             }
         }
     }

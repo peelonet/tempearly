@@ -142,6 +142,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsList();
         }
 
+        inline bool IsMap() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsMap();
+        }
+
         inline bool IsRange() const
         {
             return m_kind == KIND_OBJECT && m_data.o->IsRange();
