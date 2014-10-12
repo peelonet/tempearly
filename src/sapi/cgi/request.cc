@@ -5,7 +5,7 @@
 #endif
 
 #include "utils.h"
-#include "sapi/cgi/cgi-request.h"
+#include "sapi/cgi/request.h"
 
 namespace tempearly
 {

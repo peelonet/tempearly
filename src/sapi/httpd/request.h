@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_SAPI_HTTPD_HTTPD_REQUEST_H_GUARD
-#define TEMPEARLY_SAPI_HTTPD_HTTPD_REQUEST_H_GUARD
+#ifndef TEMPEARLY_SAPI_HTTPD_REQUEST_H_GUARD
+#define TEMPEARLY_SAPI_HTTPD_REQUEST_H_GUARD
 
 #include "core/dictionary.h"
 #include "sapi/request.h"
@@ -49,4 +49,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_SAPI_HTTPD_HTTPD_REQUEST_H_GUARD */
+#endif /* !TEMPEARLY_SAPI_HTTPD_REQUEST_H_GUARD */

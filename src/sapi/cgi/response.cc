@@ -1,6 +1,6 @@
 #include "api/exception.h"
 #include "core/bytestring.h"
-#include "sapi/cgi/cgi-response.h"
+#include "sapi/cgi/response.h"
 
 namespace tempearly
 {

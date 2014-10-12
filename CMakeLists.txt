@@ -3,19 +3,19 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(tempearly C CXX)
 
 OPTION(
-    TEMPEARLY_ENABLE_CGI_SAPI
+    ENABLE_CGI_SAPI
     "Enable CGI SAPI"
     ON
 )
 
 OPTION(
-    TEMPEARLY_ENABLE_FASTCGI_SAPI
+    ENABLE_FASTCGI_SAPI
     "Enable FastCGI SAPI"
     OFF
 )
 
 OPTION(
-    TEMPEARLY_ENABLE_HTTPD_SAPI
+    ENABLE_HTTPD_SAPI
     "Enable builtin HTTP server SAPI"
     OFF
 )
@@ -97,22 +97,22 @@ SET(
     src/sapi/response.cc
 )
 
-IF (TEMPEARLY_ENABLE_CGI_SAPI)
+IF (ENABLE_CGI_SAPI)
     ADD_EXECUTABLE(
         tempearly-cgi
-        src/sapi/cgi/cgi-request.cc
-        src/sapi/cgi/cgi-response.cc
+        src/sapi/cgi/request.cc
+        src/sapi/cgi/response.cc
         src/sapi/cgi/main.cc
         ${INTERPRETER_SOURCES}
     )
 ENDIF()
 
-IF (TEMPEARLY_ENABLE_FASTCGI_SAPI)
+IF (ENABLE_FASTCGI_SAPI)
     INCLUDE(FindFastCGI)
     ADD_EXECUTABLE(
         tempearly-fcgi
-        src/sapi/cgi/cgi-request.cc
-        src/sapi/cgi/cgi-response.cc
+        src/sapi/cgi/request.cc
+        src/sapi/cgi/response.cc
         src/sapi/fastcgi/main.cc
         ${INTERPRETER_SOURCES}
     )
@@ -122,13 +122,12 @@ IF (TEMPEARLY_ENABLE_FASTCGI_SAPI)
     )
 ENDIF()
 
-IF (TEMPEARLY_ENABLE_HTTPD_SAPI)
+IF (ENABLE_HTTPD_SAPI)
     ADD_EXECUTABLE(
         tempearly-httpd
-        src/sapi/httpd/httpd-request.cc
-        src/sapi/httpd/httpd-response.cc
         src/sapi/httpd/main.cc
-        src/sapi/httpd/server.cc
+        src/sapi/httpd/request.cc
+        src/sapi/httpd/response.cc
         ${INTERPRETER_SOURCES}
     )
 ENDIF()

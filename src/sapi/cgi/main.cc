@@ -1,7 +1,7 @@
 #include "interpreter.h"
 #include "core/filename.h"
-#include "sapi/cgi/cgi-request.h"
-#include "sapi/cgi/cgi-response.h"
+#include "sapi/cgi/request.h"
+#include "sapi/cgi/response.h"
 
 using namespace tempearly;
 
