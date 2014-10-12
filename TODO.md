@@ -7,7 +7,6 @@
 
 # API
 
-- Hash maps
 - Regular expressions
 - Database connectivity
 - Date/time
