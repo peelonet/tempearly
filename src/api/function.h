@@ -17,7 +17,7 @@ namespace tempearly
         /**
          * Default constructor.
          */
-        explicit FunctionObject(const Handle<Class>& cls);
+        explicit FunctionObject(const Handle<Interpreter>& interpreter);
 
         /**
          * Default destructor.

@@ -20,6 +20,11 @@ namespace tempearly
         Handle<Class> AddClass(const String& name,
                                const Handle<Class>& base);
 
+        void AddFunction(const String& name,
+                         int arity,
+                         Value(*callback)(const Handle<Interpreter>&,
+                                          const std::vector<Value>&));
+
         /**
          * Returns true if this interpreter has an uncaught exception.
          */
@@ -109,6 +114,7 @@ namespace tempearly
         Handle<Class> eArithmeticError;
         Handle<Class> eAttributeError;
         Handle<Class> eKeyError;
+        Handle<Class> eImportError;
         Handle<Class> eLookupError;
         Handle<Class> eNameError;
         Handle<Class> eStateError;
