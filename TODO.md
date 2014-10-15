@@ -10,6 +10,9 @@
 - Regular expressions
 - Database connectivity
 - Date/time
+- Streams
+- File IO
+- Filename globbing
 
 # Server APIs
 
