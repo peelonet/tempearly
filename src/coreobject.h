@@ -36,6 +36,11 @@ namespace tempearly
             return false;
         }
 
+        virtual bool IsFile() const
+        {
+            return false;
+        }
+
         virtual bool IsFunction() const
         {
             return false;

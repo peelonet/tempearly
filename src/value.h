@@ -122,6 +122,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsException();
         }
 
+        inline bool IsFile() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsFile();
+        }
+
         inline bool IsFloat() const
         {
             return m_kind == KIND_FLOAT;

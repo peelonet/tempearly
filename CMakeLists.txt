@@ -70,6 +70,7 @@ SET(
     src/api/class.cc
     src/api/core.cc
     src/api/exception.cc
+    src/api/file.cc
     src/api/function.cc
     src/api/iterator.cc
     src/api/list.cc
