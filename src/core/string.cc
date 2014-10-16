@@ -194,7 +194,7 @@ namespace tempearly
         }
     }
 
-    String& String::operator=(const String& that)
+    String& String::Assign(const String& that)
     {
         if (m_runes != that.m_runes)
         {
@@ -212,6 +212,101 @@ namespace tempearly
         m_offset = that.m_offset;
         m_length = that.m_length;
         m_hash_code = that.m_hash_code;
+
+        return *this;
+    }
+
+    String& String::Assign(const char* input)
+    {
+        const char* p = input;
+
+        if (m_counter && --m_counter[0] == 0)
+        {
+            delete[] m_runes;
+            delete[] m_counter;
+        }
+        m_offset = m_length = m_hash_code = 0;
+        if (!p)
+        {
+            return *this;
+        }
+        while (*p)
+        {
+            std::size_t n = utf8_size(*p);
+
+            if (n)
+            {
+                ++m_length;
+                p += n;
+            } else {
+                break;
+            }
+        }
+        if (m_length)
+        {
+            bool valid = true;
+
+            m_runes = new rune[m_length];
+            m_counter = new unsigned int[1];
+            m_counter[0] = 1;
+            for (std::size_t i = 0; i < m_length; ++i)
+            {
+                std::size_t n = utf8_size(input[0]);
+                rune result;
+
+                switch (n)
+                {
+                    case 1:
+                        result = static_cast<rune>(input[0]);
+                        break;
+
+                    case 2:
+                        result = static_cast<rune>(input[0] & 0x1f);
+                        break;
+
+                    case 3:
+                        result = static_cast<rune>(input[0] & 0x0f);
+                        break;
+
+                    case 4:
+                        result = static_cast<rune>(input[0] & 0x07);
+                        break;
+
+                    case 5:
+                        result = static_cast<rune>(input[0] & 0x03);
+                        break;
+
+                    case 6:
+                        result = static_cast<rune>(input[0] & 0x01);
+                        break;
+
+                    default:
+                        valid = false;
+                }
+                if (valid)
+                {
+                    for (std::size_t j = 1; j < n; ++j)
+                    {
+                        if ((input[j] & 0xc0) == 0x80)
+                        {
+                            result = (result << 6) | (input[j] & 0x3f);
+                        } else {
+                            valid = false;
+                            break;
+                        }
+                    }
+                    if (valid)
+                    {
+                        m_runes[i] = result;
+                        input += n;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
 
         return *this;
     }
