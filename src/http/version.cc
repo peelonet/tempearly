@@ -24,7 +24,7 @@ namespace tempearly
         }
         if ((entry = version_map.Find(string)))
         {
-            slot = entry->value;
+            slot = entry->GetValue();
 
             return true;
         }
@@ -38,13 +38,11 @@ namespace tempearly
         {
             fill_version_map();
         }
-        for (const HttpVersionMap::Entry* entry = version_map.GetFront();
-             entry;
-             entry = entry->next)
+        for (const HttpVersionMap::Entry* entry = version_map.GetFront(); entry; entry = entry->GetNext())
         {
-            if (entry->value == kind)
+            if (entry->GetValue() == kind)
             {
-                return entry->id;
+                return entry->GetName();
             }
         }
 

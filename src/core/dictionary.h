@@ -18,20 +18,72 @@ namespace tempearly
          * Represents single key-value pair stored in the dictionary. Can also
          * be used for iteration.
          */
-        struct Entry
+        class Entry
         {
-            /** Identifier of the entry. */
-            String id;
+        public:
+            /**
+             * Returns identifier/name of the entry.
+             */
+            inline const String& GetName() const
+            {
+                return m_name;
+            }
+
+            /**
+             * Returns value of the entry.
+             */
+            inline T& GetValue()
+            {
+                return m_value;
+            }
+
+            /**
+             * Returns value of the entry.
+             */
+            inline const T& GetValue() const
+            {
+                return m_value;
+            }
+
+            /**
+             * Returns pointer to the next entry.
+             */
+            inline const Entry* GetNext() const
+            {
+                return m_next;
+            }
+
+            /**
+             * Returns pointer to the previous entry.
+             */
+            inline const Entry* GetPrevious() const
+            {
+                return m_previous;
+            }
+
+        private:
+            Entry(std::size_t hash_code, const String& name, const T& value)
+                : m_hash_code(hash_code)
+                , m_name(name)
+                , m_value(value)
+                , m_next(0)
+                , m_previous(0)
+                , m_child(0) {}
+
+            /** Cached hash code of the entry. */
+            std::size_t m_hash_code;
+            /** Name of the entry. */
+            String m_name;
             /** Value of the entry. */
-            T value;
-            /** Cached hash code. */
-            std::size_t hash;
+            T m_value;
             /** Pointer to next entry in the dictionary. */
-            Entry* next;
+            Entry* m_next;
             /** Pointer to previous entry in the dictionary. */
-            Entry* prev;
-            /** Pointer to child entry in the dictionary. */
-            Entry* child;
+            Entry* m_previous;
+            /** Pointer next entry in hash table. */
+            Entry* m_child;
+            friend class Dictionary;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Entry);
         };
 
         /**
@@ -66,21 +118,18 @@ namespace tempearly
                  entry1;
                  entry1 = entry1->next)
             {
-                Entry* entry2 = static_cast<Entry*>(std::malloc(sizeof(Entry)));
-                const std::size_t index = entry1->hash % kBucketSize;
+                Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
+                const std::size_t index = entry1->m_hash_code % kBucketSize;
 
-                new (static_cast<void*>(&entry2->id)) String(entry1->id);
-                new (static_cast<void*>(&entry2->value)) T(entry1->value);
-                entry2->hash = entry1->hash;
-                entry2->next = 0;
-                if ((entry2->prev = m_back))
+                entry2->m_next = 0;
+                if ((entry2->m_previous = m_back))
                 {
-                    m_back->next = entry2;
+                    m_back->m_next = entry2;
                 } else {
                     m_front = entry2;
                 }
                 m_back = entry2;
-                entry2->child = m_bucket[index];
+                entry2->m_child = m_bucket[index];
                 m_bucket[index] = entry2;
             }
         }
@@ -90,18 +139,46 @@ namespace tempearly
          */
         virtual ~Dictionary()
         {
-            Entry* current = m_front;
-            Entry* next;
-
-            while (current)
-            {
-                next = current->next;
-                current->id.~String();
-                current->value.~T();
-                std::free(static_cast<void*>(current));
-                current = next;
-            }
+            Clear();
             delete[] m_bucket;
+        }
+
+        /**
+         * Copies contents from another dictionary into this one.
+         */
+        template< class U >
+        Dictionary& Assign(const Dictionary<U>& that)
+        {
+            Clear();
+            for (const typename Dictionary<U>::Entry* entry1 = that.GetFront();
+                 entry1;
+                 entry1 = entry1->next)
+            {
+                Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
+                const std::size_t index = entry1->m_hash_code % kBucketSize;
+
+                entry2->m_next = 0;
+                if ((entry2->m_previous = m_back))
+                {
+                    m_back->m_next = entry2;
+                } else {
+                    m_front = entry2;
+                }
+                m_back = entry2;
+                entry2->m_child = m_bucket[index];
+                m_bucket[index] = entry2;
+            }
+
+            return *this;
+        }
+
+        /**
+         * Assignment operator.
+         */
+        template< class U >
+        inline Dictionary& operator=(const Dictionary<U>& that)
+        {
+            return Assign(that);
         }
 
         /**
@@ -116,9 +193,27 @@ namespace tempearly
          * Returns pointer to the first entry in the dictionary, or NULL if the
          * dictionary is empty.
          */
+        inline Entry* GetFront()
+        {
+            return m_front;
+        }
+
+        /**
+         * Returns pointer to the first entry in the dictionary, or NULL if the
+         * dictionary is empty.
+         */
         inline const Entry* GetFront() const
         {
             return m_front;
+        }
+
+        /**
+         * Returns pointer to the last entry in the dictionary, or NULL if the
+         * dictionary is empty.
+         */
+        inline Entry* GetBack()
+        {
+            return m_back;
         }
 
         /**
@@ -136,14 +231,36 @@ namespace tempearly
          *
          * \param id Identifier to look for
          */
+        Entry* Find(const String& id)
+        {
+            const std::size_t hash = id.HashCode();
+            const std::size_t index = hash % kBucketSize;
+
+            for (Entry* entry = m_bucket[index]; entry; entry = entry->m_child)
+            {
+                if (entry->m_hash_code == hash)
+                {
+                    return entry;
+                }
+            }
+
+            return 0;
+        }
+
+        /**
+         * Searches for an value with given identifier. Returns pointer to the
+         * entry holding the value, if such exists. Otherwise NULL is returned.
+         *
+         * \param id Identifier to look for
+         */
         const Entry* Find(const String& id) const
         {
             const std::size_t hash = id.HashCode();
             const std::size_t index = hash % kBucketSize;
 
-            for (const Entry* entry = m_bucket[index]; entry; entry = entry->child)
+            for (const Entry* entry = m_bucket[index]; entry; entry = entry->m_child)
             {
-                if (entry->hash == hash)
+                if (entry->m_hash_code == hash)
                 {
                     return entry;
                 }
@@ -165,28 +282,46 @@ namespace tempearly
             const std::size_t index = hash % kBucketSize;
             Entry* entry;
 
-            for (entry = m_bucket[index]; entry; entry = entry->child)
+            for (entry = m_bucket[index]; entry; entry = entry->m_child)
             {
-                if (entry->hash == hash)
+                if (entry->m_hash_code == hash)
                 {
-                    entry->value = value;
+                    entry->m_value = value;
                     return;
                 }
             }
-            entry = static_cast<Entry*>(std::malloc(sizeof(Entry)));
-            new (static_cast<void*>(&entry->id)) String(id);
-            new (static_cast<void*>(&entry->value)) T(value);
-            entry->hash = hash;
-            entry->next = 0;
-            if ((entry->prev = m_back))
+            entry = new Entry(hash, id, value);
+            entry->m_next = 0;
+            if ((entry->m_previous = m_back))
             {
-                m_back->next = entry;
+                m_back->m_next = entry;
             } else {
                 m_front = entry;
             }
             m_back = entry;
-            entry->child = m_bucket[index];
+            entry->m_child = m_bucket[index];
             m_bucket[index] = entry;
+        }
+
+        /**
+         * Removes all entries from the dictionary.
+         */
+        void Clear()
+        {
+            Entry* current = m_front;
+            Entry* next;
+
+            for (std::size_t i = 0; i < kBucketSize; ++i)
+            {
+                m_bucket[i] = 0;
+            }
+            while (current)
+            {
+                next = current->m_next;
+                delete current;
+                current = next;
+            }
+            m_front = m_back = 0;
         }
 
     private:

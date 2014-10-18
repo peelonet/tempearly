@@ -22,16 +22,13 @@ namespace tempearly
         }
         m_committed = true;
         m_socket->Printf("HTTP/1.0 %d\r\n", GetStatus()); // TODO: status message
-        for (const Dictionary<String>::Entry* e = GetHeaders().GetFront();
-             e;
-             e = e->next)
+        for (const Dictionary<String>::Entry* entry = GetHeaders().GetFront(); entry; entry = entry->GetNext())
         {
             m_socket->Printf("%s: %s\r\n",
-                             e->id.Encode().c_str(),
-                             e->value.Encode().c_str());
+                             entry->GetName().Encode().c_str(),
+                             entry->GetValue().Encode().c_str());
         }
         m_socket->Send("\r\n", 2);
-        // TODO: flush the socket
     }
 
     void HttpServerResponse::Write(std::size_t size, const char* data)

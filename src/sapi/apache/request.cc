@@ -42,18 +42,23 @@ namespace tempearly
     {
         const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
 
-        return e && !e->value.empty();
+        return e && !e->GetValue().empty();
     }
 
     bool ApacheRequest::GetParameter(const String& id, String& value) const
     {
-        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+        const Dictionary<std::vector<String> >::Entry* entry = m_parameters.Find(id);
 
-        if (e && !e->value.empty())
+        if (entry)
         {
-            value = e->value.front();
+            const std::vector<String>& values = entry->GetValue();
 
-            return true;
+            if (!values.empty())
+            {
+                value = values.front();
+
+                return true;
+            }
         }
 
         return false;
@@ -105,18 +110,16 @@ namespace tempearly
         }
     }
 
-    static void add_param(const String& key, const String& value, Dictionary<std::vector<String> >& parameters)
+    static inline void add_param(const String& key, const String& value, Dictionary<std::vector<String> >& parameters)
     {
-        const Dictionary<std::vector<String> >::Entry* e = parameters.Find(key);
-        std::vector<String> vector;
+        Dictionary<std::vector<String> >::Entry* entry = parameters.Find(key);
 
-        if (e)
+        if (entry)
         {
-            vector.reserve(e->value.size() + 1);
-            vector.assign(e->value.begin(), e->value.end());
+            entry->GetValue().push_back(value);
+        } else {
+            parameters.Insert(key, std::vector<String>(1, value));
         }
-        vector.push_back(value);
-        parameters.Insert(key, vector);
     }
 
     static void parse_post(request_rec* request, Dictionary<std::vector<String> >& parameters)

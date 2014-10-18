@@ -805,7 +805,7 @@ SCAN_EXPONENT:
                     string = m_buffer.ToString();
                     if ((entry = m_keywords.Find(string)))
                     {
-                        token.kind = entry->value;
+                        token.kind = entry->GetValue();
                     } else {
                         token.kind = Token::IDENTIFIER;
                         token.text = string;

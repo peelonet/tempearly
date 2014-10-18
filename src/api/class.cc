@@ -66,7 +66,7 @@ namespace tempearly
 
             if (entry)
             {
-                value = entry->value;
+                value = entry->GetValue();
 
                 return true;
             }
@@ -295,9 +295,9 @@ namespace tempearly
         }
         if (m_attributes)
         {
-            for (const AttributeMap::Entry* e = m_attributes->GetFront(); e; e = e->next)
+            for (const AttributeMap::Entry* entry = m_attributes->GetFront(); entry; entry = entry->GetNext())
             {
-                e->value.Mark();
+                entry->GetValue().Mark();
             }
         }
     }

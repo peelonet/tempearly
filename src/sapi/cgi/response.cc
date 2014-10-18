@@ -23,14 +23,12 @@ namespace tempearly
         {
             std::fprintf(stdout, "Status: %d\r\n", GetStatus());
         }
-        for (const Dictionary<String>::Entry* e = GetHeaders().GetFront();
-             e;
-             e = e->next)
+        for (const Dictionary<String>::Entry* entry = GetHeaders().GetFront(); entry; entry = entry->GetNext())
         {
             std::fprintf(stdout,
                          "%s: %s\r\n",
-                         e->id.Encode().c_str(),
-                         e->value.Encode().c_str());
+                         entry->GetName().Encode().c_str(),
+                         entry->GetValue().Encode().c_str());
         }
         std::fprintf(stdout, "\r\n");
         std::fflush(stdout);

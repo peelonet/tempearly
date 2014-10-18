@@ -55,18 +55,23 @@ namespace tempearly
     {
         const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
 
-        return e && !e->value.empty();
+        return e && !e->GetValue().empty();
     }
 
     bool HttpServerRequest::GetParameter(const String& id, String& slot) const
     {
         const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
 
-        if (e && !e->value.empty())
+        if (e)
         {
-            slot = e->value.front();
+            const std::vector<String>& values = e->GetValue();
 
-            return true;
+            if (!values.empty())
+            {
+                slot = values.front();
+
+                return true;
+            }
         }
 
         return false;
@@ -83,7 +88,7 @@ namespace tempearly
 
         if (e)
         {
-            slot = e->value;
+            slot = e->GetValue();
 
             return true;
         }

@@ -427,15 +427,14 @@ namespace tempearly
             }
             if (UrlDecode(name, name) && UrlDecode(value, value))
             {
-                const Dictionary<std::vector<String> >::Entry* e = dictionary.Find(name);
-                std::vector<String> vector;
+                Dictionary<std::vector<String> >::Entry* entry = dictionary.Find(name);
 
-                if (e)
+                if (entry)
                 {
-                    vector.insert(vector.begin(), e->value.begin(), e->value.end());
+                    entry->GetValue().push_back(value);
+                } else {
+                    dictionary.Insert(name, std::vector<String>(1, value));
                 }
-                vector.push_back(value);
-                dictionary.Insert(name, vector);
             }
         }
     }
