@@ -62,9 +62,10 @@ namespace tempearly
         void SetVariable(const String& id, const Value& value);
 
         /**
-         * Constructs an hash map from contents of the variable scope.
+         * Constructs an object which contains variables from this scope as
+         * attributes.
          */
-        Handle<MapObject> ToMap(const Handle<Interpreter>& interpreter) const;
+        Handle<Object> ToObject(const Handle<Interpreter>& interpreter) const;
 
         void Mark();
 
