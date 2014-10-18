@@ -16,7 +16,7 @@
 
 # Server APIs
 
+- AST caching in FastCGI and Apache SAPIs.
 - Process multipart HTTP requests.
 - Parse request parameters (especially POSTed ones) only when requested in the
   script.
-- Apache 2.x
