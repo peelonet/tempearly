@@ -2,6 +2,7 @@
 #define TEMPEARLY_API_MAP_H_GUARD
 
 #include "value.h"
+#include "api/object.h"
 
 namespace tempearly
 {
