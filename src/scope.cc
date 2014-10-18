@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "api/map.h"
 
 namespace tempearly
 {
@@ -47,21 +46,19 @@ namespace tempearly
         m_variables->Insert(id, value);
     }
 
-    Handle<MapObject> Scope::ToMap(const Handle<Interpreter>& interpreter) const
+    Handle<Object> Scope::ToObject(const Handle<Interpreter>& interpreter) const
     {
-        Handle<MapObject> map = new MapObject(interpreter->cMap);
+        Handle<Object> object = new Object(interpreter->cObject);
 
         if (m_variables)
         {
             for (const VariableMap::Entry* entry = m_variables->GetFront(); entry; entry = entry->GetNext())
             {
-                const String& name = entry->GetName();
-
-                map->Insert(name.HashCode(), Value::NewString(name), entry->GetValue());
+                object->SetAttribute(entry->GetName(), entry->GetValue());
             }
         }
 
-        return map;
+        return object;
     }
 
     void Scope::Mark()

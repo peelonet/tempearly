@@ -47,10 +47,10 @@ namespace tempearly
      * import(filename) => Map
      *
      * Includes given file into current script and returns it's variable scope
-     * as hash map.
+     * as an object.
      *
      * Files are imported only once, their resulting variable scope is cached
-     * into the interpreter and the cached hash map is returned on subsequent
+     * into the interpreter and the cached object is returned on subsequent
      * import calls of the same file.
      *
      * This is usually used to import common utility functions declared in

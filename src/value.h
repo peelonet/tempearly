@@ -81,6 +81,11 @@ namespace tempearly
         Value& operator=(const Value& that);
 
         /**
+         * Assignment operator.
+         */
+        Value& operator=(const Handle<CoreObject>& object);
+
+        /**
          * Returns kind of the value.
          */
         inline Kind GetKind() const

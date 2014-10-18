@@ -137,6 +137,20 @@ namespace tempearly
         return *this;
     }
 
+    Value& Value::operator=(const Handle<CoreObject>& object)
+    {
+        Clear();
+        if ((m_data.o = object.Get()))
+        {
+            m_data.o->IncReferenceCount();
+            m_kind = KIND_OBJECT;
+        } else {
+            m_kind = KIND_NULL;
+        }
+
+        return *this;
+    }
+
     bool Value::IsInstance(const Handle<Interpreter>& interpreter,
                            const Handle<Class>& cls) const
     {
@@ -198,6 +212,23 @@ namespace tempearly
                 }
 
                 return true;
+            }
+            if (m_kind == KIND_OBJECT && m_data.o->GetAttribute("__getattr__", value) && value.IsFunction())
+            {
+                return value = value.As<FunctionObject>()->Invoke(
+                    interpreter,
+                    std::vector<Value>(1, Value::NewString(id))
+                );
+            }
+            else if (cls->GetAttribute("__getattr__", value) && value.IsFunction())
+            {
+                std::vector<Value> args;
+
+                args.reserve(2);
+                args.push_back(*this);
+                args.push_back(Value::NewString(id));
+
+                return value = value.As<FunctionObject>()->Invoke(interpreter, args);
             }
             interpreter->Throw(interpreter->eAttributeError,
                                "Missing attribute: " + id);

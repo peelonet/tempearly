@@ -128,7 +128,7 @@ namespace tempearly
 
                 return Value();
             }
-            result = Value::NewObject(m_scope->ToMap(this));
+            result = m_scope->ToObject(this);
             PopScope();
             if (!m_imported_files)
             {
