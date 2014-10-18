@@ -22,7 +22,7 @@ namespace tempearly
 
         if (entry)
         {
-            slot = entry->value;
+            slot = entry->GetValue();
 
             return true;
         }
@@ -41,7 +41,7 @@ namespace tempearly
 
         if (entry)
         {
-            m_headers.Insert(name, entry->value + ", " + value);
+            m_headers.Insert(name, entry->GetValue() + ", " + value);
         } else {
             m_headers.Insert(name, value);
         }
@@ -49,7 +49,7 @@ namespace tempearly
 
     void Response::Write(const String& string)
     {
-        ByteString bytes = string.Encode();
+        const ByteString bytes = string.Encode();
 
         Write(bytes.GetLength(), bytes.c_str());
     }

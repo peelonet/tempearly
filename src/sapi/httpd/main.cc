@@ -220,8 +220,7 @@ static void serve(const Handle<Socket>& socket, const Filename& root_path)
     }
 }
 
-static void httpd_loop(const Handle<Socket>& server_socket,
-                       const Filename& root_path)
+static void httpd_loop(const Handle<Socket>& server_socket, const Filename& root_path)
 {
     for (;;)
     {
@@ -245,6 +244,7 @@ static void send_error(const Handle<Socket>& socket, const char* status, const S
     socket->Printf("Content-Type: text/plain; charset=utf-8\r\n");
     socket->Printf("Content-Length: %ld\r\n\r\n", content.GetLength());
     socket->Send(content.c_str(), content.GetLength());
+    socket->Close();
 }
 
 static void send_file(const Handle<Socket>& socket,
@@ -359,9 +359,7 @@ static bool parse_request_header(const String& line, HttpRequestData& request)
     return true;
 }
 
-static byte* parse_request(byte* start,
-                           std::size_t& remain,
-                           HttpRequestData& request)
+static byte* parse_request(byte* start, std::size_t& remain, HttpRequestData& request)
 {
     byte* begin = start;
     byte* end = static_cast<byte*>(std::memchr(begin, '\n', remain));
@@ -389,6 +387,7 @@ static byte* parse_request(byte* start,
     for (;;)
     {
         begin = start;
+        // TODO: This line reading bugs if client sends only \n
         if (!(end = static_cast<byte*>(std::memchr(begin, '\n', remain))))
         {
             return 0;
@@ -427,7 +426,7 @@ static String get_mime_type(const String& extension)
     }
     if ((entry = mime_type_map.Find(extension)))
     {
-        return entry->value;
+        return entry->GetValue();
     } else {
         return "application/octet-stream";
     }

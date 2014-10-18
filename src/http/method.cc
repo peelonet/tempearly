@@ -31,7 +31,7 @@ namespace tempearly
         // TODO: make this case ignorant
         if ((entry = method_map.Find(string)))
         {
-            slot = entry->value;
+            slot = entry->GetValue();
 
             return true;
         }
@@ -45,13 +45,11 @@ namespace tempearly
         {
             fill_method_map();
         }
-        for (const HttpMethodMap::Entry* entry = method_map.GetFront();
-             entry;
-             entry = entry->next)
+        for (const HttpMethodMap::Entry* entry = method_map.GetFront(); entry; entry = entry->GetNext())
         {
-            if (entry->value == kind)
+            if (entry->GetValue() == kind)
             {
-                return entry->id;
+                return entry->GetName();
             }
         }
 

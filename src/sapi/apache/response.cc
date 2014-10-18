@@ -26,14 +26,17 @@ namespace tempearly
         }
         m_committed = true;
         m_request->status = GetStatus();
-        for (const Dictionary<String>::Entry* e = GetHeaders().GetFront(); e; e = e->next)
+        for (const Dictionary<String>::Entry* entry = GetHeaders().GetFront(); entry; entry = entry->GetNext())
         {
-            if (e->id == "Content-Type")
+            const String& name = entry->GetName();
+            const String& value = entry->GetValue();
+
+            if (name.EqualsIgnoreCase("Content-Type"))
             {
-                ap_set_content_type(m_request, e->value.Encode().c_str());
+                ap_set_content_type(m_request, value.Encode().c_str());
                 content_type_set = true;
             } else {
-                apr_table_add(m_request->headers_out, e->id.Encode().c_str(), e->value.Encode().c_str());
+                apr_table_add(m_request->headers_out, name.Encode().c_str(), value.Encode().c_str());
             }
         }
         if (!content_type_set)

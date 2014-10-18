@@ -28,7 +28,7 @@ namespace tempearly
 
             if (entry)
             {
-                value = entry->value;
+                value = entry->GetValue();
 
                 return true;
             }
@@ -59,9 +59,9 @@ namespace tempearly
         }
         if (m_variables)
         {
-            for (const VariableMap::Entry* e = m_variables->GetFront(); e; e = e->next)
+            for (const VariableMap::Entry* entry = m_variables->GetFront(); entry; entry = entry->GetNext())
             {
-                e->value.Mark();
+                entry->GetValue().Mark();
             }
         }
     }
