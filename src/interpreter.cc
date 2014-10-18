@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "api/function.h"
 #include "api/iterator.h"
+#include "api/map.h"
 #include "core/bytestring.h"
 #include "core/filename.h"
 
@@ -27,7 +28,16 @@ namespace tempearly
 
     Interpreter::Interpreter()
         : m_exception(0)
-        , m_empty_iterator(0) {}
+        , m_empty_iterator(0)
+        , m_imported_files(0) {}
+
+    Interpreter::~Interpreter()
+    {
+        if (m_imported_files)
+        {
+            delete m_imported_files;
+        }
+    }
 
     void Interpreter::Initialize()
     {
@@ -84,6 +94,54 @@ namespace tempearly
         }
 
         return false;
+    }
+
+    Value Interpreter::Import(const Filename& filename)
+    {
+        const String& full_name = filename.GetFullName();
+        FILE* handle;
+
+        if (m_imported_files)
+        {
+            Dictionary<Value>::Entry* entry = m_imported_files->Find(full_name);
+
+            if (entry)
+            {
+                return entry->GetValue();
+            }
+        }
+        if ((handle = filename.Open("rb")))
+        {
+            Handle<Parser> parser = new Parser(handle);
+            Handle<Script> script = parser->Compile(this);
+            Value result;
+
+            parser->Close();
+            if (!script)
+            {
+                return Value();
+            }
+            PushScope(globals);
+            if (!script->Execute(this))
+            {
+                PopScope();
+
+                return Value();
+            }
+            result = Value::NewObject(m_scope->ToMap(this));
+            PopScope();
+            if (!m_imported_files)
+            {
+                m_imported_files = new Dictionary<Value>();
+            }
+            m_imported_files->Insert(full_name, result);
+
+            return result;
+        } else {
+            Throw(eImportError, "Unable to import file");
+
+            return Value();
+        }
     }
 
     Handle<Class> Interpreter::AddClass(const String& name,
@@ -255,6 +313,13 @@ namespace tempearly
         if (m_empty_iterator && !m_empty_iterator->IsMarked())
         {
             m_empty_iterator->Mark();
+        }
+        if (m_imported_files)
+        {
+            for (const Dictionary<Value>::Entry* entry = m_imported_files->GetFront(); entry; entry = entry->GetNext())
+            {
+                entry->GetValue().Mark();
+            }
         }
     }
 }

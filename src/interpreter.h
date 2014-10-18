@@ -13,9 +13,13 @@ namespace tempearly
     public:
         explicit Interpreter();
 
+        ~Interpreter();
+
         void Initialize();
 
         bool Include(const Filename& filename);
+
+        Value Import(const Filename& filename);
 
         Handle<Class> AddClass(const String& name,
                                const Handle<Class>& base);
@@ -133,6 +137,8 @@ namespace tempearly
         Handle<Scope> m_scope;
         /** Shared instance of empty iterator. */
         IteratorObject* m_empty_iterator;
+        /** Container for imported files. */
+        Dictionary<Value>* m_imported_files;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Interpreter);
     };
 }
