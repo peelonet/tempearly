@@ -1,7 +1,6 @@
 #include <http_protocol.h>
 #include <apr_strings.h>
 
-#include "api/exception.h"
 #include "core/bytestring.h"
 #include "sapi/apache/response.h"
 
@@ -52,29 +51,5 @@ namespace tempearly
             Commit();
         }
         ap_rwrite(data, size, m_request);
-    }
-
-    void ApacheResponse::SendException(const Handle<ExceptionObject>& exception)
-    {
-        if (!exception)
-        {
-            return; // Just in case
-        }
-        if (m_committed)
-        {
-            ap_rprintf(
-                m_request,
-                "<p><strong>ERROR:</strong> %s</p>",
-                exception->GetMessage().Encode().c_str()
-            );
-        } else {
-            m_committed = true;
-            ap_set_content_type(m_request, "text/plain");
-            ap_rprintf(
-                m_request,
-                "ERROR:\n%s\n",
-                exception->GetMessage().Encode().c_str()
-            );
-        }
     }
 }

@@ -40,28 +40,6 @@ namespace tempearly
         m_socket->Send(data, size);
     }
 
-    void HttpServerResponse::SendException(const Handle<ExceptionObject>& exception)
-    {
-        if (!exception)
-        {
-            return; // Just in case.
-        }
-        if (m_committed)
-        {
-            m_socket->Printf(
-                "<p><strong>ERROR:</strong> %s</p>",
-                exception->GetMessage().Encode().c_str()
-            );
-        } else {
-            m_committed = true;
-            m_socket->Printf("HTTP/1.0 500 Internal Server Error\r\n");
-            m_socket->Printf("Content-Type: text/plain; charset=utf-8\r\n\r\n");
-            m_socket->Printf("ERROR:\n%s\n",
-                             exception->GetMessage().Encode().c_str());
-            // TODO: flush socket
-        }
-    }
-
     void HttpServerResponse::Mark()
     {
         Response::Mark();

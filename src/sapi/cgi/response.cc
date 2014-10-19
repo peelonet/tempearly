@@ -1,4 +1,3 @@
-#include "api/exception.h"
 #include "core/bytestring.h"
 #include "sapi/cgi/response.h"
 
@@ -44,33 +43,5 @@ namespace tempearly
                     sizeof(char),
                     size,
                     stdout);
-    }
-
-    void CgiResponse::SendException(const Handle<ExceptionObject>& exception)
-    {
-        if (!exception)
-        {
-            return; // Just in case.
-        }
-        if (m_committed)
-        {
-            std::fprintf(
-                stdout,
-                "<p><strong>ERROR:</strong> %s</p>",
-                exception->GetMessage().Encode().c_str()
-            );
-        } else {
-            m_committed = true;
-            std::fprintf(
-                stdout,
-                "Status: 500\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n"
-            );
-            std::fprintf(
-                stdout,
-                "ERROR:\n%s\n",
-                exception->GetMessage().Encode().c_str()
-            );
-            std::fflush(stdout);
-        }
     }
 }

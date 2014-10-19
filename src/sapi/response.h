@@ -80,7 +80,7 @@ namespace tempearly
 
         virtual void Write(std::size_t size, const char* data) = 0;
 
-        virtual void SendException(const Handle<ExceptionObject>& exception) = 0;
+        void SendException(const Handle<ExceptionObject>& exception);
 
     private:
         /** Status code of the response. */
