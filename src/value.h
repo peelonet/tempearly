@@ -201,6 +201,32 @@ namespace tempearly
                    const Value& arg) const;
 
         /**
+         * Performs equality test between two values. This is done by invoking
+         * the "__eq__" method with given value as argument.
+         *
+         * \param interpreter Script interpreter
+         * \param that        Other value to test equality with
+         * \param slot        Where result of the comparison is assigned to
+         * \return            A boolean flag indicating whether the comparison
+         *                    was successfull or whether an exception was
+         *                    thrown
+         */
+        bool Equals(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const;
+
+        /**
+         * Compares two values against each other. This is done by invoking the
+         * "__cmp__" method with given value as argument.
+         *
+         * \param interpreter Script interpreter
+         * \param that        Other value to compare this one against
+         * \param slot        Where result of the comparison is assigned to
+         * \return            A boolean flag indicating whether the comparison
+         *                    was successfull or whether an exception was
+         *                    thrown
+         */
+        bool Compare(const Handle<Interpreter>& interpreter, const Value& that, int& slot) const;
+
+        /**
          * Treats object as iterator and attempts to retrieve it's next value.
          *
          * \param interpreter Script interpreter
@@ -271,6 +297,27 @@ namespace tempearly
         bool ToBool(const Handle<Interpreter>& interpreter, bool& value) const;
 
         bool ToString(const Handle<Interpreter>& interpreter, String& string) const;
+
+        inline bool HasFlag(CountedObject::Flag flag) const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->HasFlag(flag);
+        }
+
+        inline void SetFlag(CountedObject::Flag flag) const
+        {
+            if (m_kind == KIND_OBJECT)
+            {
+                m_data.o->SetFlag(flag);
+            }
+        }
+
+        inline void UnsetFlag(CountedObject::Flag flag) const
+        {
+            if (m_kind == KIND_OBJECT)
+            {
+                m_data.o->UnsetFlag(flag);
+            }
+        }
 
         inline operator bool() const
         {

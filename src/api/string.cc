@@ -641,7 +641,7 @@ namespace tempearly
 
     void init_string(Interpreter* i)
     {
-        i->cString = i->AddClass("String", i->cObject);
+        i->cString = i->AddClass("String", i->cIterable);
 
         i->cString->SetAllocator(Class::kNoAlloc);
 

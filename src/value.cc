@@ -297,6 +297,49 @@ namespace tempearly
         return Call(interpreter, id, std::vector<Value>(1, arg));
     }
 
+    bool Value::Equals(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const
+    {
+        Value result = Call(interpreter, "__eq__", that);
+
+        if (!result)
+        {
+            return false;
+        }
+        else if (result.IsBool())
+        {
+            slot = result.AsBool();
+        } else {
+            slot = false;
+        }
+
+        return true;
+    }
+
+    bool Value::Compare(const Handle<Interpreter>& interpreter, const Value& that, int& slot) const
+    {
+        Value result = Call(interpreter, "__cmp__", that);
+
+        if (result)
+        {
+            if (result.IsNull())
+            {
+                slot = 0;
+            } else {
+                i64 i;
+
+                if (!result.AsInt(interpreter, i))
+                {
+                    return false;
+                }
+                slot = static_cast<int>(i);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
     bool Value::GetNext(const Handle<Interpreter>& interpreter, Value& slot) const
     {
         Value result = Call(interpreter, "next");

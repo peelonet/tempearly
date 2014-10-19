@@ -14,6 +14,7 @@ namespace tempearly
     void init_exception(Interpreter*);
     void init_file(Interpreter*);
     void init_function(Interpreter*);
+    void init_iterable(Interpreter*);
     void init_iterator(Interpreter*);
     void init_list(Interpreter*);
     void init_map(Interpreter*);
@@ -49,6 +50,7 @@ namespace tempearly
         globals = new Scope(Handle<Scope>(), Handle<Scope>());
 
         init_object(this);
+        init_iterable(this);
         init_bool(this);
         init_number(this);
         init_string(this);

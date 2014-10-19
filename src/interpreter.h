@@ -106,6 +106,7 @@ namespace tempearly
         Handle<Class> cFloat;
         Handle<Class> cFunction;
         Handle<Class> cInt;
+        Handle<Class> cIterable;
         Handle<Class> cIterator;
         Handle<Class> cList;
         Handle<Class> cMap;

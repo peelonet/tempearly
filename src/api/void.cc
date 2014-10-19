@@ -25,7 +25,7 @@ namespace tempearly
 
     void init_void(Interpreter* i)
     {
-        i->cVoid = i->AddClass("Void", i->cObject);
+        i->cVoid = i->AddClass("Void", i->cIterable);
 
         i->cVoid->SetAllocator(Class::kNoAlloc);
 
