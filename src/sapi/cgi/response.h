@@ -16,8 +16,6 @@ namespace tempearly
 
         void Write(std::size_t size, const char* data);
 
-        void SendException(const Handle<ExceptionObject>& exception);
-
     private:
         /** Whether the response has been committed or not. */
         bool m_committed;

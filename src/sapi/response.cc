@@ -1,3 +1,5 @@
+#include "utils.h"
+#include "api/exception.h"
 #include "core/bytestring.h"
 #include "sapi/response.h"
 
@@ -52,5 +54,22 @@ namespace tempearly
         const ByteString bytes = string.Encode();
 
         Write(bytes.GetLength(), bytes.c_str());
+    }
+
+    void Response::SendException(const Handle<ExceptionObject>& exception)
+    {
+        if (!exception)
+        {
+            return; // Just in case
+        }
+        else if (IsCommitted())
+        {
+            Write("\n<p><strong>ERROR:</strong> " + Utils::XmlEscape(exception->GetMessage()) + "</p>\n");
+        } else {
+            m_headers.Clear();
+            SetHeader("Content-Type", "text/plain; charset=utf-8");
+            m_status = 500;
+            Write("ERROR:\n" + exception->GetMessage() + "\n");
+        }
     }
 }

@@ -18,8 +18,6 @@ namespace tempearly
 
         void Write(std::size_t size, const char* data);
 
-        void SendException(const Handle<ExceptionObject>& exception);
-
         void Mark();
 
     private:
