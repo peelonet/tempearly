@@ -299,6 +299,50 @@ namespace tempearly
         return Value::NewObject(iterator);
     }
 
+    /**
+     * List#__add__(collection) => List
+     *
+     * Returns a new list which contains items from the list with items
+     * included from the object given as argument.
+     *
+     *     a = [1, 2, 3];
+     *     a += [4, 5];
+     *     a;               #=> [1, 2, 3, 4, 5]
+     */
+    TEMPEARLY_NATIVE_METHOD(list_add)
+    {
+        Handle<ListObject> original = args[0].As<ListObject>();
+        Handle<ListObject> result;
+        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value element;
+
+        if (!iterator)
+        {
+            return Value();
+        }
+        result = new ListObject(interpreter->cList, original);
+        while (iterator.GetNext(interpreter, element))
+        {
+            result->Append(element);
+        }
+        if (interpreter->HasException())
+        {
+            return Value();
+        }
+
+        return Value::NewObject(result);
+    }
+
+    /**
+     * List#__bool__() => Bool
+     *
+     * Boolean representation of list. Non-empty lists evaluate as true.
+     */
+    TEMPEARLY_NATIVE_METHOD(list_bool)
+    {
+        return Value::NewBool(!args[0].As<ListObject>()->IsEmpty());
+    }
+
     void init_list(Interpreter* i)
     {
         i->cList = i->AddClass("List", i->cIterable);
@@ -314,5 +358,12 @@ namespace tempearly
         i->cList->AddMethod(i, "clear", 0, list_clear);
 
         i->cList->AddMethod(i, "__iter__", 0, list_iter);
+
+        // Operators
+        i->cList->AddMethod(i, "__add__", 1, list_add);
+
+        // Conversion methods
+        i->cList->AddMethod(i, "__bool__", 0, list_bool);
+        i->cList->AddMethodAlias(i, "__str__", "join");
     }
 }

@@ -286,6 +286,49 @@ namespace tempearly
         m_attributes->Insert(name, method);
     }
 
+    namespace
+    {
+        class AliasMethod : public FunctionObject
+        {
+        public:
+            explicit AliasMethod(const Handle<Interpreter>& interpreter, const String& alias)
+                : FunctionObject(interpreter)
+                , m_alias(alias) {}
+
+            Value Invoke(const Handle<Interpreter>& interpreter,
+                         const std::vector<Value>& args)
+            {
+                // Arguments must not be empty.
+                if (args.empty())
+                {
+                    interpreter->Throw(interpreter->eTypeError,
+                                       "Missing method receiver");
+
+                    return Value();
+                }
+
+                return args[0].Call(interpreter, m_alias, std::vector<Value>(args.begin() + 1, args.end()));
+            }
+
+        private:
+            const String m_alias;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(AliasMethod);
+        };
+    }
+
+    void Class::AddMethodAlias(const Handle<Interpreter>& interpreter,
+                               const String& alias_name,
+                               const String& aliased_name)
+    {
+        Value method = Value::NewObject(new AliasMethod(interpreter, aliased_name));
+
+        if (!m_attributes)
+        {
+            m_attributes = new AttributeMap();
+        }
+        m_attributes->Insert(alias_name, method);
+    }
+
     void Class::Mark()
     {
         CountedObject::Mark();

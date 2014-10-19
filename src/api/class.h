@@ -66,6 +66,19 @@ namespace tempearly
                              int arity,
                              MethodCallback callback);
 
+        /**
+         * Adds an alias method to this class. Alias methods are methods which
+         * sipmly redirect the method call to another method.
+         *
+         * \param interpreter  Script interpreter
+         * \param alias_name   Name of the alias method
+         * \param aliased_name Name of the aliased method, e.g. the method
+         *                     which the alias method calls
+         */
+        void AddMethodAlias(const Handle<Interpreter>& interpreter,
+                            const String& alias_name,
+                            const String& aliased_name);
+
         void Mark();
 
         bool IsClass() const

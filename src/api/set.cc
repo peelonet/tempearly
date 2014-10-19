@@ -291,10 +291,10 @@ namespace tempearly
     }
 
     /**
-     * Set#__add__(collection) => List
+     * Set#__add__(collection) => Set
      *
-     * Returns a new list which contains items from the list with items
-     * included from the object given as argument.
+     * Returns a new set which contains items from the list with items included
+     * from the object given as argument.
      *
      *     a = Set(1, 2, 3);
      *     a += [4, 5];
@@ -363,5 +363,6 @@ namespace tempearly
 
         // Conversion methods
         i->cSet->AddMethod(i, "__bool__", 0, set_bool);
+        i->cSet->AddMethodAlias(i, "__str__", "join");
     }
 }

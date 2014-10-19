@@ -197,7 +197,7 @@ namespace tempearly
 
         i->cIterator->AddMethod(i, "__bool__", 0, iter_bool);
 
-        //TODO:i->cIterator->AddAlias(i, "__lsh__", "feed");
-        //TODO:i->cIterator->AddAlias(i, "__call__", "next");
+        i->cIterator->AddMethodAlias(i, "__lsh__", "feed");
+        i->cIterator->AddMethodAlias(i, "__call__", "next");
     }
 }
