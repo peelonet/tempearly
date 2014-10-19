@@ -540,7 +540,7 @@ namespace tempearly
 
         // Conversion methods
         i->cMap->AddMethod(i, "__bool__", 0, map_bool);
-        //TODO:i->cMap->AddAlias(engine, "__str__", "join");
+        i->cMap->AddMethodAlias(i, "__str__", "join");
 
         i->cMap->AddMethod(i, "__add__", 1, map_add);
     }
