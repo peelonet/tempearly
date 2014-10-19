@@ -25,6 +25,17 @@ namespace tempearly
         virtual ~FunctionObject();
 
         /**
+         * Constructs scripted function.
+         *
+         * \param interpreter Script interpreter
+         * \param parameters  Parameters for the function
+         * \param nodes       Function body
+         */
+        static Handle<FunctionObject> NewScripted(const Handle<Interpreter>& interpreter,
+                                                  const std::vector<Handle<Parameter> >& parameters,
+                                                  const std::vector<Handle<Node> >& nodes);
+
+        /**
          * Invokes the function.
          *
          * \param interpreter Script interpreter

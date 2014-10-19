@@ -61,6 +61,7 @@ namespace tempearly
     class MapObject;
     class Node;
     class Object;
+    class Parameter;
     class Parser;
     class Random;
     class RangeObject;
@@ -74,6 +75,7 @@ namespace tempearly
     class StringBuilder;
     class Time;
     class Token;
+    class TypeHint;
     class Value;
 }
 

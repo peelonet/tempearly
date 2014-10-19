@@ -47,6 +47,11 @@ namespace tempearly
         explicit Result(Kind kind = KIND_SUCCESS, const Value& value = Value());
 
         /**
+         * Constructs successfull result with an value.
+         */
+        Result(const Value& value);
+
+        /**
          * Copy constructor.
          *
          * \param that Existing result to construct copy of

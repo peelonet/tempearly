@@ -71,6 +71,7 @@ namespace tempearly
             case KW_END: return "`end'";
             case KW_FALSE: return "`false'";
             case KW_FOR: return "`for'";
+            case KW_FUNCTION: return "`function'";
             case KW_IF: return "`if'";
             case KW_NULL: return "`null'";
             case KW_RETURN: return "`return'";

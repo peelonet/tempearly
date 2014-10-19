@@ -6,6 +6,10 @@ namespace tempearly
         : m_kind(kind)
         , m_value(value) {}
 
+    Result::Result(const Value& value)
+        : m_kind(KIND_SUCCESS)
+        , m_value(value) {}
+
     Result::Result(const Result& that)
         : m_kind(that.m_kind)
         , m_value(that.m_value) {}

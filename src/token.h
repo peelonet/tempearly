@@ -81,6 +81,7 @@ namespace tempearly
             KW_END,
             KW_FALSE,
             KW_FOR,
+            KW_FUNCTION,
             KW_IF,
             KW_NULL,
             KW_RETURN,

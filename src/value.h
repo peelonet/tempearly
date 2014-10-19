@@ -117,6 +117,11 @@ namespace tempearly
             return m_kind == KIND_BOOL;
         }
 
+        inline bool IsClass() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsClass();
+        }
+
         inline bool IsInt() const
         {
             return m_kind == KIND_INT;

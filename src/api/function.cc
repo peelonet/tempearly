@@ -1,4 +1,6 @@
 #include "interpreter.h"
+#include "node.h"
+#include "parameter.h"
 #include "api/function.h"
 
 namespace tempearly
@@ -7,6 +9,100 @@ namespace tempearly
         : Object(interpreter->cFunction) {}
 
     FunctionObject::~FunctionObject() {}
+
+    namespace
+    {
+        class ScriptedFunction : public FunctionObject
+        {
+        public:
+            explicit ScriptedFunction(const Handle<Interpreter>& interpreter,
+                                      const std::vector<Handle<Parameter> >& parameters,
+                                      const std::vector<Handle<Node> >& nodes)
+                : FunctionObject(interpreter)
+                , m_parameters(parameters.begin(), parameters.end())
+                , m_nodes(nodes.begin(), nodes.end()) {}
+
+            Value Invoke(const Handle<Interpreter>& interpreter, const std::vector<Value>& args)
+            {
+                interpreter->PushScope(interpreter->GetScope());
+                if (!Parameter::Apply(interpreter,
+                                      std::vector<Handle<Parameter> >(m_parameters.begin(), m_parameters.end()),
+                                      args))
+                {
+                    interpreter->PopScope();
+
+                    return Value();
+                }
+                for (std::size_t i = 0; i < m_nodes.size(); ++i)
+                {
+                    Result result = m_nodes[i]->Execute(interpreter);
+
+                    switch (result.GetKind())
+                    {
+                        case Result::KIND_SUCCESS:
+                            break;
+
+                        case Result::KIND_RETURN:
+                            interpreter->PopScope();
+                            if (result.HasValue())
+                            {
+                                return result.GetValue();
+                            } else {
+                                return Value::NullValue();
+                            }
+
+                        case Result::KIND_BREAK:
+                            interpreter->Throw(interpreter->eSyntaxError, "Unexpected 'break'");
+                            interpreter->PopScope();
+                            return Value();
+
+                        case Result::KIND_CONTINUE:
+                            interpreter->Throw(interpreter->eSyntaxError, "Unexpected 'continue'");
+                            interpreter->PopScope();
+                            return Value();
+
+                        default:
+                            interpreter->PopScope();
+                            return Value();
+                    }
+                }
+                interpreter->PopScope();
+
+                return Value::NullValue();
+            }
+
+            void Mark()
+            {
+                FunctionObject::Mark();
+                for (std::size_t i = 0; i < m_parameters.size(); ++i)
+                {
+                    if (!m_parameters[i]->IsMarked())
+                    {
+                        m_parameters[i]->Mark();
+                    }
+                }
+                for (std::size_t i = 0; i < m_nodes.size(); ++i)
+                {
+                    if (!m_nodes[i]->IsMarked())
+                    {
+                        m_nodes[i]->Mark();
+                    }
+                }
+            }
+
+        private:
+            const std::vector<Parameter*> m_parameters;
+            const std::vector<Node*> m_nodes;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ScriptedFunction);
+        };
+    }
+
+    Handle<FunctionObject> FunctionObject::NewScripted(const Handle<Interpreter>& interpreter,
+                                                       const std::vector<Handle<Parameter> >& parameters,
+                                                       const std::vector<Handle<Node> >& nodes)
+    {
+        return new ScriptedFunction(interpreter, parameters, nodes);
+    }
 
     namespace
     {

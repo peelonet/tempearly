@@ -468,6 +468,22 @@ namespace tempearly
         const bool m_exclusive;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(RangeNode);
     };
+
+    class FunctionNode : public Node
+    {
+    public:
+        explicit FunctionNode(const std::vector<Handle<Parameter> >& parameters,
+                              const std::vector<Handle<Node> >& nodes);
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        const std::vector<Parameter*> m_parameters;
+        const std::vector<Node*> m_nodes;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FunctionNode);
+    };
 }
 
 #endif /* !TEMPEARLY_NODE_H_GUARD */

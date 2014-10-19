@@ -65,11 +65,13 @@ SET(
     src/interpreter.cc
     src/memory.cc
     src/node.cc
+    src/parameter.cc
     src/parser.cc
     src/result.cc
     src/scope.cc
     src/script.cc
     src/token.cc
+    src/typehint.cc
     src/utils.cc
     src/value.cc
     src/api/bool.cc

@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "parameter.h"
 #include "parser.h"
 #include "utils.h"
 
@@ -8,6 +9,7 @@ namespace tempearly
     static bool parse_script_block(const Handle<Interpreter>&, Parser*, std::vector<Handle<Node> >&, bool&);
     static Handle<Node> parse_stmt(const Handle<Interpreter>&, Parser*);
     static Handle<Node> parse_expr(const Handle<Interpreter>&, Parser*);
+    static Handle<Node> parse_postfix(const Handle<Interpreter>&, Parser*);
 
     Parser::Parser(FILE* stream)
         : m_stream(stream)
@@ -20,6 +22,7 @@ namespace tempearly
         m_keywords.Insert("end", Token::KW_END);
         m_keywords.Insert("false", Token::KW_FALSE);
         m_keywords.Insert("for", Token::KW_FOR);
+        m_keywords.Insert("function", Token::KW_FUNCTION);
         m_keywords.Insert("if", Token::KW_IF);
         m_keywords.Insert("null", Token::KW_NULL);
         m_keywords.Insert("return", Token::KW_RETURN);
@@ -1350,6 +1353,168 @@ SCAN_EXPONENT:
         return new MapNode(entries);
     }
 
+    static Handle<TypeHint> parse_typehint(const Handle<Interpreter>& interpreter,
+                                           Parser* parser)
+    {
+        Handle<Node> node = parse_postfix(interpreter, parser);
+        Handle<TypeHint> hint;
+
+        if (!node)
+        {
+            return Handle<TypeHint>();
+        }
+        hint = TypeHint::FromExpression(node);
+        if (parser->ReadToken(Token::CONDITIONAL))
+        {
+            hint = hint->MakeNullable();
+        }
+        if (parser->ReadToken(Token::BIT_AND))
+        {
+            Handle<TypeHint> other = parse_typehint(interpreter, parser);
+
+            if (!other)
+            {
+                return Handle<TypeHint>();
+            }
+            hint = hint->MakeAnd(other);
+        }
+        else if (parser->ReadToken(Token::BIT_OR))
+        {
+            Handle<TypeHint> other = parse_typehint(interpreter, parser);
+
+            if (!other)
+            {
+                return Handle<TypeHint>();
+            }
+            hint = hint->MakeOr(other);
+        }
+
+        return hint;
+    }
+
+    static bool parse_parameters(const Handle<Interpreter>& interpreter,
+                                 Parser* parser,
+                                 std::vector<Handle<Parameter> >& parameters)
+    {
+        if (!expect_token(interpreter, parser, Token::LPAREN))
+        {
+            return false;
+        }
+        else if (parser->ReadToken(Token::RPAREN))
+        {
+            return true;
+        }
+        for (;;)
+        {
+            const bool rest = parser->ReadToken(Token::DOT_DOT_DOT);
+            const Parser::TokenDescriptor token = parser->ReadToken();
+            String name;
+            Handle<TypeHint> type;
+            Handle<Node> default_value;
+
+            if (token.kind != Token::IDENTIFIER)
+            {
+                StringBuilder sb;
+
+                sb << "Unexpected "
+                   << Token::What(token.kind)
+                   << "; Missing identifier";
+                interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
+
+                return false;
+            }
+            name = token.text;
+            if (parser->ReadToken(Token::COLON))
+            {
+                if (!(type = parse_typehint(interpreter, parser)))
+                {
+                    return false;
+                }
+            }
+            if (parser->ReadToken(Token::ASSIGN))
+            {
+                if (!(default_value = parse_expr(interpreter, parser)))
+                {
+                    return false;
+                }
+            }
+            parameters.push_back(new Parameter(name, type, default_value, rest));
+            if (!rest && parser->ReadToken(Token::COMMA))
+            {
+                continue;
+            }
+            else if (parser->ReadToken(Token::RPAREN))
+            {
+                return true;
+            }
+            interpreter->Throw(interpreter->eSyntaxError,
+                               "Unterminated parameter list");
+
+            return false;
+        }
+    }
+
+    static Handle<Node> parse_function(const Handle<Interpreter>& interpreter,
+                                       Parser* parser)
+    {
+        std::vector<Handle<Parameter> > parameters;
+        std::vector<Handle<Node> > nodes;
+
+        if ((parser->PeekToken(Token::LPAREN) && !parse_parameters(interpreter, parser, parameters))
+            || !expect_token(interpreter, parser, Token::COLON))
+        {
+            return Handle<Node>();
+        }
+        if (parser->ReadToken(Token::CLOSE_TAG))
+        {
+            for (;;)
+            {
+                bool should_continue = false;
+
+                if (!parse_text_block(interpreter, parser, nodes, should_continue))
+                {
+                    return Handle<Node>();
+                }
+                else if (should_continue)
+                {
+                    if (parser->PeekToken(Token::KW_END)
+                        || parser->PeekToken(Token::KW_ELSE))
+                    {
+                        break;
+                    }
+                    else if (!parse_script_block(interpreter, parser, nodes, should_continue))
+                    {
+                        return Handle<Node>();
+                    }
+                    else if (!should_continue)
+                    {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        } else {
+            while (!parser->PeekToken(Token::KW_END))
+            {
+                Handle<Node> statement = parse_stmt(interpreter, parser);
+
+                if (!statement)
+                {
+                    return Handle<Node>();
+                }
+                nodes.push_back(statement);
+            }
+        }
+        if (!expect_token(interpreter, parser, Token::KW_END)
+            || !expect_token(interpreter, parser, Token::KW_FUNCTION))
+        {
+            return Handle<Node>();
+        }
+
+        return new FunctionNode(parameters, nodes);
+    }
+
     static Handle<Node> parse_primary(const Handle<Interpreter>& interpreter,
                                       Parser* parser)
     {
@@ -1433,6 +1598,10 @@ SCAN_EXPONENT:
 
             case Token::IDENTIFIER:
                 node = new IdentifierNode(token.text);
+                break;
+
+            case Token::KW_FUNCTION:
+                node = parse_function(interpreter, parser);
                 break;
             
             default:

@@ -1,6 +1,8 @@
 #include "interpreter.h"
 #include "node.h"
+#include "parameter.h"
 #include "utils.h"
+#include "api/function.h"
 #include "api/list.h"
 #include "api/map.h"
 #include "api/range.h"
@@ -359,7 +361,7 @@ namespace tempearly
 
     Result ValueNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        return Result(Result::KIND_SUCCESS, m_value);
+        return m_value;
     }
 
     void ValueNode::Mark()
@@ -385,7 +387,7 @@ namespace tempearly
         {
             return m_right->Execute(interpreter);
         } else {
-            return Result(Result::KIND_SUCCESS, condition);
+            return condition;
         }
     }
 
@@ -417,7 +419,7 @@ namespace tempearly
         }
         else if (b)
         {
-            return Result(Result::KIND_SUCCESS, condition);
+            return condition;
         } else {
             return m_right->Execute(interpreter);
         }
@@ -448,7 +450,7 @@ namespace tempearly
         {
             return Result(Result::KIND_ERROR);
         } else {
-            return Result(Result::KIND_SUCCESS, Value::NewBool(!b));
+            return Value::NewBool(!b);
         }
     }
 
@@ -487,7 +489,7 @@ namespace tempearly
         }
         else if (value.GetAttribute(interpreter, m_id, value))
         {
-            return Result(Result::KIND_SUCCESS, value);
+            return value;
         } else {
             return Result(Result::KIND_ERROR);
         }
@@ -555,7 +557,7 @@ namespace tempearly
             }
             if ((value = value.Call(interpreter, m_id, args)))
             {
-                return Result(Result::KIND_SUCCESS, value);
+                return value;
             } else {
                 return Result(Result::KIND_ERROR);
             }
@@ -596,7 +598,7 @@ namespace tempearly
             return Result(Result::KIND_ERROR);
         }
 
-        return Result(Result::KIND_SUCCESS, value);
+        return value;
     }
 
     void PrefixNode::Mark()
@@ -627,7 +629,7 @@ namespace tempearly
             return Result(Result::KIND_ERROR);
         }
 
-        return Result(Result::KIND_SUCCESS, value);
+        return value;
     }
 
     void PostfixNode::Mark()
@@ -661,7 +663,7 @@ namespace tempearly
         {
             return Result(Result::KIND_ERROR);
         } else {
-            return Result(Result::KIND_SUCCESS, result);
+            return result;
         }
     }
 
@@ -708,7 +710,7 @@ namespace tempearly
 
         if (value && m_variable->Assign(interpreter, value))
         {
-            return Result(Result::KIND_SUCCESS, value);
+            return value;
         } else {
             return Result(Result::KIND_ERROR);
         }
@@ -745,7 +747,7 @@ namespace tempearly
         {
             if (scope->GetVariable(m_id, value))
             {
-                return Result(Result::KIND_SUCCESS, value);
+                return value;
             }
         }
         interpreter->Throw(interpreter->eNameError,
@@ -833,7 +835,6 @@ namespace tempearly
     Result ListNode::Execute(const Handle<Interpreter>& interpreter) const
     {
         std::vector<Value> vector;
-        Handle<ListObject> list;
         
         vector.reserve(m_elements.size());
         for (std::size_t i = 0; i < m_elements.size(); ++i)
@@ -847,9 +848,8 @@ namespace tempearly
                 return Result(Result::KIND_ERROR);
             }
         }
-        list = new ListObject(interpreter->cList, vector);
 
-        return Result(Result::KIND_SUCCESS, Value::NewObject(list));
+        return Value::NewObject(new ListObject(interpreter->cList, vector));
     }
 
     bool ListNode::Assign(const Handle<Interpreter>& interpreter,
@@ -916,7 +916,7 @@ namespace tempearly
             map->Insert(hash, key, value);
         }
 
-        return Result(Result::KIND_SUCCESS, Value::NewObject(map));
+        return Value::NewObject(map);
     }
 
     void MapNode::Mark()
@@ -948,16 +948,14 @@ namespace tempearly
     {
         Value begin;
         Value end;
-        Handle<CoreObject> range;
         
         if (!(begin = m_begin->Evaluate(interpreter))
             || !(end = m_end->Evaluate(interpreter)))
         {
             return Result(Result::KIND_ERROR);
         }
-        range = new RangeObject(interpreter, begin, end, m_exclusive);
 
-        return Result(Result::KIND_SUCCESS, Value::NewObject(range));
+        return Value::NewObject(new RangeObject(interpreter, begin, end, m_exclusive));
     }
 
     void RangeNode::Mark()
@@ -970,6 +968,39 @@ namespace tempearly
         if (!m_end->IsMarked())
         {
             m_end->Mark();
+        }
+    }
+
+    FunctionNode::FunctionNode(const std::vector<Handle<Parameter> >& parameters,
+                               const std::vector<Handle<Node> >& nodes)
+        : m_parameters(parameters.begin(), parameters.end())
+        , m_nodes(nodes.begin(), nodes.end()) {}
+
+    Result FunctionNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        return Value::NewObject(FunctionObject::NewScripted(
+            interpreter,
+            std::vector<Handle<Parameter> >(m_parameters.begin(), m_parameters.end()),
+            std::vector<Handle<Node> >(m_nodes.begin(), m_nodes.end())
+        ));
+    }
+
+    void FunctionNode::Mark()
+    {
+        Node::Mark();
+        for (std::size_t i = 0; i < m_parameters.size(); ++i)
+        {
+            if (!m_parameters[i]->IsMarked())
+            {
+                m_parameters[i]->Mark();
+            }
+        }
+        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        {
+            if (!m_nodes[i]->IsMarked())
+            {
+                m_nodes[i]->Mark();
+            }
         }
     }
 }
