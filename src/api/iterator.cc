@@ -183,7 +183,7 @@ namespace tempearly
 
     void init_iterator(Interpreter* i)
     {
-        i->cIterator = i->AddClass("Iterator", i->cObject);
+        i->cIterator = i->AddClass("Iterator", i->cIterable);
 
         i->cIterator->SetAllocator(Class::kNoAlloc);
 

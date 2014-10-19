@@ -244,7 +244,7 @@ namespace tempearly
 
     void init_range(Interpreter* i)
     {
-        i->cRange = i->AddClass("Range", i->cObject);
+        i->cRange = i->AddClass("Range", i->cIterable);
 
         i->cRange->SetAllocator(Class::kNoAlloc);
 

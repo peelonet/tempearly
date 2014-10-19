@@ -517,7 +517,7 @@ namespace tempearly
 
     void init_map(Interpreter* i)
     {
-        i->cMap = i->AddClass("Map", i->cObject);
+        i->cMap = i->AddClass("Map", i->cIterable);
 
         i->cMap->SetAllocator(map_alloc);
 

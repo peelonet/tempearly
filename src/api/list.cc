@@ -301,7 +301,7 @@ namespace tempearly
 
     void init_list(Interpreter* i)
     {
-        i->cList = i->AddClass("List", i->cObject);
+        i->cList = i->AddClass("List", i->cIterable);
 
         i->cList->SetAllocator(list_alloc);
 

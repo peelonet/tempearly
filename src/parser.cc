@@ -546,6 +546,10 @@ READ_NEXT_CHAR:
                 else if (ReadChar('~'))
                 {
                     token.kind = Token::MATCH;
+                }
+                else if (ReadChar('>'))
+                {
+                    token.kind = Token::ARROW;
                 } else {
                     token.kind = Token::ASSIGN;
                 }
@@ -1460,56 +1464,70 @@ SCAN_EXPONENT:
         std::vector<Handle<Parameter> > parameters;
         std::vector<Handle<Node> > nodes;
 
-        if ((parser->PeekToken(Token::LPAREN) && !parse_parameters(interpreter, parser, parameters))
-            || !expect_token(interpreter, parser, Token::COLON))
+        if (parser->PeekToken(Token::LPAREN) && !parse_parameters(interpreter, parser, parameters))
         {
             return Handle<Node>();
         }
-        if (parser->ReadToken(Token::CLOSE_TAG))
+        if (parser->ReadToken(Token::ARROW))
         {
-            for (;;)
-            {
-                bool should_continue = false;
+            Handle<Node> node = parse_expr(interpreter, parser);
 
-                if (!parse_text_block(interpreter, parser, nodes, should_continue))
+            if (!node)
+            {
+                return Handle<Node>();
+            }
+            nodes.push_back(new ReturnNode(node));
+        } else {
+            if (!expect_token(interpreter, parser, Token::COLON))
+            {
+                return Handle<Node>();
+            }
+            if (parser->ReadToken(Token::CLOSE_TAG))
+            {
+                for (;;)
                 {
-                    return Handle<Node>();
-                }
-                else if (should_continue)
-                {
-                    if (parser->PeekToken(Token::KW_END)
-                        || parser->PeekToken(Token::KW_ELSE))
-                    {
-                        break;
-                    }
-                    else if (!parse_script_block(interpreter, parser, nodes, should_continue))
+                    bool should_continue = false;
+
+                    if (!parse_text_block(interpreter, parser, nodes, should_continue))
                     {
                         return Handle<Node>();
                     }
-                    else if (!should_continue)
+                    else if (should_continue)
                     {
+                        if (parser->PeekToken(Token::KW_END)
+                            || parser->PeekToken(Token::KW_ELSE))
+                        {
+                            break;
+                        }
+                        else if (!parse_script_block(interpreter, parser, nodes, should_continue))
+                        {
+                            return Handle<Node>();
+                        }
+                        else if (!should_continue)
+                        {
+                            break;
+                        }
+                    } else {
                         break;
                     }
-                } else {
-                    break;
                 }
-            }
-        } else {
-            while (!parser->PeekToken(Token::KW_END))
-            {
-                Handle<Node> statement = parse_stmt(interpreter, parser);
-
-                if (!statement)
+            } else {
+                while (!parser->PeekToken(Token::KW_END))
                 {
-                    return Handle<Node>();
+                    Handle<Node> statement = parse_stmt(interpreter, parser);
+
+                    if (!statement)
+                    {
+                        return Handle<Node>();
+                    }
+                    nodes.push_back(statement);
                 }
-                nodes.push_back(statement);
             }
-        }
-        if (!expect_token(interpreter, parser, Token::KW_END)
-            || !expect_token(interpreter, parser, Token::KW_FUNCTION))
-        {
-            return Handle<Node>();
+            if (!expect_token(interpreter, parser, Token::KW_END)
+                || !expect_token(interpreter, parser, Token::KW_FUNCTION))
+            {
+                return Handle<Node>();
+            }
         }
 
         return new FunctionNode(parameters, nodes);

@@ -342,7 +342,7 @@ namespace tempearly
 
     void init_set(Interpreter* i)
     {
-        i->cSet = i->AddClass("Set", i->cObject);
+        i->cSet = i->AddClass("Set", i->cIterable);
 
         i->cSet->SetAllocator(set_alloc);
 
