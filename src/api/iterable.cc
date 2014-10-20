@@ -766,67 +766,157 @@ namespace tempearly
         return Value();
     }
 
-    static bool bubble_sort(const Handle<Interpreter>& interpreter, std::vector<Value>& vector)
+    static bool quicksort(const Handle<Interpreter>& interpreter,
+                          std::vector<Value>& vector,
+                          const std::size_t offset,
+                          const std::size_t slice_size)
     {
-        const std::size_t size = vector.size();
+        std::size_t left;
+        std::size_t right;
+        std::size_t pivot;
+        int cmp;
 
-        for (std::size_t i = 0; i < size - 1; ++i)
+        if (slice_size < 2)
         {
-            for (std::size_t j = 0; j < size - i - 1; ++j)
-            {
-                int cmp;
+            return true;
+        }
 
-                if (!vector[j].Compare(interpreter, vector[j + 1], cmp))
+        left = offset;
+        right = slice_size - 1 + offset;
+        pivot = slice_size / 2 + offset;
+
+        if (pivot != right)
+        {
+            std::swap(vector[pivot], vector[right]);
+            pivot = right;
+            --right;
+        }
+
+        while (left < right)
+        {
+            if (!vector[left].Compare(interpreter, vector[pivot], cmp))
+            {
+                return false;
+            }
+            else if (cmp > 0)
+            {
+                if (!vector[right].Compare(interpreter, vector[pivot], cmp))
                 {
                     return false;
                 }
-                else if (cmp > 0)
+                else if (cmp < 0)
                 {
-                    std::swap(vector[j], vector[j + 1]);
+                    std::swap(vector[left++], vector[right--]);
+                } else {
+                    --right;
                 }
+            } else {
+                ++left;
             }
         }
 
-        return true;
+        left = offset;
+
+        while (left - offset < slice_size - 1)
+        {
+            if (!vector[pivot].Compare(interpreter, vector[left], cmp))
+            {
+                return false;
+            }
+            else if (cmp < 0)
+            {
+                std::swap(vector[pivot], vector[left]);
+                break;
+            }
+            ++left;
+        }
+
+        // Lower and upper slice
+        return quicksort(interpreter, vector, offset, left++ - offset)
+            && quicksort(interpreter, vector, left, slice_size - left - offset);
     }
 
-    static bool bubble_sort_callback(const Handle<Interpreter>& interpreter,
-                                     std::vector<Value>& vector,
-                                     const Value& function)
+    static bool quicksort_callback(const Handle<Interpreter>& interpreter,
+                                   std::vector<Value>& vector,
+                                   const std::size_t offset,
+                                   const std::size_t slice_size,
+                                   const Value& function)
     {
-        const std::size_t size = vector.size();
+        std::size_t left;
+        std::size_t right;
+        std::size_t pivot;
         std::vector<Value> args;
         Value result;
+        i64 cmp;
+
+        if (slice_size < 2)
+        {
+            return true;
+        }
 
         args.reserve(2);
-        for (std::size_t i = 0; i < size - 1; ++i)
+        left = offset;
+        right = slice_size - 1 + offset;
+        pivot = slice_size / 2 + offset;
+
+        if (pivot != right)
         {
-            for (std::size_t j = 0; j < size - i - 1; ++j)
+            std::swap(vector[pivot], vector[right]);
+            pivot = right;
+            --right;
+        }
+
+        while (left < right)
+        {
+            args.clear();
+            args.push_back(vector[left]);
+            args.push_back(vector[pivot]);
+            if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
+            {
+                return false;
+            }
+            else if (cmp > 0)
             {
                 args.clear();
-                args.push_back(vector[j]);
-                args.push_back(vector[j + 1]);
-                if (!(result = function.Call(interpreter, "__call__", args)))
+                args.push_back(vector[right]);
+                args.push_back(vector[pivot]);
+                if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
                 {
                     return false;
                 }
-                else if (!result.IsNull())
+                else if (cmp < 0)
                 {
-                    i64 cmp;
-
-                    if (!result.AsInt(interpreter, cmp))
-                    {
-                        return false;
-                    }
-                    else if (cmp > 0)
-                    {
-                        std::swap(vector[j], vector[j + 1]);
-                    }
+                    std::swap(vector[left++], vector[right--]);
+                } else {
+                    --right;
                 }
+            } else {
+                ++left;
             }
         }
 
-        return true;
+        left = offset;
+
+        while (left - offset < slice_size - 1)
+        {
+            args.clear();
+            args.push_back(vector[pivot]);
+            args.push_back(vector[left]);
+            if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
+            {
+                return false;
+            }
+            else if (cmp < 0)
+            {
+                std::swap(vector[pivot], vector[left]);
+                break;
+            }
+            ++left;
+        }
+
+        // Lower and upper slice
+        return quicksort_callback(interpreter, vector, offset, left++ - offset, function)
+            && quicksort_callback(interpreter, vector, left, slice_size - left - offset, function);
     }
 
     /**
@@ -855,12 +945,12 @@ namespace tempearly
             {
                 if (args.size() < 2)
                 {
-                    if (bubble_sort(interpreter, vector))
+                    if (quicksort(interpreter, vector, 0, vector.size()))
                     {
                         return Value::NewObject(new ListObject(interpreter->cList, vector));
                     }
                 }
-                else if (bubble_sort_callback(interpreter, vector, args[1]))
+                else if (quicksort_callback(interpreter, vector, 0, vector.size(), args[1]))
                 {
                     return Value::NewObject(new ListObject(interpreter->cList, vector));
                 }
@@ -988,6 +1078,7 @@ namespace tempearly
         i->cIterable->AddMethod(i, "join", -1, iterable_join);
         i->cIterable->AddMethod(i, "map", 1, iterable_map);
         i->cIterable->AddMethod(i, "sort", -1, iterable_sort);
+
         i->cIterable->AddMethod(i, "split", 1, iterable_split);
         i->cIterable->AddMethod(i, "take", 1, iterable_take);
     }

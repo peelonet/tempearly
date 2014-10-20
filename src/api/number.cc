@@ -2,9 +2,47 @@
 
 #include "interpreter.h"
 #include "utils.h"
+#include "core/random.h"
 
 namespace tempearly
 {
+    /**
+     * Int.rand(max = RAND_MAX) => Int
+     *
+     * Returns a random number.
+     * Additional argument can specify the maximum value.
+     *
+     *     Int.rand()    #=> Random number between 0 - RAND_MAX
+     *     Int.rand(max) #=> Random number between 0 - max
+     */
+    TEMPEARLY_NATIVE_METHOD(int_s_rand)
+    {
+        if (args.size() > 0)
+        {
+            i64 max;
+
+            if (args[0].AsInt(interpreter, max))
+            {
+                if (max > 1)
+                {
+                    return Value::NewInt(Random::NextU64() % max);
+                }
+                else if (max == 0)
+                {
+                    interpreter->Throw(interpreter->eValueError,
+                                       "Max cannot be zero");
+                } else {
+                    interpreter->Throw(interpreter->eValueError,
+                                       "Max cannot be negative");
+                }
+            }
+
+            return Value();
+        }
+
+        return Value::NewInt(Random::NextU64());
+    }
+
     /**
      * Int#__str__(base = 10) => String
      *
@@ -333,6 +371,34 @@ namespace tempearly
     }
 
     /**
+     * Float.rand(max = 1) => Float
+     *
+     * Returns a random floating point number between 0 and max.
+     */
+    TEMPEARLY_NATIVE_METHOD(flo_s_rand)
+    {
+        if (args.size() > 0)
+        {
+            double max;
+
+            if (args[0].AsFloat(interpreter, max))
+            {
+                if (max > 0)
+                {
+                    return Value::NewFloat(Random::NextDouble() * max);
+                } else {
+                    interpreter->Throw(interpreter->eValueError,
+                                      "Max cannot be negative or zero");
+                }
+            }
+
+            return Value();
+        }
+
+        return Value::NewFloat(Random::NextDouble());
+    }
+
+    /**
      * Float#__str__() => String
      *
      * Returns textual presentation of the floating point number.
@@ -511,7 +577,11 @@ namespace tempearly
         i->cNum = i->AddClass("Num", i->cObject);
 
         i->cInt = i->AddClass("Int", i->cNum);
+
         i->cInt->SetAllocator(Class::kNoAlloc);
+
+        i->cInt->AddStaticMethod(i, "rand", -1, int_s_rand);
+
         i->cInt->AddMethod(i, "__str__", -1, int_str);
         i->cInt->AddMethod(i, "__add__", 1, int_add);
         i->cInt->AddMethod(i, "__sub__", 1, int_sub);
@@ -530,7 +600,11 @@ namespace tempearly
         i->cInt->AddMethod(i, "__invert__", 0, int_invert);
 
         i->cFloat = i->AddClass("Float", i->cNum);
+
         i->cFloat->SetAllocator(Class::kNoAlloc);
+
+        i->cFloat->AddStaticMethod(i, "rand", -1, flo_s_rand);
+
         i->cFloat->AddMethod(i, "__str__", -1, flo_str);
         i->cFloat->AddMethod(i, "__add__", 1, flo_add);
         i->cFloat->AddMethod(i, "__sub__", 1, flo_sub);
