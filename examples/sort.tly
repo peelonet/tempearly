@@ -1,0 +1,19 @@
+#!/usr/bin/env tempearly-cgi
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quicksort</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Original list</h2>
+        <% list = (1..30).map(function(i) => Int.rand(1000)); %>
+        <p>${list}</p>
+
+        <h2>Sorted list</h2>
+        <p>${list.sort()}</p>
+    </div>
+</body>
+</html>

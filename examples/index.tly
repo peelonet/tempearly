@@ -1,3 +1,4 @@
+#!/usr/bin/env tempearly-cgi
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,6 +12,8 @@
         <ul>
             <li><a href="/coin-flipper.tly">Coin flipper</a></li>
             <li><a href="/form.tly">Forms</a></li>
+            <li><a href="/random.tly">Random numbers</a></li>
+            <li><a href="/sort.tly">Quicksort</a></li>
         </ul>
     </div>
 </body>
