@@ -170,7 +170,7 @@ namespace tempearly
 
         bool IsMap() const
         {
-            return this;
+            return true;
         }
 
         /**

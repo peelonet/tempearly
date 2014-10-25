@@ -1,4 +1,4 @@
-#ifndef TEMPERALY_NET_SOCKET_H_GUARD
+#ifndef TEMPEARLY_NET_SOCKET_H_GUARD
 #define TEMPEARLY_NET_SOCKET_H_GUARD
 
 #include "core/string.h"
