@@ -26,7 +26,7 @@ namespace tempearly
             }
             else if (!interpreter->HasException())
             {
-                if (args.size() > 1)
+                if (args.GetSize() > 1)
                 {
                     return args[1];
                 }
@@ -64,7 +64,7 @@ namespace tempearly
         }
         else if (!interpreter->HasException())
         {
-            if (args.size() > 1)
+            if (args.GetSize() > 1)
             {
                 return args[1];
             }
@@ -108,7 +108,7 @@ namespace tempearly
         }
         else if (!interpreter->HasException())
         {
-            if (args.size() > 1)
+            if (args.GetSize() > 1)
             {
                 return args[1];
             }
@@ -144,16 +144,17 @@ namespace tempearly
             {
                 Value element;
                 Value result;
-                std::vector<Value> args2;
+                Vector<Value> args2;
 
-                if (args.size() < 2)
+                if (args.GetSize() < 2)
                 {
                     bool b;
 
-                    args2.reserve(1);
+                    args2.Reserve(1);
                     while (iterator.GetNext(interpreter, element))
                     {
-                        args2.assign(1, max);
+                        args2.Clear();
+                        args2.PushBack(max);
                         if (!(result = element.Call(interpreter, "__gt__", args2))
                             || !result.AsBool(interpreter, b))
                         {
@@ -167,12 +168,12 @@ namespace tempearly
                 } else {
                     i64 i;
 
-                    args2.reserve(2);
+                    args2.Reserve(2);
                     while (iterator.GetNext(interpreter, element))
                     {
-                        args2.clear();
-                        args2.push_back(max);
-                        args2.push_back(element);
+                        args2.Clear();
+                        args2.PushBack(max);
+                        args2.PushBack(element);
                         if (!(result = args[1].Call(interpreter, "__call__", args2))
                             || !result.AsInt(interpreter, i))
                         {
@@ -224,18 +225,18 @@ namespace tempearly
             {
                 Value element;
                 Value result;
-                std::vector<Value> args2;
+                Vector<Value> args2;
 
-                if (args.size() < 2)
+                if (args.GetSize() < 2)
                 {
                     bool b;
 
-                    args2.reserve(1);
+                    args2.Reserve(1);
                     while (iterator.GetNext(interpreter, element))
                     {
-                        args2.assign(1, min);
-                        if (!(result = element.Call(interpreter, "__lt__", args2))
-                            || !result.AsBool(interpreter, b))
+                        args2.Clear();
+                        args2.PushBack(min);
+                        if (!(result = element.Call(interpreter, "__lt__", args2)) || !result.AsBool(interpreter, b))
                         {
                             return Value();
                         }
@@ -247,14 +248,13 @@ namespace tempearly
                 } else {
                     i64 i;
 
-                    args2.reserve(2);
+                    args2.Reserve(2);
                     while (iterator.GetNext(interpreter, element))
                     {
-                        args2.clear();
-                        args2.push_back(min);
-                        args2.push_back(element);
-                        if (!(result = args[1].Call(interpreter, "__call__", args2))
-                            || !result.AsInt(interpreter, i))
+                        args2.Clear();
+                        args2.PushBack(min);
+                        args2.PushBack(element);
+                        if (!(result = args[1].Call(interpreter, "__call__", args2)) || !result.AsInt(interpreter, i))
                         {
                             return Value();
                         }
@@ -306,14 +306,15 @@ namespace tempearly
         {
             u64 count = 1;
             Value sum = element;
-            std::vector<Value> args2;
+            Vector<Value> args2;
 
-            if (args.size() < 2)
+            if (args.GetSize() < 2)
             {
-                args2.reserve(1);
+                args2.Reserve(1);
                 while (iterator.GetNext(interpreter, element))
                 {
-                    args2.assign(1, element);
+                    args2.Clear();
+                    args2.PushBack(element);
                     if (!(sum = sum.Call(interpreter, "__add__", args2)))
                     {
                         return Value();
@@ -321,12 +322,12 @@ namespace tempearly
                     ++count;
                 }
             } else {
-                args2.reserve(2);
+                args2.Reserve(2);
                 while (iterator.GetNext(interpreter, element))
                 {
-                    args2.clear();
-                    args2.push_back(sum);
-                    args2.push_back(element);
+                    args2.Clear();
+                    args2.PushBack(sum);
+                    args2.PushBack(element);
                     if (!(sum = args[1].Call(interpreter, "__call__", args2)))
                     {
                         return Value();
@@ -336,8 +337,8 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                args2.clear();
-                args2.push_back(Value::NewInt(count));
+                args2.Clear();
+                args2.PushBack(Value::NewInt(count));
 
                 return sum.Call(interpreter, "__div__", args2);
             }
@@ -377,26 +378,27 @@ namespace tempearly
         if (iterator.GetNext(interpreter, element))
         {
             Value sum = element;
-            std::vector<Value> args2;
+            Vector<Value> args2;
 
-            if (args.size() < 2)
+            if (args.GetSize() < 2)
             {
-                args2.reserve(1);
+                args2.Reserve(1);
                 while (iterator.GetNext(interpreter, element))
                 {
-                    args2.assign(1, element);
+                    args2.Clear();
+                    args2.PushBack(element);
                     if (!(sum = sum.Call(interpreter, "__add__", args2)))
                     {
                         return Value();
                     }
                 }
             } else {
-                args2.reserve(2);
+                args2.Reserve(2);
                 while (iterator.GetNext(interpreter, element))
                 {
-                    args2.clear();
-                    args2.push_back(sum);
-                    args2.push_back(element);
+                    args2.Clear();
+                    args2.PushBack(sum);
+                    args2.PushBack(element);
                     if (!(sum = args[1].Call(interpreter, "__call__", args2)))
                     {
                         return Value();
@@ -674,11 +676,11 @@ namespace tempearly
         StringBuilder buffer;
         String separator;
 
-        if (args.size() < 2)
+        if (args.GetSize() < 2)
         {
             separator = ", ";
         }
-        else if (args.size() == 2)
+        else if (args.GetSize() == 2)
         {
             if (!args[1].AsString(interpreter, separator))
             {
@@ -767,7 +769,7 @@ namespace tempearly
     }
 
     static bool quicksort(const Handle<Interpreter>& interpreter,
-                          std::vector<Value>& vector,
+                          Vector<Value>& vector,
                           const std::size_t offset,
                           const std::size_t slice_size)
     {
@@ -787,7 +789,7 @@ namespace tempearly
 
         if (pivot != right)
         {
-            std::swap(vector[pivot], vector[right]);
+            vector.Swap(pivot, right);
             pivot = right;
             --right;
         }
@@ -806,7 +808,7 @@ namespace tempearly
                 }
                 else if (cmp < 0)
                 {
-                    std::swap(vector[left++], vector[right--]);
+                    vector.Swap(left++, right--);
                 } else {
                     --right;
                 }
@@ -825,7 +827,7 @@ namespace tempearly
             }
             else if (cmp < 0)
             {
-                std::swap(vector[pivot], vector[left]);
+                vector.Swap(pivot, left);
                 break;
             }
             ++left;
@@ -837,7 +839,7 @@ namespace tempearly
     }
 
     static bool quicksort_callback(const Handle<Interpreter>& interpreter,
-                                   std::vector<Value>& vector,
+                                   Vector<Value>& vector,
                                    const std::size_t offset,
                                    const std::size_t slice_size,
                                    const Value& function)
@@ -845,7 +847,7 @@ namespace tempearly
         std::size_t left;
         std::size_t right;
         std::size_t pivot;
-        std::vector<Value> args;
+        Vector<Value> args;
         Value result;
         i64 cmp;
 
@@ -854,39 +856,39 @@ namespace tempearly
             return true;
         }
 
-        args.reserve(2);
+        args.Reserve(2);
         left = offset;
         right = slice_size - 1 + offset;
         pivot = slice_size / 2 + offset;
 
         if (pivot != right)
         {
-            std::swap(vector[pivot], vector[right]);
+            vector.Swap(pivot, right);
             pivot = right;
             --right;
         }
 
         while (left < right)
         {
-            args.clear();
-            args.push_back(vector[left]);
-            args.push_back(vector[pivot]);
+            args.Clear();
+            args.PushBack(vector[left]);
+            args.PushBack(vector[pivot]);
             if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
             {
                 return false;
             }
             else if (cmp > 0)
             {
-                args.clear();
-                args.push_back(vector[right]);
-                args.push_back(vector[pivot]);
+                args.Clear();
+                args.PushBack(vector[right]);
+                args.PushBack(vector[pivot]);
                 if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
                 {
                     return false;
                 }
                 else if (cmp < 0)
                 {
-                    std::swap(vector[left++], vector[right--]);
+                    vector.Swap(left++, right--);
                 } else {
                     --right;
                 }
@@ -899,16 +901,16 @@ namespace tempearly
 
         while (left - offset < slice_size - 1)
         {
-            args.clear();
-            args.push_back(vector[pivot]);
-            args.push_back(vector[left]);
+            args.Clear();
+            args.PushBack(vector[pivot]);
+            args.PushBack(vector[left]);
             if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
             {
                 return false;
             }
             else if (cmp < 0)
             {
-                std::swap(vector[pivot], vector[left]);
+                vector.Swap(pivot, left);
                 break;
             }
             ++left;
@@ -935,22 +937,22 @@ namespace tempearly
         if (iterator)
         {
             Value element;
-            std::vector<Value> vector;
+            Vector<Value> vector;
 
             while (iterator.GetNext(interpreter, element))
             {
-                vector.push_back(element);
+                vector.PushBack(element);
             }
             if (!interpreter->HasException())
             {
-                if (args.size() < 2)
+                if (args.GetSize() < 2)
                 {
-                    if (quicksort(interpreter, vector, 0, vector.size()))
+                    if (quicksort(interpreter, vector, 0, vector.GetSize()))
                     {
                         return Value::NewObject(new ListObject(interpreter->cList, vector));
                     }
                 }
-                else if (quicksort_callback(interpreter, vector, 0, vector.size(), args[1]))
+                else if (quicksort_callback(interpreter, vector, 0, vector.GetSize(), args[1]))
                 {
                     return Value::NewObject(new ListObject(interpreter->cList, vector));
                 }

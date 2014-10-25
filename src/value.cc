@@ -205,28 +205,22 @@ namespace tempearly
             {
                 if (value.IsFunction())
                 {
-                    std::vector<Value> args;
-
-                    args.push_back(*this);
-                    value = value.As<FunctionObject>()->Curry(interpreter, args);
+                    value = value.As<FunctionObject>()->Curry(interpreter, Vector<Value>(1, *this));
                 }
 
                 return true;
             }
             if (m_kind == KIND_OBJECT && m_data.o->GetAttribute("__getattr__", value) && value.IsFunction())
             {
-                return value = value.As<FunctionObject>()->Invoke(
-                    interpreter,
-                    std::vector<Value>(1, Value::NewString(id))
-                );
+                return value = value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, NewString(id)));
             }
             else if (cls->GetAttribute("__getattr__", value) && value.IsFunction())
             {
-                std::vector<Value> args;
+                Vector<Value> args;
 
-                args.reserve(2);
-                args.push_back(*this);
-                args.push_back(Value::NewString(id));
+                args.Reserve(2);
+                args.PushBack(*this);
+                args.PushBack(NewString(id));
 
                 return value = value.As<FunctionObject>()->Invoke(interpreter, args);
             }
@@ -251,7 +245,7 @@ namespace tempearly
 
     Value Value::Call(const Handle<Interpreter>& interpreter,
                       const String& id,
-                      const std::vector<Value>& args) const
+                      const Vector<Value>& args) const
     {
         Value value;
 
@@ -272,9 +266,9 @@ namespace tempearly
                 {
                     return value.As<FunctionObject>()->Invoke(interpreter, args);
                 } else {
-                    std::vector<Value> new_args(args);
+                    Vector<Value> new_args(args);
 
-                    new_args.insert(new_args.begin(), *this);
+                    new_args.PushFront(*this);
                     if (value.IsFunction())
                     {
                         return value.As<FunctionObject>()->Invoke(interpreter, new_args);
@@ -294,7 +288,7 @@ namespace tempearly
                       const String& id,
                       const Value& arg) const
     {
-        return Call(interpreter, id, std::vector<Value>(1, arg));
+        return Call(interpreter, id, Vector<Value>(1, arg));
     }
 
     bool Value::Equals(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const

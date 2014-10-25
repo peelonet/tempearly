@@ -15,8 +15,8 @@ namespace tempearly
                            bool rest = false);
 
         static bool Apply(const Handle<Interpreter>& interpreter,
-                          const std::vector<Handle<Parameter> >& parameters,
-                          const std::vector<Value>& arguments);
+                          const Vector<Handle<Parameter> >& parameters,
+                          const Vector<Value>& arguments);
 
         /**
          * Returns name of the parameter.

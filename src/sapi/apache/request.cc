@@ -6,7 +6,7 @@
 namespace tempearly
 {
     static HttpMethod::Kind parse_method(request_rec*);
-    static void parse_post(request_rec*, Dictionary<std::vector<String> >&);
+    static void parse_post(request_rec*, Dictionary<Vector<String> >&);
 
     ApacheRequest::ApacheRequest(request_rec* request)
         : m_request(request)
@@ -40,22 +40,22 @@ namespace tempearly
 
     bool ApacheRequest::HasParameter(const String& id) const
     {
-        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
 
-        return e && !e->GetValue().empty();
+        return e && !e->GetValue().IsEmpty();
     }
 
     bool ApacheRequest::GetParameter(const String& id, String& value) const
     {
-        const Dictionary<std::vector<String> >::Entry* entry = m_parameters.Find(id);
+        const Dictionary<Vector<String> >::Entry* entry = m_parameters.Find(id);
 
         if (entry)
         {
-            const std::vector<String>& values = entry->GetValue();
+            const Vector<String>& values = entry->GetValue();
 
-            if (!values.empty())
+            if (!values.IsEmpty())
             {
-                value = values.front();
+                value = values.GetFront();
 
                 return true;
             }
@@ -110,19 +110,19 @@ namespace tempearly
         }
     }
 
-    static inline void add_param(const String& key, const String& value, Dictionary<std::vector<String> >& parameters)
+    static inline void add_param(const String& key, const String& value, Dictionary<Vector<String> >& parameters)
     {
-        Dictionary<std::vector<String> >::Entry* entry = parameters.Find(key);
+        Dictionary<Vector<String> >::Entry* entry = parameters.Find(key);
 
         if (entry)
         {
-            entry->GetValue().push_back(value);
+            entry->GetValue().PushBack(value);
         } else {
-            parameters.Insert(key, std::vector<String>(1, value));
+            parameters.Insert(key, Vector<String>(1, value));
         }
     }
 
-    static void parse_post(request_rec* request, Dictionary<std::vector<String> >& parameters)
+    static void parse_post(request_rec* request, Dictionary<Vector<String> >& parameters)
     {
         const char* ct = apr_table_get(request->headers_in, "Content-Type");
 

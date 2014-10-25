@@ -17,7 +17,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_s_rand)
     {
-        if (args.size() > 0)
+        if (args.GetSize() > 0)
         {
             i64 max;
 
@@ -54,7 +54,7 @@ namespace tempearly
     {
         i64 radix = 10;
 
-        if (args.size() > 1)
+        if (args.GetSize() > 1)
         {
             if (!args[1].AsInt(interpreter, radix))
             {
@@ -377,7 +377,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_s_rand)
     {
-        if (args.size() > 0)
+        if (args.GetSize() > 0)
         {
             double max;
 

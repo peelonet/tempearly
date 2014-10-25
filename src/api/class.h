@@ -2,6 +2,7 @@
 #define TEMPEARLY_API_CLASS_H_GUARD
 
 #include "coreobject.h"
+#include "core/vector.h"
 
 namespace tempearly
 {
@@ -10,8 +11,7 @@ namespace tempearly
     public:
         typedef Handle<CoreObject> (*Allocator)(const Handle<Interpreter>&,
                                                 const Handle<Class>&);
-        typedef Value (*MethodCallback)(const Handle<Interpreter>&,
-                                        const std::vector<Value>&);
+        typedef Value (*MethodCallback)(const Handle<Interpreter>&, const Vector<Value>&);
 
         /**
          * Allocator which allocates nothing.

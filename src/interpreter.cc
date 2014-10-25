@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "parser.h"
+#include "utils.h"
 #include "api/function.h"
 #include "api/iterator.h"
 #include "api/map.h"
@@ -175,35 +176,34 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter,
-                         const std::vector<Value>& args)
+            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
                 Value result;
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
-                    if (args.size() < static_cast<unsigned>(-(m_arity + 1)))
+                    if (args.GetSize() < static_cast<unsigned>(-(m_arity + 1)))
                     {
                         StringBuilder sb;
 
                         sb << "Function expected at least "
                            << (-(m_arity) - 1)
                            << " arguments, got "
-                           << args.size();
+                           << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                         return Value();
                     }
                 }
-                else if (args.size() != static_cast<unsigned>(m_arity))
+                else if (args.GetSize() != static_cast<unsigned>(m_arity))
                 {
                     StringBuilder sb;
 
                     sb << "Function expected "
                        << m_arity
                        << " arguments, got "
-                       << args.size();
+                       << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                     return Value();

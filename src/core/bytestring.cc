@@ -6,8 +6,8 @@ namespace tempearly
 {
     ByteString::ByteString()
         : m_length(0)
-        , m_bytes(new byte[1])
-        , m_counter(new unsigned int[1])
+        , m_bytes(Memory::Allocate<byte>(1))
+        , m_counter(Memory::Allocate<unsigned int>(1))
     {
         m_bytes[0] = 0;
         m_counter[0] = 1;
@@ -23,8 +23,8 @@ namespace tempearly
 
     ByteString::ByteString(const char* input)
         : m_length(std::strlen(input))
-        , m_bytes(new byte[m_length + 1])
-        , m_counter(new unsigned int[1])
+        , m_bytes(Memory::Allocate<byte>(m_length + 1))
+        , m_counter(Memory::Allocate<unsigned int>(1))
     {
         for (std::size_t i = 0; i < m_length; ++i)
         {
@@ -36,12 +36,10 @@ namespace tempearly
 
     ByteString::ByteString(const byte* b, std::size_t n)
         : m_length(n)
-        , m_bytes(new byte[m_length + 1])
-        , m_counter(new unsigned int[1])
+        , m_bytes(Memory::Allocate<byte>(m_length + 1))
+        , m_counter(Memory::Allocate<unsigned int>(1))
     {
-        std::memcpy(static_cast<void*>(m_bytes),
-                    static_cast<const void*>(b),
-                    sizeof(byte) * m_length);
+        Memory::Copy<byte>(m_bytes, b, m_length);
         m_bytes[m_length] = 0;
         m_counter[0] = 1;
     }
@@ -50,8 +48,8 @@ namespace tempearly
     {
         if (--m_counter[0] == 0)
         {
-            delete[] m_bytes;
-            delete[] m_counter;
+            Memory::Unallocate<byte>(m_bytes);
+            Memory::Unallocate<unsigned int>(m_counter);
         }
     }
 
@@ -61,8 +59,8 @@ namespace tempearly
         {
             if (--m_counter[0] == 0)
             {
-                delete[] m_bytes;
-                delete[] m_counter;
+                Memory::Unallocate<byte>(m_bytes);
+                Memory::Unallocate<unsigned int>(m_counter);
             }
             m_bytes = that.m_bytes;
             m_counter = that.m_counter;
@@ -133,15 +131,11 @@ namespace tempearly
             ByteString result;
 
             result.m_length = m_length + that.m_length;
-            result.m_bytes = new byte[result.m_length + 1];
-            result.m_counter = new unsigned int[1];
+            result.m_bytes = Memory::Allocate<byte>(result.m_length + 1);
+            result.m_counter = Memory::Allocate<unsigned int>(1);
             result.m_counter[0] = 1;
-            std::memcpy(static_cast<void*>(result.m_bytes),
-                        static_cast<const void*>(m_bytes),
-                        sizeof(byte) * m_length);
-            std::memcpy(static_cast<void*>(result.m_bytes + m_length),
-                        static_cast<const void*>(that.m_bytes),
-                        sizeof(byte) * that.m_length);
+            Memory::Copy<byte>(result.m_bytes, m_bytes, m_length);
+            Memory::Copy<byte>(result.m_bytes + m_length, that.m_bytes, that.m_length);
 
             return result;
         }

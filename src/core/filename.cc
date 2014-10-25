@@ -15,8 +15,8 @@ namespace tempearly
     const rune Filename::kSeparator = '/';
 #endif
 
-    static void parse_filename(const String&, String&, String&, std::vector<String>&);
-    static String compile_filename(const String&, const std::vector<String>&);
+    static void parse_filename(const String&, String&, String&, Vector<String>&);
+    static String compile_filename(const String&, const Vector<String>&);
 
     Filename::Filename()
 #if !defined(_WIN32)
@@ -42,6 +42,8 @@ namespace tempearly
         parse_filename(source, m_full_name, m_root, m_parts);
     }
 
+    Filename::~Filename() {}
+
     Filename& Filename::Assign(const Filename& that)
     {
         m_full_name = that.m_full_name;
@@ -55,22 +57,22 @@ namespace tempearly
         return *this;
     }
 
-    bool Filename::IsSeparator(rune r)
-    {
-        return r == '/' || r == '\\';
-    }
-
     Filename& Filename::Assign(const String& source)
     {
         m_full_name.Clear();
         m_root.Clear();
-        m_parts.clear();
+        m_parts.Clear();
 #if !defined(_WIN32)
         m_stat_state = STAT_UNINITIALIZED;
 #endif
         parse_filename(source, m_full_name, m_root, m_parts);
 
         return *this;
+    }
+
+    bool Filename::IsSeparator(rune r)
+    {
+        return r == '/' || r == '\\';
     }
 
     Filename Filename::GetParent() const
@@ -80,9 +82,9 @@ namespace tempearly
 
     String Filename::GetExtension() const
     {
-        if (!m_parts.empty())
+        if (!m_parts.IsEmpty())
         {
-            const String& filename = m_parts[m_parts.size() - 1];
+            const String& filename = m_parts.GetBack();
             std::size_t index = filename.LastIndexOf('.');
 
             if (index != String::npos && index > 0)
@@ -94,13 +96,13 @@ namespace tempearly
         return String();
     }
 
-    std::vector<String> Filename::GetParts() const
+    Vector<String> Filename::GetParts() const
     {
-        std::vector<String> result(m_parts);
+        Vector<String> result(m_parts);
 
         if (!m_root.IsEmpty())
         {
-            result.insert(result.begin(), m_root);
+            result.PushFront(m_root);
         }
 
         return result;
@@ -334,7 +336,7 @@ namespace tempearly
     }
 #endif
 
-    static void append_part(const String& input, std::vector<String>& parts)
+    static void append_part(const String& input, Vector<String>& parts)
     {
         const std::size_t length = input.GetLength();
 
@@ -346,27 +348,27 @@ namespace tempearly
         {
             if (length == 2 && input[1] == '.')
             {
-                if (!parts.empty())
+                if (!parts.IsEmpty())
                 {
-                    parts.pop_back();
+                    parts.Erase(parts.GetSize() - 1);
                     return;
                 }
             }
             else if (length == 1)
             {
-                if (!parts.empty())
+                if (!parts.IsEmpty())
                 {
                     return;
                 }
             }
         }
-        parts.push_back(input);
+        parts.PushBack(input);
     }
 
     static void parse_filename(const String& source,
                                String& full_name,
                                String& root,
-                               std::vector<String>& parts)
+                               Vector<String>& parts)
     {
         const std::size_t length = source.GetLength();
         std::size_t begin = 0;
@@ -423,7 +425,7 @@ namespace tempearly
         full_name = compile_filename(root, parts);
     }
 
-    static String compile_filename(const String& root, const std::vector<String>& parts)
+    static String compile_filename(const String& root, const Vector<String>& parts)
     {
         StringBuilder sb;
 
@@ -431,7 +433,7 @@ namespace tempearly
         {
             sb << root;
         }
-        for (std::size_t i = 0; i < parts.size(); ++i)
+        for (std::size_t i = 0; i < parts.GetSize(); ++i)
         {
             if (i > 0 && !Filename::IsSeparator(sb.GetBack()))
             {

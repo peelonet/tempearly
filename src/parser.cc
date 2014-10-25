@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include "interpreter.h"
 #include "parameter.h"
 #include "parser.h"
@@ -5,8 +7,8 @@
 
 namespace tempearly
 {
-    static bool parse_text_block(const Handle<Interpreter>&, Parser*, std::vector<Handle<Node> >&, bool&);
-    static bool parse_script_block(const Handle<Interpreter>&, Parser*, std::vector<Handle<Node> >&, bool&);
+    static bool parse_text_block(const Handle<Interpreter>&, Parser*, Vector<Handle<Node> >&, bool&);
+    static bool parse_script_block(const Handle<Interpreter>&, Parser*, Vector<Handle<Node> >&, bool&);
     static Handle<Node> parse_stmt(const Handle<Interpreter>&, Parser*);
     static Handle<Node> parse_expr(const Handle<Interpreter>&, Parser*);
     static Handle<Node> parse_postfix(const Handle<Interpreter>&, Parser*);
@@ -848,7 +850,7 @@ SCAN_EXPONENT:
 
     Handle<Script> Parser::Compile(const Handle<Interpreter>& interpreter)
     {
-        std::vector<Handle<Node> > nodes;
+        Vector<Handle<Node> > nodes;
 
         // Skip leading shebang if such exists
         if (ReadChar('#'))
@@ -922,7 +924,7 @@ SCAN_EXPONENT:
 
     static bool parse_text_block(const Handle<Interpreter>& interpreter,
                                  Parser* parser,
-                                 std::vector<Handle<Node> >& nodes,
+                                 Vector<Handle<Node> >& nodes,
                                  bool& should_continue)
     {
         StringBuilder text;
@@ -936,7 +938,7 @@ SCAN_EXPONENT:
                 {
                     if (!text.IsEmpty())
                     {
-                        nodes.push_back(new TextNode(text.ToString()));
+                        nodes.PushBack(new TextNode(text.ToString()));
                         text.Clear();
                     }
                     should_continue = true;
@@ -956,7 +958,7 @@ SCAN_EXPONENT:
 
                     if (!text.IsEmpty())
                     {
-                        nodes.push_back(new TextNode(text.ToString()));
+                        nodes.PushBack(new TextNode(text.ToString()));
                         text.Clear();
                     }
                     if (!(expr = parse_expr(interpreter, parser)))
@@ -974,7 +976,7 @@ SCAN_EXPONENT:
 
                         return false;
                     }
-                    nodes.push_back(new ExpressionNode(expr, escape));
+                    nodes.PushBack(new ExpressionNode(expr, escape));
                     c = parser->ReadChar();
                 } else {
                     text << '$';
@@ -1022,7 +1024,7 @@ SCAN_EXPONENT:
         }
         if (!text.IsEmpty())
         {
-            nodes.push_back(new TextNode(text.ToString()));
+            nodes.PushBack(new TextNode(text.ToString()));
         }
         should_continue = false;
 
@@ -1031,7 +1033,7 @@ SCAN_EXPONENT:
 
     static bool parse_script_block(const Handle<Interpreter>& interpreter,
                                    Parser* parser,
-                                   std::vector<Handle<Node> >& nodes,
+                                   Vector<Handle<Node> >& nodes,
                                    bool& should_continue)
     {
         for (;;)
@@ -1059,7 +1061,7 @@ SCAN_EXPONENT:
                 {
                     return false;
                 }
-                nodes.push_back(stmt);
+                nodes.PushBack(stmt);
                 should_continue = true;
             }
         }
@@ -1070,7 +1072,7 @@ SCAN_EXPONENT:
     static Handle<Node> parse_block(const Handle<Interpreter>& interpreter,
                                     Parser* parser)
     {
-        std::vector<Handle<Node> > nodes;
+        Vector<Handle<Node> > nodes;
 
         if (parser->ReadToken(Token::CLOSE_TAG))
         {
@@ -1102,8 +1104,7 @@ SCAN_EXPONENT:
                 }
             }
         } else {
-            while (!parser->PeekToken(Token::KW_END)
-                    && !parser->PeekToken(Token::KW_ELSE))
+            while (!parser->PeekToken(Token::KW_END) && !parser->PeekToken(Token::KW_ELSE))
             {
                 Handle<Node> statement = parse_stmt(interpreter, parser);
 
@@ -1111,10 +1112,10 @@ SCAN_EXPONENT:
                 {
                     return Handle<Node>();
                 }
-                nodes.push_back(statement);
+                nodes.PushBack(statement);
             }
         }
-        switch (nodes.size())
+        switch (nodes.GetSize())
         {
             case 0:
                 return new EmptyNode();
@@ -1290,7 +1291,7 @@ SCAN_EXPONENT:
     static Handle<Node> parse_list(const Handle<Interpreter>& interpreter,
                                    Parser* parser)
     {
-        std::vector<Handle<Node> > elements;
+        Vector<Handle<Node> > elements;
 
         if (!parser->ReadToken(Token::RBRACK))
         {
@@ -1302,7 +1303,7 @@ SCAN_EXPONENT:
                 {
                     return Handle<Node>();
                 }
-                elements.push_back(node);
+                elements.PushBack(node);
                 if (parser->ReadToken(Token::COMMA))
                 {
                     continue;
@@ -1324,7 +1325,7 @@ SCAN_EXPONENT:
     static Handle<Node> parse_map(const Handle<Interpreter>& interpreter,
                                   Parser* parser)
     {
-        std::vector<Pair<Handle<Node> > > entries;
+        Vector<Pair<Handle<Node> > > entries;
         Handle<Node> key;
         Handle<Node> value;
 
@@ -1338,7 +1339,7 @@ SCAN_EXPONENT:
                 {
                     return Handle<Node>();
                 }
-                entries.push_back(Pair<Handle<Node> >(key, value));
+                entries.PushBack(Pair<Handle<Node> >(key, value));
                 if (parser->ReadToken(Token::COMMA))
                 {
                     continue;
@@ -1398,7 +1399,7 @@ SCAN_EXPONENT:
 
     static bool parse_parameters(const Handle<Interpreter>& interpreter,
                                  Parser* parser,
-                                 std::vector<Handle<Parameter> >& parameters)
+                                 Vector<Handle<Parameter> >& parameters)
     {
         if (!expect_token(interpreter, parser, Token::LPAREN))
         {
@@ -1442,7 +1443,7 @@ SCAN_EXPONENT:
                     return false;
                 }
             }
-            parameters.push_back(new Parameter(name, type, default_value, rest));
+            parameters.PushBack(new Parameter(name, type, default_value, rest));
             if (!rest && parser->ReadToken(Token::COMMA))
             {
                 continue;
@@ -1461,8 +1462,8 @@ SCAN_EXPONENT:
     static Handle<Node> parse_function(const Handle<Interpreter>& interpreter,
                                        Parser* parser)
     {
-        std::vector<Handle<Parameter> > parameters;
-        std::vector<Handle<Node> > nodes;
+        Vector<Handle<Parameter> > parameters;
+        Vector<Handle<Node> > nodes;
 
         if (parser->PeekToken(Token::LPAREN) && !parse_parameters(interpreter, parser, parameters))
         {
@@ -1476,7 +1477,7 @@ SCAN_EXPONENT:
             {
                 return Handle<Node>();
             }
-            nodes.push_back(new ReturnNode(node));
+            nodes.PushBack(new ReturnNode(node));
         } else {
             if (!expect_token(interpreter, parser, Token::COLON))
             {
@@ -1520,7 +1521,7 @@ SCAN_EXPONENT:
                     {
                         return Handle<Node>();
                     }
-                    nodes.push_back(statement);
+                    nodes.PushBack(statement);
                 }
             }
             if (!expect_token(interpreter, parser, Token::KW_END)
@@ -1637,7 +1638,7 @@ SCAN_EXPONENT:
 
     static bool parse_args(const Handle<Interpreter>& interpreter,
                            Parser* parser,
-                           std::vector<Handle<Node> >& args)
+                           Vector<Handle<Node> >& args)
     {
         if (!expect_token(interpreter, parser, Token::LPAREN))
         {
@@ -1655,7 +1656,7 @@ SCAN_EXPONENT:
             {
                 return false;
             }
-            args.push_back(node);
+            args.PushBack(node);
             if (parser->ReadToken(Token::COMMA))
             {
                 continue;
@@ -1691,7 +1692,7 @@ SCAN_EXPONENT:
         }
         else if (parser->PeekToken(Token::LPAREN))
         {
-            std::vector<Handle<Node> > args;
+            Vector<Handle<Node> > args;
 
             if (parse_args(interpreter, parser, args))
             {
@@ -1728,7 +1729,7 @@ SCAN_EXPONENT:
 
             if (token.kind == Token::LPAREN)
             {
-                std::vector<Handle<Node> > args;
+                Vector<Handle<Node> > args;
 
                 if (!parse_args(interpreter, parser, args))
                 {
@@ -1894,7 +1895,7 @@ SCAN_EXPONENT:
                     node,
                     kind == Token::MUL ? "__mul__" :
                     kind == Token::DIV ? "__div__" : "__mod__",
-                    std::vector<Handle<Node> >(1, operand)
+                    Vector<Handle<Node> >(1, operand)
                 );
             } else {
                 return node;
@@ -1933,7 +1934,7 @@ SCAN_EXPONENT:
                 node = new CallNode(
                     node,
                     kind == Token::ADD ? "__add__" : "__sub__",
-                    std::vector<Handle<Node> >(1, operand)
+                    Vector<Handle<Node> >(1, operand)
                 );
             } else {
                 return node;
@@ -1972,7 +1973,7 @@ SCAN_EXPONENT:
                 node = new CallNode(
                     node,
                     kind == Token::LSH ? "__lsh__" : "__rsh__",
-                    std::vector<Handle<Node> >(1, operand)
+                    Vector<Handle<Node> >(1, operand)
                 );
             } else {
                 return node;
@@ -2004,7 +2005,7 @@ SCAN_EXPONENT:
             node = new CallNode(
                 node,
                 "__and__",
-                std::vector<Handle<Node> >(1, operand)
+                Vector<Handle<Node> >(1, operand)
             );
         }
 
@@ -2035,7 +2036,7 @@ SCAN_EXPONENT:
             node = new CallNode(
                 node,
                 "__xor__",
-                std::vector<Handle<Node> >(1, operand)
+                Vector<Handle<Node> >(1, operand)
             );
         }
 
@@ -2066,7 +2067,7 @@ SCAN_EXPONENT:
             node = new CallNode(
                 node,
                 "__or__",
-                std::vector<Handle<Node> >(1, operand)
+                Vector<Handle<Node> >(1, operand)
             );
         }
 
@@ -2114,7 +2115,7 @@ SCAN_EXPONENT:
                         kind == Token::GT  ? "__gt__"  :
                         kind == Token::LTE ? "__lte__" :
                                              "__gte__",
-                        std::vector<Handle<Node> >(1, operand)
+                        Vector<Handle<Node> >(1, operand)
                     );
                     break;
                 }
@@ -2165,7 +2166,7 @@ SCAN_EXPONENT:
                         kind == Token::EQ    ? "__eq__"    :
                         kind == Token::MATCH ? "__match__" :
                                                "__cmp__",
-                        std::vector<Handle<Node> >(1, operand)
+                        Vector<Handle<Node> >(1, operand)
                     );
                     break;
                 }
@@ -2185,7 +2186,7 @@ SCAN_EXPONENT:
                         new CallNode(
                             node,
                             kind == Token::NE ? "__eq__" : "__match__",
-                            std::vector<Handle<Node> >(1, operand)
+                            Vector<Handle<Node> >(1, operand)
                         )
                     );
                     break;

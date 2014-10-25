@@ -49,6 +49,7 @@ namespace tempearly
     class ByteString;
     class Class;
     class CoreObject;
+    class CountedObject;
     class Date;
     class DateTime;
     class ExceptionObject;

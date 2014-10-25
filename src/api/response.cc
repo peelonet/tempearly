@@ -25,7 +25,7 @@ namespace tempearly
             return Value();
         }
         exists = interpreter->response->GetHeader(name, old_value);
-        if (args.size() > 2)
+        if (args.GetSize() > 2)
         {
             String new_value;
 
@@ -75,7 +75,7 @@ namespace tempearly
         {
             return Value();
         }
-        if (args.size() > 2 && !args[2].AsBool(interpreter, permanent))
+        if (args.GetSize() > 2 && !args[2].AsBool(interpreter, permanent))
         {
             return Value();
         }
@@ -107,7 +107,7 @@ namespace tempearly
     {
         int old_status = interpreter->response->GetStatus();
 
-        if (args.size() > 1)
+        if (args.GetSize() > 1)
         {
             i64 new_status;
 

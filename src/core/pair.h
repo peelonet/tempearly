@@ -22,6 +22,13 @@ namespace tempearly
         /**
          * Copy constructor.
          */
+        Pair(const Pair<T>& that)
+            : m_key(that.m_key)
+            , m_value(that.m_value) {}
+
+        /**
+         * Copy constructor.
+         */
         template< class U >
         Pair(const Pair<U>& that)
             : m_key(that.GetKey())
@@ -59,11 +66,24 @@ namespace tempearly
          *
          * \param that Other pair to copy values from
          */
-        template< class U >
-        Pair& operator=(const Pair<U>& that)
+        Pair& operator=(const Pair<T>& that)
         {
             m_key = that.m_key;
             m_value = that.m_value;
+
+            return *this;
+        }
+
+        /**
+         * Replaces values of the pair with values of another pair.
+         *
+         * \param that Other pair to copy values from
+         */
+        template< class U >
+        Pair& operator=(const Pair<U>& that)
+        {
+            m_key = that.GetKey();
+            m_value = that.GetValue();
 
             return *this;
         }

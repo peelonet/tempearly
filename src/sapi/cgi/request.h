@@ -25,7 +25,7 @@ namespace tempearly
         void ReadParameters();
 
     private:
-        Dictionary<std::vector<String> > m_parameters;
+        Dictionary<Vector<String> > m_parameters;
         bool m_parameters_read;
         /** Request method ("GET", "POST", etc.). */
         String m_method;

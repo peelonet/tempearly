@@ -27,7 +27,7 @@ namespace tempearly
         void AddFunction(const String& name,
                          int arity,
                          Value(*callback)(const Handle<Interpreter>&,
-                                          const std::vector<Value>&));
+                                          const Vector<Value>&));
 
         /**
          * Returns true if this interpreter has an uncaught exception.

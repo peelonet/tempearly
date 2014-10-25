@@ -2,6 +2,7 @@
 #define TEMPEARLY_VALUE_H_GUARD
 
 #include "coreobject.h"
+#include "core/vector.h"
 
 namespace tempearly
 {
@@ -194,7 +195,7 @@ namespace tempearly
 
         Value Call(const Handle<Interpreter>& interpreter,
                    const String& id,
-                   const std::vector<Value>& args = std::vector<Value>()) const;
+                   const Vector<Value>& args = Vector<Value>()) const;
 
         Value Call(const Handle<Interpreter>& interpreter,
                    const String& id,

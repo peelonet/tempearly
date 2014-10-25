@@ -44,7 +44,7 @@ namespace tempearly
         const HttpMethod::Kind m_method;
         const String m_path;
         Dictionary<String> m_headers;
-        Dictionary<std::vector<String> > m_parameters;
+        Dictionary<Vector<String> > m_parameters;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(HttpServerRequest);
     };
 }

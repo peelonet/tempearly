@@ -29,7 +29,7 @@ namespace tempearly
     private:
         request_rec* m_request;
         const HttpMethod::Kind m_method;
-        Dictionary<std::vector<String> > m_parameters;
+        Dictionary<Vector<String> > m_parameters;
         bool m_parameters_read;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ApacheRequest);
     };

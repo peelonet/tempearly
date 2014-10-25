@@ -53,22 +53,22 @@ namespace tempearly
 
     bool HttpServerRequest::HasParameter(const String& id) const
     {
-        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
 
-        return e && !e->GetValue().empty();
+        return e && !e->GetValue().IsEmpty();
     }
 
     bool HttpServerRequest::GetParameter(const String& id, String& slot) const
     {
-        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
 
         if (e)
         {
-            const std::vector<String>& values = e->GetValue();
+            const Vector<String>& values = e->GetValue();
 
-            if (!values.empty())
+            if (!values.IsEmpty())
             {
-                slot = values.front();
+                slot = values.GetFront();
 
                 return true;
             }

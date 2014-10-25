@@ -11,14 +11,14 @@ namespace tempearly
     class Script : public CountedObject
     {
     public:
-        explicit Script(const std::vector<Handle<Node> >& nodes);
+        explicit Script(const Vector<Handle<Node> >& nodes);
 
         bool Execute(const Handle<Interpreter>& interpreter) const;
 
         void Mark();
 
     private:
-        const std::vector<Node*> m_nodes;
+        const Vector<Node*> m_nodes;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Script);
     };
 }

@@ -16,24 +16,22 @@ namespace tempearly
         {
         public:
             explicit ScriptedFunction(const Handle<Interpreter>& interpreter,
-                                      const std::vector<Handle<Parameter> >& parameters,
-                                      const std::vector<Handle<Node> >& nodes)
+                                      const Vector<Handle<Parameter> >& parameters,
+                                      const Vector<Handle<Node> >& nodes)
                 : FunctionObject(interpreter)
-                , m_parameters(parameters.begin(), parameters.end())
-                , m_nodes(nodes.begin(), nodes.end()) {}
+                , m_parameters(parameters)
+                , m_nodes(nodes) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const std::vector<Value>& args)
+            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
                 interpreter->PushScope(interpreter->GetScope());
-                if (!Parameter::Apply(interpreter,
-                                      std::vector<Handle<Parameter> >(m_parameters.begin(), m_parameters.end()),
-                                      args))
+                if (!Parameter::Apply(interpreter, m_parameters, args))
                 {
                     interpreter->PopScope();
 
                     return Value();
                 }
-                for (std::size_t i = 0; i < m_nodes.size(); ++i)
+                for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
                 {
                     Result result = m_nodes[i]->Execute(interpreter);
 
@@ -74,14 +72,14 @@ namespace tempearly
             void Mark()
             {
                 FunctionObject::Mark();
-                for (std::size_t i = 0; i < m_parameters.size(); ++i)
+                for (std::size_t i = 0; i < m_parameters.GetSize(); ++i)
                 {
                     if (!m_parameters[i]->IsMarked())
                     {
                         m_parameters[i]->Mark();
                     }
                 }
-                for (std::size_t i = 0; i < m_nodes.size(); ++i)
+                for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
                 {
                     if (!m_nodes[i]->IsMarked())
                     {
@@ -91,15 +89,15 @@ namespace tempearly
             }
 
         private:
-            const std::vector<Parameter*> m_parameters;
-            const std::vector<Node*> m_nodes;
+            const Vector<Parameter*> m_parameters;
+            const Vector<Node*> m_nodes;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ScriptedFunction);
         };
     }
 
     Handle<FunctionObject> FunctionObject::NewScripted(const Handle<Interpreter>& interpreter,
-                                                       const std::vector<Handle<Parameter> >& parameters,
-                                                       const std::vector<Handle<Node> >& nodes)
+                                                       const Vector<Handle<Parameter> >& parameters,
+                                                       const Vector<Handle<Node> >& nodes)
     {
         return new ScriptedFunction(interpreter, parameters, nodes);
     }
@@ -111,21 +109,14 @@ namespace tempearly
         public:
             explicit CurryFunction(const Handle<Interpreter>& interpreter,
                                    FunctionObject* base,
-                                   const std::vector<Value>& args)
+                                   const Vector<Value>& args)
                 : FunctionObject(interpreter)
                 , m_base(base)
                 , m_args(args) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter,
-                         const std::vector<Value>& args)
+            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
-                std::vector<Value> new_args;
-
-                new_args.reserve(m_args.size() + args.size());
-                new_args.insert(new_args.begin(), args.begin(), args.end());
-                new_args.insert(new_args.begin(), m_args.begin(), m_args.end());
-
-                return m_base->Invoke(interpreter, new_args);
+                return m_base->Invoke(interpreter, m_args + args);
             }
 
             void Mark()
@@ -135,7 +126,7 @@ namespace tempearly
                 {
                     m_base->Mark();
                 }
-                for (std::size_t i = 0; i < m_args.size(); ++i)
+                for (std::size_t i = 0; i < m_args.GetSize(); ++i)
                 {
                     m_args[i].Mark();
                 }
@@ -143,13 +134,12 @@ namespace tempearly
 
         private:
             FunctionObject* m_base;
-            const std::vector<Value> m_args;
+            const Vector<Value> m_args;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CurryFunction);
         };
     }
 
-    Value FunctionObject::Curry(const Handle<Interpreter>& interpreter,
-                                const std::vector<Value>& args)
+    Value FunctionObject::Curry(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
     {
         return Value::NewObject(new CurryFunction(interpreter, this, args));
     }
@@ -161,10 +151,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(func_call)
     {
-        return args[0].As<FunctionObject>()->Invoke(
-            interpreter,
-            std::vector<Value>(args.begin() + 1, args.end())
-        );
+        return args[0].As<FunctionObject>()->Invoke(interpreter, args.SubVector(1));
     }
 
     void init_function(Interpreter* i)

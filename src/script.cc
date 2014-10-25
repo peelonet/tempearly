@@ -3,12 +3,12 @@
 
 namespace tempearly
 {
-    Script::Script(const std::vector<Handle<Node> >& nodes)
-        : m_nodes(nodes.begin(), nodes.end()) {}
+    Script::Script(const Vector<Handle<Node> >& nodes)
+        : m_nodes(nodes) {}
 
     bool Script::Execute(const Handle<Interpreter>& interpreter) const
     {
-        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
         {
             Result result = m_nodes[i]->Execute(interpreter);
 
@@ -44,7 +44,7 @@ namespace tempearly
     void Script::Mark()
     {
         CountedObject::Mark();
-        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
         {
             Node* node = m_nodes[i];
 

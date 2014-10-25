@@ -1,7 +1,8 @@
-#include <cstring>
+#include <cctype>
 
 #include "core/bytestring.h"
 #include "core/string.h"
+#include "core/vector.h"
 
 namespace tempearly
 {
@@ -90,8 +91,8 @@ namespace tempearly
         {
             bool valid = true;
 
-            m_runes = new rune[m_length];
-            m_counter = new unsigned int[1];
+            m_runes = Memory::Allocate<rune>(m_length);
+            m_counter = Memory::Allocate<unsigned int>(1);
             m_counter[0] = 1;
             for (std::size_t i = 0; i < m_length; ++i)
             {
@@ -156,32 +157,31 @@ namespace tempearly
     String::String(const rune* c, std::size_t n)
         : m_offset(0)
         , m_length(n)
-        , m_runes(m_length ? new rune[m_length] : 0)
-        , m_counter(m_length ? new unsigned int[1] : 0)
+        , m_runes(Memory::Allocate<rune>(m_length))
+        , m_counter(m_length ? Memory::Allocate<unsigned int>(1) : 0)
         , m_hash_code(0)
     {
         if (m_counter)
         {
             m_counter[0] = 1;
-            std::memcpy(static_cast<void*>(m_runes),
-                        static_cast<const void*>(c),
-                        sizeof(rune) * n);
+            Memory::Copy<rune>(m_runes, c, n);
         }
     }
 
     String::String(rune c, std::size_t n)
         : m_offset(0)
         , m_length(n)
-        , m_runes(m_length ? new rune[m_length] : 0)
-        , m_counter(m_length ? new unsigned int[1] : 0)
+        , m_runes(Memory::Allocate<rune>(m_length))
+        , m_counter(m_length ? Memory::Allocate<unsigned int>(1) : 0)
         , m_hash_code(0)
     {
         if (m_counter)
         {
-            std::memcpy(static_cast<void*>(m_runes),
-                        static_cast<const void*>(&c),
-                        sizeof(rune) * m_length);
             m_counter[0] = 1;
+            for (std::size_t i = 0; i < m_length; ++i)
+            {
+                m_runes[i] = c;
+            }
         }
     }
 
@@ -189,8 +189,8 @@ namespace tempearly
     {
         if (m_counter && --m_counter[0] == 0)
         {
-            delete[] m_runes;
-            delete[] m_counter;
+            Memory::Unallocate<rune>(m_runes);
+            Memory::Unallocate<unsigned int>(m_counter);
         }
     }
 
@@ -200,8 +200,8 @@ namespace tempearly
         {
             if (m_counter && --m_counter[0] == 0)
             {
-                delete[] m_runes;
-                delete[] m_counter;
+                Memory::Unallocate<rune>(m_runes);
+                Memory::Unallocate<unsigned int>(m_counter);
             }
             m_runes = that.m_runes;
             if ((m_counter = that.m_counter))
@@ -222,8 +222,8 @@ namespace tempearly
 
         if (m_counter && --m_counter[0] == 0)
         {
-            delete[] m_runes;
-            delete[] m_counter;
+            Memory::Unallocate<rune>(m_runes);
+            Memory::Unallocate<unsigned int>(m_counter);
         }
         m_offset = m_length = m_hash_code = 0;
         if (!p)
@@ -246,8 +246,8 @@ namespace tempearly
         {
             bool valid = true;
 
-            m_runes = new rune[m_length];
-            m_counter = new unsigned int[1];
+            m_runes = Memory::Allocate<rune>(m_length);
+            m_counter = Memory::Allocate<unsigned int>(1);
             m_counter[0] = 1;
             for (std::size_t i = 0; i < m_length; ++i)
             {
@@ -313,9 +313,9 @@ namespace tempearly
 
     ByteString String::Encode() const
     {
-        std::vector<byte> bytes;
+        Vector<byte> bytes;
 
-        bytes.reserve(m_length);
+        bytes.Reserve(m_length);
         for (std::size_t i = 0; i < m_length; ++i)
         {
             const rune r = m_runes[m_offset + i];
@@ -329,27 +329,27 @@ namespace tempearly
             }
             else if (r <= 0x7f)
             {
-                bytes.push_back(static_cast<byte>(r));
+                bytes.PushBack(static_cast<byte>(r));
             }
             else if (r <= 0x07ff)
             {
-                bytes.push_back(static_cast<byte>(0xc0 | ((r & 0x7c0) >> 6)));
-                bytes.push_back(static_cast<byte>(0x80 | (r & 0x3f)));
+                bytes.PushBack(static_cast<byte>(0xc0 | ((r & 0x7c0) >> 6)));
+                bytes.PushBack(static_cast<byte>(0x80 | (r & 0x3f)));
             }
             else if (r <= 0xffff)
             {
-                bytes.push_back(static_cast<byte>(0xe0 | ((r & 0xf000)) >> 12));
-                bytes.push_back(static_cast<byte>(0x80 | ((r & 0xfc0)) >> 6));
-                bytes.push_back(static_cast<byte>(0x80 | (r & 0x3f)));
+                bytes.PushBack(static_cast<byte>(0xe0 | ((r & 0xf000)) >> 12));
+                bytes.PushBack(static_cast<byte>(0x80 | ((r & 0xfc0)) >> 6));
+                bytes.PushBack(static_cast<byte>(0x80 | (r & 0x3f)));
             } else {
-                bytes.push_back(static_cast<byte>(0xf0 | ((r & 0x1c0000) >> 18)));
-                bytes.push_back(static_cast<byte>(0x80 | ((r & 0x3f000) >> 12)));
-                bytes.push_back(static_cast<byte>(0x80 | ((r & 0xfc0) >> 6)));
-                bytes.push_back(static_cast<byte>(0x80 | (r & 0x3f)));
+                bytes.PushBack(static_cast<byte>(0xf0 | ((r & 0x1c0000) >> 18)));
+                bytes.PushBack(static_cast<byte>(0x80 | ((r & 0x3f000) >> 12)));
+                bytes.PushBack(static_cast<byte>(0x80 | ((r & 0xfc0) >> 6)));
+                bytes.PushBack(static_cast<byte>(0x80 | (r & 0x3f)));
             }
         }
 
-        return ByteString(bytes.data(), bytes.size());
+        return ByteString(bytes.GetData(), bytes.GetSize());
     }
 
 #if defined(_WIN32)
@@ -396,8 +396,8 @@ namespace tempearly
             std::size_t offset = 0;
 
             result.m_length = length;
-            result.m_runes = new rune[length];
-            result.m_counter = new unsigned[1];
+            result.m_runes = Memory::Allocate<rune>(length);
+            result.m_counter = Memory::Allocate<unsigned int>(1);
             result.m_counter[0] = 1;
             for (const wchar_t* p = input; *p; ++p)
             {
@@ -634,8 +634,8 @@ namespace tempearly
     {
         if (m_counter && --m_counter[0] == 0)
         {
-            delete[] m_runes;
-            delete[] m_counter;
+            Memory::Unallocate<rune>(m_runes);
+            Memory::Unallocate<unsigned int>(m_counter);
         }
         m_offset = m_length = m_hash_code = 0;
         m_runes = 0;
@@ -655,15 +655,11 @@ namespace tempearly
             String result;
 
             result.m_length = m_length + that.m_length;
-            result.m_runes = new rune[result.m_length];
-            result.m_counter = new unsigned int[1];
+            result.m_runes = Memory::Allocate<rune>(result.m_length);
+            result.m_counter = Memory::Allocate<unsigned int>(1);
             result.m_counter[0] = 1;
-            std::memcpy(static_cast<void*>(result.m_runes),
-                        static_cast<const void*>(m_runes + m_offset),
-                        sizeof(rune) * m_length);
-            std::memcpy(static_cast<void*>(result.m_runes + m_length),
-                        static_cast<const void*>(that.m_runes + that.m_offset),
-                        sizeof(rune) * that.m_length);
+            Memory::Copy<rune>(result.m_runes, m_runes + m_offset, m_length);
+            Memory::Copy<rune>(result.m_runes + m_length, that.m_runes + that.m_offset, that.m_length);
 
             return result;
         }
@@ -676,8 +672,8 @@ namespace tempearly
         if (m_length)
         {
             result.m_length = m_length;
-            result.m_runes = new rune[m_length];
-            result.m_counter = new unsigned int[1];
+            result.m_runes = Memory::Allocate<rune>(m_length);
+            result.m_counter = Memory::Allocate<unsigned int>(1);
             result.m_counter[0] = 1;
             for (std::size_t i = 0; i < m_length; ++i)
             {

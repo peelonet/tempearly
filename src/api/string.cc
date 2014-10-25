@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include "interpreter.h"
 #include "api/iterator.h"
 #include "api/list.h"
@@ -18,7 +20,7 @@ namespace tempearly
         StringBuilder result;
         String slot;
 
-        for (std::size_t i = 0; i < args.size(); ++i)
+        for (std::size_t i = 0; i < args.GetSize(); ++i)
         {
             if (!args[i].ToString(interpreter, slot))
             {

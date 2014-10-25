@@ -207,7 +207,7 @@ namespace tempearly
             {
                 return value;
             }
-            else if (args.size() > 2)
+            else if (args.GetSize() > 2)
             {
                 return args[2];
             } else {
@@ -252,7 +252,7 @@ namespace tempearly
             String sep1;
             String sep2;
 
-            if (args.size() > 1)
+            if (args.GetSize() > 1)
             {
                 if (args[1].IsNull())
                 {
@@ -262,7 +262,7 @@ namespace tempearly
                 {
                     return Value();
                 }
-                if (args.size() > 2)
+                if (args.GetSize() > 2)
                 {
                     if (args[2].IsNull())
                     {

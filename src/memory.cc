@@ -169,9 +169,17 @@ namespace tempearly
 
     CountedObject::CountedObject()
         : m_flags(0)
-        , m_reference_count(0) {}
+        , m_reference_count(0)
+        , m_handle_head(0)
+        , m_handle_tail(0) {}
 
-    CountedObject::~CountedObject() {}
+    CountedObject::~CountedObject()
+    {
+        for (Handle<CountedObject>* handle = m_handle_head; handle; handle = handle->m_next)
+        {
+            handle->m_pointer = 0;
+        }
+    }
 
     void CountedObject::Mark()
     {

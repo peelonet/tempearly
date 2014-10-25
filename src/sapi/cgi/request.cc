@@ -66,22 +66,22 @@ namespace tempearly
 
     bool CgiRequest::HasParameter(const String& id) const
     {
-        const Dictionary<std::vector<String> >::Entry* e = m_parameters.Find(id);
+        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
 
-        return e && !e->GetValue().empty();
+        return e && !e->GetValue().IsEmpty();
     }
 
     bool CgiRequest::GetParameter(const String& id, String& value) const
     {
-        const Dictionary<std::vector<String> >::Entry* entry = m_parameters.Find(id);
+        const Dictionary<Vector<String> >::Entry* entry = m_parameters.Find(id);
 
         if (entry)
         {
-            const std::vector<String>& values = entry->GetValue();
+            const Vector<String>& values = entry->GetValue();
 
-            if (!values.empty())
+            if (!values.IsEmpty())
             {
-                value = values.front();
+                value = values.GetFront();
 
                 return true;
             }
