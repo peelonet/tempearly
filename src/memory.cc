@@ -40,7 +40,7 @@ namespace tempearly
                 for (current = m_head; current; current = next)
                 {
                     next = current->next;
-                    delete current->object;
+                    current->object->~CountedObject();
                     std::free(static_cast<void*>(current));
                 }
             }
@@ -90,7 +90,7 @@ namespace tempearly
                         }
                         saved_tail = current;
                     } else {
-                        delete current->object;
+                        current->object->~CountedObject();
                         std::free(static_cast<void*>(current));
                     }
                     current = next;
@@ -124,7 +124,7 @@ namespace tempearly
                         current->next = m_head;
                         m_head = current;
                     } else {
-                        delete current->object;
+                        current->object->~CountedObject();
                         std::free(static_cast<void*>(current));
                     }
                 }
