@@ -1,0 +1,32 @@
+#!/usr/bin/bash
+
+PORT="8000"
+URL_BASE="http://localhost:$PORT/"
+
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <FILE> <QUERIES>"
+    echo "Example: $0 quicksort.tly 100"
+    exit 1
+fi
+
+i=0
+COUNT=0
+while [ $i -lt $2 ];
+do
+    let i=i+1
+
+    curl -fsSo /dev/null $URL_BASE$1
+    if (( $? )); then
+        echo "$i: FAILED"
+    else
+        echo "$i: OK"
+        let COUNT=COUNT+1
+    fi
+
+done
+
+if [ $i -eq $COUNT ]; then
+    echo "All tests passed!"
+else
+    echo "$COUNT out of $i tests passed"
+fi
