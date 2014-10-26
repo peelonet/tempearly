@@ -835,7 +835,7 @@ namespace tempearly
 
         // Lower and upper slice
         return quicksort(interpreter, vector, offset, left++ - offset)
-            && quicksort(interpreter, vector, left, slice_size - left - offset);
+            && quicksort(interpreter, vector, left, slice_size - (left - offset));
     }
 
     static bool quicksort_callback(const Handle<Interpreter>& interpreter,
@@ -918,7 +918,7 @@ namespace tempearly
 
         // Lower and upper slice
         return quicksort_callback(interpreter, vector, offset, left++ - offset, function)
-            && quicksort_callback(interpreter, vector, left, slice_size - left - offset, function);
+            && quicksort_callback(interpreter, vector, left, slice_size - (left - offset), function);
     }
 
     /**
