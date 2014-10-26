@@ -29,7 +29,10 @@ namespace tempearly
     void init_void(Interpreter*);
 
     Interpreter::Interpreter()
-        : m_exception(0)
+        : request(0)
+        , response(0)
+        , globals(0)
+        , m_exception(0)
         , m_empty_iterator(0)
         , m_imported_files(0) {}
 

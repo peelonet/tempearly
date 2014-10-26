@@ -93,11 +93,11 @@ namespace tempearly
          */
         void Mark();
 
-        Handle<Request> request;
-        Handle<Response> response;
+        Request* request;
+        Response* response;
 
         /** Global variable scope. */
-        Handle<Scope> globals;
+        Scope* globals;
 
         Handle<Class> cBool;
         Handle<Class> cClass;
