@@ -26,6 +26,12 @@ OPTION(
     OFF
 )
 
+OPTION(
+    TEMPEARLY_GC_DEBUG
+    "Display debugging messages from GC"
+    OFF
+)
+
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 INCLUDE(CheckIncludeFile)
