@@ -170,7 +170,15 @@ namespace tempearly
          */
         virtual ~Dictionary()
         {
-            Clear();
+            Entry* current = m_front;
+            Entry* next;
+
+            while (current)
+            {
+                next = current->m_next;
+                delete current;
+                current = next;
+            }
             Memory::Unallocate<Entry*>(m_bucket);
         }
 

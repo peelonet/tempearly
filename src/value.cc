@@ -93,7 +93,14 @@ namespace tempearly
 
     Value::~Value()
     {
-        Clear();
+        if (m_kind == KIND_STRING)
+        {
+            delete m_data.s;
+        }
+        else if (m_kind == KIND_OBJECT)
+        {
+            m_data.o->DecReferenceCount();
+        }
     }
 
     const Value& Value::NullValue()
