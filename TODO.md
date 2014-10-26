@@ -1,11 +1,14 @@
-# Interpreter
+# TODO list
+
+## Interpreter
 
 - Modify parser so that it doesn't require `Interpreter` instance. This enables us to compile
   and cache scripts before any requests are being made.
 - Builtin support for SQLite
 - Interfaces/mixins for classes
+- More detailed error messages. (Include source position.)
 
-# API
+## API
 
 - Regular expressions
 - Database connectivity
@@ -14,7 +17,7 @@
 - File IO
 - Filename globbing
 
-# Server APIs
+## Server APIs
 
 - AST caching in FastCGI and Apache SAPIs.
 - Process multipart HTTP requests.
