@@ -160,7 +160,7 @@ namespace tempearly
 
     void* CountedObject::operator new(std::size_t size)
     {
-        if (allocation_counter++ >= TEMPEARLY_GC_THRESHOLD0)
+        if (++allocation_counter >= TEMPEARLY_GC_THRESHOLD0)
         {
             allocation_counter = 0;
             generation0.Mark();
