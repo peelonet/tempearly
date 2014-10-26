@@ -20,3 +20,8 @@
 - Process multipart HTTP requests.
 - Parse request parameters (especially POSTed ones) only when requested in the
   script.
+
+# Maybe list
+
+- Multiple garbage collector implementations or customizable garbage collector. (Mainly
+  for Apache2 SAPI so that the GC could use memory pools provided by Apache HTTPD.)
