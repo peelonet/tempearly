@@ -127,7 +127,7 @@ namespace tempearly
         {
             set->Clear();
         }
-        for (std::size_t i = 1; i < args.size(); ++i)
+        for (std::size_t i = 1; i < args.GetSize(); ++i)
         {
             const Value& object = args[i];
             i64 hash;
@@ -263,7 +263,7 @@ namespace tempearly
     {
         Handle<SetObject> set = args[0].As<SetObject>();
 
-        for (std::size_t i = 1; i < args.size(); ++i)
+        for (std::size_t i = 1; i < args.GetSize(); ++i)
         {
             const Value& object = args[i];
             i64 hash;

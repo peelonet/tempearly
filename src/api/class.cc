@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "utils.h"
 #include "api/function.h"
 #include "core/stringbuilder.h"
 
@@ -102,13 +103,12 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter,
-                         const std::vector<Value>& args)
+            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
                 Value result;
 
                 // Arguments must not be empty.
-                if (args.empty())
+                if (args.IsEmpty())
                 {
                     interpreter->Throw(interpreter->eTypeError,
                                        "Missing method receiver");
@@ -131,27 +131,27 @@ namespace tempearly
                 // Test that we have correct amount of arguments.
                 else if (m_arity < 0)
                 {
-                    if (args.size() < static_cast<unsigned>(-(m_arity + 1) + 1))
+                    if (args.GetSize() < static_cast<unsigned>(-(m_arity + 1) + 1))
                     {
                         StringBuilder sb;
 
                         sb << "Method expected at least "
                            << (-(m_arity) - 1)
                            << " arguments, got "
-                           << args.size();
+                           << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                         return Value();
                     }
                 }
-                else if (args.size() != static_cast<unsigned>(m_arity) + 1)
+                else if (args.GetSize() != static_cast<unsigned>(m_arity) + 1)
                 {
                     StringBuilder sb;
 
                     sb << "Method expected "
                        << m_arity
                        << " arguments, got "
-                       << args.size();
+                       << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                     return Value();
@@ -209,35 +209,34 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter,
-                         const std::vector<Value>& args)
+            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
                 Value result;
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
-                    if (args.size() < static_cast<unsigned>(-(m_arity + 1)))
+                    if (args.GetSize() < static_cast<unsigned>(-(m_arity + 1)))
                     {
                         StringBuilder sb;
 
                         sb << "Method expected at least "
                            << (-(m_arity) - 1)
                            << " arguments, got "
-                           << args.size();
+                           << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                         return Value();
                     }
                 }
-                else if (args.size() != static_cast<unsigned>(m_arity))
+                else if (args.GetSize() != static_cast<unsigned>(m_arity))
                 {
                     StringBuilder sb;
 
                     sb << "Method expected "
                        << m_arity
                        << " arguments, got "
-                       << args.size();
+                       << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
 
                     return Value();
@@ -295,11 +294,10 @@ namespace tempearly
                 : FunctionObject(interpreter)
                 , m_alias(alias) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter,
-                         const std::vector<Value>& args)
+            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
                 // Arguments must not be empty.
-                if (args.empty())
+                if (args.IsEmpty())
                 {
                     interpreter->Throw(interpreter->eTypeError,
                                        "Missing method receiver");
@@ -307,7 +305,7 @@ namespace tempearly
                     return Value();
                 }
 
-                return args[0].Call(interpreter, m_alias, std::vector<Value>(args.begin() + 1, args.end()));
+                return args[0].Call(interpreter, m_alias, args.SubVector(1));
             }
 
         private:
@@ -402,9 +400,7 @@ namespace tempearly
 
         if (instance)
         {
-            std::vector<Value> new_args(args.begin() + 1, args.end());
-
-            if (instance.Call(interpreter, "__init__", new_args))
+            if (instance.Call(interpreter, "__init__", args.SubVector(1)))
             {
                 return instance;
             }

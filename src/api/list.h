@@ -74,16 +74,14 @@ namespace tempearly
          *
          * \param cls Class of the list object
          */
-        explicit ListObject(const Handle<Class>& cls,
-                            const std::vector<Value>& vector);
+        explicit ListObject(const Handle<Class>& cls, const Vector<Value>& vector);
 
         /**
          * Constructs copy of existing list.
          *
          * \param cls Class of the list object
          */
-        explicit ListObject(const Handle<Class>& cls,
-                            const Handle<ListObject>& that);
+        explicit ListObject(const Handle<Class>& cls, const Handle<ListObject>& that);
 
         /**
          * Returns true if the list is empty.
@@ -127,7 +125,7 @@ namespace tempearly
         /**
          * Inserts all elements from given vector to the end of the list.
          */
-        void Append(const std::vector<Value>& vector);
+        void Append(const Vector<Value>& vector);
 
         /**
          * Inserts given value in begining of the list.
@@ -137,7 +135,7 @@ namespace tempearly
         /**
          * Inserts all elements from given vector into beginning of the list.
          */
-        void Prepend(const std::vector<Value>& vector);
+        void Prepend(const Vector<Value>& vector);
 
         /**
          * Removes all values from the list.

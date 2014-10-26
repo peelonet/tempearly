@@ -1,3 +1,4 @@
+#include <cctype>
 #include <cfloat>
 #include <cmath>
 
@@ -346,16 +347,16 @@ namespace tempearly
             || string.IndexOf('%') != String::npos)
         {
             ByteString bytes = string.Encode();
-            std::vector<char> result;
+            Vector<char> result;
 
-            result.reserve(bytes.GetLength());
+            result.Reserve(bytes.GetLength());
             for (std::size_t i = 0; i < bytes.GetLength(); ++i)
             {
                 const byte b = bytes[i];
 
                 if (b == '+')
                 {
-                    result.push_back(' ');
+                    result.PushBack(' ');
                 }
                 else if (b == '%')
                 {
@@ -384,14 +385,14 @@ namespace tempearly
                             return false;
                         }
                     }
-                    result.push_back(byte);
+                    result.PushBack(byte);
                     i += 2;
                 } else {
-                    result.push_back(b);
+                    result.PushBack(b);
                 }
             }
-            result.push_back(0);
-            slot = String(result.data());
+            result.PushBack(0);
+            slot = result.GetData();
         } else {
             slot = string;
         }
@@ -399,8 +400,7 @@ namespace tempearly
         return true;
     }
 
-    void Utils::ParseQueryString(const String& string,
-                                 Dictionary<std::vector<String> >& dictionary)
+    void Utils::ParseQueryString(const String& string, Dictionary<Vector<String> >& dictionary)
     {
         std::size_t current_index = 0;
         String name;
@@ -427,13 +427,13 @@ namespace tempearly
             }
             if (UrlDecode(name, name) && UrlDecode(value, value))
             {
-                Dictionary<std::vector<String> >::Entry* entry = dictionary.Find(name);
+                Dictionary<Vector<String> >::Entry* entry = dictionary.Find(name);
 
                 if (entry)
                 {
-                    entry->GetValue().push_back(value);
+                    entry->GetValue().PushBack(value);
                 } else {
-                    dictionary.Insert(name, std::vector<String>(1, value));
+                    dictionary.Insert(name, Vector<String>(1, value));
                 }
             }
         }

@@ -32,12 +32,9 @@ namespace tempearly
         const Value& end = args[1];
         bool exclusive = false;
 
-        if (args.size() > 2)
+        if (args.GetSize() > 2 && !args[2].AsBool(interpreter, exclusive))
         {
-            if (!args[2].AsBool(interpreter, exclusive))
-            {
-                return Value();
-            }
+            return Value();
         }
 
         return Value::NewObject(new RangeObject(interpreter, begin, end, exclusive));

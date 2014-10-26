@@ -94,9 +94,9 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(file_parts)
     {
         Handle<ListObject> list = new ListObject(interpreter->cList);
-        std::vector<String> parts = args[0].As<FileObject>()->GetPath().GetParts();
+        Vector<String> parts = args[0].As<FileObject>()->GetPath().GetParts();
 
-        for (std::size_t i = 0; i < parts.size(); ++i)
+        for (std::size_t i = 0; i < parts.GetSize(); ++i)
         {
             list->Append(Value::NewString(parts[i]));
         }

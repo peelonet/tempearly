@@ -10,10 +10,9 @@ namespace tempearly
         , m_front(0)
         , m_back(0) {}
 
-    ListObject::ListObject(const Handle<Class>& cls,
-                           const std::vector<Value>& vector)
+    ListObject::ListObject(const Handle<Class>& cls, const Vector<Value>& vector)
         : Object(cls)
-        , m_size(vector.size())
+        , m_size(vector.GetSize())
         , m_front(0)
         , m_back(0)
     {
@@ -31,8 +30,7 @@ namespace tempearly
         }
     }
 
-    ListObject::ListObject(const Handle<Class>& cls,
-                          const Handle<ListObject>& that)
+    ListObject::ListObject(const Handle<Class>& cls, const Handle<ListObject>& that)
         : Object(cls)
         , m_size(that->m_size)
         , m_front(0)
@@ -66,14 +64,14 @@ namespace tempearly
         ++m_size;
     }
 
-    void ListObject::Append(const std::vector<Value>& vector)
+    void ListObject::Append(const Vector<Value>& vector)
     {
-        if (!vector.empty())
+        if (!vector.IsEmpty())
         {
             Handle<Link> front = new Link(vector[0]);
             Handle<Link> back = front;
 
-            for (std::size_t i = 1; i < vector.size(); ++i)
+            for (std::size_t i = 1; i < vector.GetSize(); ++i)
             {
                 Handle<Link> link = new Link(vector[i]);
 
@@ -87,7 +85,7 @@ namespace tempearly
                 m_front = front;
             }
             m_back = back;
-            m_size += vector.size();
+            m_size += vector.GetSize();
         }
     }
 
@@ -103,14 +101,14 @@ namespace tempearly
         ++m_size;
     }
 
-    void ListObject::Prepend(const std::vector<Value>& vector)
+    void ListObject::Prepend(const Vector<Value>& vector)
     {
-        if (!vector.empty())
+        if (!vector.IsEmpty())
         {
             Handle<Link> front = new Link(vector[0]);
             Handle<Link> back = front;
 
-            for (std::size_t i = 1; i < vector.size(); ++i)
+            for (std::size_t i = 1; i < vector.GetSize(); ++i)
             {
                 Handle<Link> link = new Link(vector[i]);
 
@@ -124,7 +122,7 @@ namespace tempearly
                 m_back = back;
             }
             m_front = front;
-            m_size += vector.size();
+            m_size += vector.GetSize();
         }
     }
 
@@ -176,9 +174,9 @@ namespace tempearly
         {
             list->Clear();
         }
-        if (args.size() > 1)
+        if (args.GetSize() > 1)
         {
-            list->Append(std::vector<Value>(args.begin() + 1, args.end()));
+            list->Append(args.SubVector(1));
         }
 
         return Value::NullValue();
@@ -203,9 +201,9 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_append)
     {
-        if (args.size() > 1)
+        if (args.GetSize() > 1)
         {
-            args[0].As<ListObject>()->Append(std::vector<Value>(args.begin() + 1, args.end()));
+            args[0].As<ListObject>()->Append(args.SubVector(1));
         }
 
         return args[0];
@@ -220,9 +218,9 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_prepend)
     {
-        if (args.size() > 1)
+        if (args.GetSize() > 1)
         {
-            args[0].As<ListObject>()->Prepend(std::vector<Value>(args.begin() + 1, args.end()));
+            args[0].As<ListObject>()->Prepend(args.SubVector(1));
         }
 
         return args[0];

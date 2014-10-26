@@ -11,8 +11,7 @@ namespace tempearly
     class FunctionObject : public Object
     {
     public:
-        typedef Value(*Callback)(const Handle<Interpreter>&,
-                                 const std::vector<Value>&);
+        typedef Value(*Callback)(const Handle<Interpreter>&, const Vector<Value>&);
 
         /**
          * Default constructor.
@@ -32,8 +31,8 @@ namespace tempearly
          * \param nodes       Function body
          */
         static Handle<FunctionObject> NewScripted(const Handle<Interpreter>& interpreter,
-                                                  const std::vector<Handle<Parameter> >& parameters,
-                                                  const std::vector<Handle<Node> >& nodes);
+                                                  const Vector<Handle<Parameter> >& parameters,
+                                                  const Vector<Handle<Node> >& nodes);
 
         /**
          * Invokes the function.
@@ -44,7 +43,7 @@ namespace tempearly
          *                    an exception was thrown
          */
         virtual Value Invoke(const Handle<Interpreter>& interpreter,
-                             const std::vector<Value>& args) = 0;
+                             const Vector<Value>& args) = 0;
 
         /**
          * Creates curry function which uses this function as it's base.
@@ -54,8 +53,7 @@ namespace tempearly
          * \return            New function which curries this one with given
          *                    arguments
          */
-        Value Curry(const Handle<Interpreter>& interpreter,
-                    const std::vector<Value>& args);
+        Value Curry(const Handle<Interpreter>& interpreter, const Vector<Value>& args);
 
         bool IsFunction() const
         {

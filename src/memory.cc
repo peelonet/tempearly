@@ -27,10 +27,9 @@ namespace tempearly
         class Generation
         {
         public:
-            explicit Generation(int threshold)
+            explicit Generation()
                 : m_head(0)
-                , m_threshold(threshold)
-                , m_count(0) {}
+                , m_counter(0) {}
 
             ~Generation()
             {
@@ -43,11 +42,6 @@ namespace tempearly
                     current->object->~CountedObject();
                     std::free(static_cast<void*>(current));
                 }
-            }
-
-            inline int GetThreshold() const
-            {
-                return m_threshold;
             }
 
             void* Allocate(std::size_t size)
@@ -68,7 +62,7 @@ namespace tempearly
                 return static_cast<void*>(slot->object);
             }
 
-            bool Collect(Generation& that)
+            int Examine(Generation& that)
             {
                 Slot* current = m_head;
                 Slot* next;
@@ -76,7 +70,7 @@ namespace tempearly
                 Slot* saved_tail = 0;
 
                 m_head = 0;
-                while (current)
+                for (; current; current = next)
                 {
                     next = current->next;
                     if (current->object->IsMarked())
@@ -93,51 +87,30 @@ namespace tempearly
                         current->object->~CountedObject();
                         std::free(static_cast<void*>(current));
                     }
-                    current = next;
                 }
                 if (saved_tail)
                 {
                     saved_tail->next = that.m_head;
                     that.m_head = saved_head;
                 }
-                if (m_count++ >= m_threshold)
-                {
-                    m_count = 0;
 
-                    return true;
-                }
-
-                return false;
+                return ++m_counter;
             }
 
-            void Collect()
+            void ResetCounter()
             {
-                Slot* current = m_head;
-                Slot* next;
-
-                m_head = 0;
-                for (; current; current = next)
-                {
-                    next = current->next;
-                    if (current->object->IsMarked())
-                    {
-                        current->next = m_head;
-                        m_head = current;
-                    } else {
-                        current->object->~CountedObject();
-                        std::free(static_cast<void*>(current));
-                    }
-                }
+                m_counter = 0;
             }
 
             void Mark()
             {
                 for (Slot* slot = m_head; slot; slot = slot->next)
                 {
-                    if (!slot->object->IsMarked()
-                        && slot->object->GetReferenceCount() > 0)
+                    CountedObject* object = slot->object;
+
+                    if (!object->IsMarked() && object->GetReferenceCount() > 0)
                     {
-                        slot->object->Mark();
+                        object->Mark();
                     }
                 }
             }
@@ -153,25 +126,32 @@ namespace tempearly
         private:
             /** Pointer to first object in the generation. */
             Slot* m_head;
-            /** Collection threshold. */
-            const int m_threshold;
-            /** Count of allocations or collections of younger generations. */
-            int m_count;
+            /** Number of examinations performed in this generation. */
+            int m_counter;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Generation);
         };
     }
 
-    static Generation generation0(700);
-    static Generation generation1(10);
-    static Generation generation2(10);
+    static Generation generation0;
+    static Generation generation1;
+    static Generation generation2;
 
     static std::size_t allocation_counter = 0;
 
     CountedObject::CountedObject()
         : m_flags(0)
-        , m_reference_count(0) {}
+        , m_reference_count(0)
+        , m_handle_head(0)
+        , m_handle_tail(0) {}
 
-    CountedObject::~CountedObject() {}
+    CountedObject::~CountedObject()
+    {
+        for (Handle<CountedObject>* handle = m_handle_head; handle; handle = handle->m_next)
+        {
+            handle->m_pointer = 0;
+        }
+        --allocation_counter;
+    }
 
     void CountedObject::Mark()
     {
@@ -180,22 +160,24 @@ namespace tempearly
 
     void* CountedObject::operator new(std::size_t size)
     {
-        if (allocation_counter++ >= static_cast<std::size_t>(generation0.GetThreshold()))
+        if (allocation_counter++ >= TEMPEARLY_GC_THRESHOLD0)
         {
+            allocation_counter = 0;
             generation0.Mark();
             generation1.Mark();
             generation2.Mark();
-            if (generation0.Collect(generation1))
+            if (generation0.Examine(generation1) >= TEMPEARLY_GC_THRESHOLD1)
             {
-                if (generation1.Collect(generation2))
+                generation0.ResetCounter();
+                if (generation1.Examine(generation2) >= TEMPEARLY_GC_THRESHOLD2)
                 {
-                    generation2.Collect();
+                    generation1.ResetCounter();
+                    generation2.Examine(generation2);
                 }
             } else {
                 generation1.Unmark();
             }
             generation2.Unmark();
-            allocation_counter = 0;
         }
 
         return generation0.Allocate(size);

@@ -2,6 +2,7 @@
 #define TEMPEARLY_UTILS_H_GUARD
 
 #include "core/dictionary.h"
+#include "core/vector.h"
 
 namespace tempearly
 {
@@ -56,7 +57,7 @@ namespace tempearly
          * extracted from it to the given dictionary.
          */
         static void ParseQueryString(const String& string,
-                                     Dictionary<std::vector<String> >& dictionary);
+                                     Dictionary<Vector<String> >& dictionary);
 
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Utils);

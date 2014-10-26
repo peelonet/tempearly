@@ -57,7 +57,7 @@ namespace tempearly
 
     private:
         /** Container for pushback values. */
-        std::vector<Value> m_pushback;
+        Vector<Value> m_pushback;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(IteratorObject);
     };
 }

@@ -8,7 +8,7 @@ namespace tempearly
 
     Value IteratorObject::Peek(const Handle<Interpreter>& interpreter)
     {
-        if (m_pushback.empty())
+        if (m_pushback.IsEmpty())
         {
             Result result = Generate(interpreter);
 
@@ -17,9 +17,9 @@ namespace tempearly
                 case Result::KIND_SUCCESS:
                     if (result.HasValue())
                     {
-                        m_pushback.push_back(result.GetValue());
+                        m_pushback.PushBack(result.GetValue());
                     } else {
-                        m_pushback.push_back(Value::NullValue());
+                        m_pushback.PushBack(Value::NullValue());
                     }
                     break;
 
@@ -35,12 +35,12 @@ namespace tempearly
             }
         }
 
-        return m_pushback.back();
+        return m_pushback.GetBack();
     }
 
     Value IteratorObject::Next(const Handle<Interpreter>& interpreter)
     {
-        if (m_pushback.empty())
+        if (m_pushback.IsEmpty())
         {
             Result result = Generate(interpreter);
 
@@ -65,9 +65,9 @@ namespace tempearly
                     return Value();
             }
         } else {
-            Value value = m_pushback.back();
+            Value value = m_pushback.GetBack();
 
-            m_pushback.pop_back();
+            m_pushback.Erase(m_pushback.GetSize() - 1);
 
             return value;
         }
@@ -77,14 +77,14 @@ namespace tempearly
     {
         if (value)
         {
-            m_pushback.push_back(value);
+            m_pushback.PushBack(value);
         }
     }
 
     void IteratorObject::Mark()
     {
         Object::Mark();
-        for (std::size_t i = 0; i < m_pushback.size(); ++i)
+        for (std::size_t i = 0; i < m_pushback.GetSize(); ++i)
         {
             m_pushback[i].Mark();
         }
@@ -124,7 +124,7 @@ namespace tempearly
     {
         Handle<IteratorObject> iterator = args[0].As<IteratorObject>();
 
-        for (std::size_t i = 1; i < args.size(); ++i)
+        for (std::size_t i = 1; i < args.GetSize(); ++i)
         {
             iterator->Feed(args[i]);
         }

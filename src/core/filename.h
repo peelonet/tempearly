@@ -2,6 +2,7 @@
 #define TEMPEARLY_CORE_FILENAME_H_GUARD
 
 #include "core/string.h"
+#include "core/vector.h"
 #if !defined(_WIN32)
 # include <sys/stat.h>
 #endif
@@ -34,9 +35,9 @@ namespace tempearly
         Filename(const String& source);
 
         /**
-         * Returns true if given character is filename separator.
+         * Destructor.
          */
-        static bool IsSeparator(rune r);
+        ~Filename();
 
         /**
          * Copies contents of another filename into this one.
@@ -64,6 +65,11 @@ namespace tempearly
         {
             return Assign(source);
         }
+
+        /**
+         * Returns true if given character is filename separator.
+         */
+        static bool IsSeparator(rune r);
 
         /**
          * Returns the full filename.
@@ -94,7 +100,7 @@ namespace tempearly
          */
         inline String GetName() const
         {
-            return m_parts.empty() ? String() : m_parts[m_parts.size() - 1];
+            return m_parts.IsEmpty() ? String() : m_parts.GetBack();
         }
 
         /**
@@ -106,7 +112,7 @@ namespace tempearly
         /**
          * Returns all components of filename in an vector.
          */
-        std::vector<String> GetParts() const;
+        Vector<String> GetParts() const;
 
         /**
          * Returns true if the filename is invalid, e.g. completely empty.
@@ -274,7 +280,7 @@ namespace tempearly
     private:
         String m_full_name;
         String m_root;
-        std::vector<String> m_parts;
+        Vector<String> m_parts;
 #if !defined(_WIN32)
         mutable enum
         {

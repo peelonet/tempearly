@@ -27,7 +27,7 @@ namespace tempearly
         void AddFunction(const String& name,
                          int arity,
                          Value(*callback)(const Handle<Interpreter>&,
-                                          const std::vector<Value>&));
+                                          const Vector<Value>&));
 
         /**
          * Returns true if this interpreter has an uncaught exception.
@@ -93,11 +93,11 @@ namespace tempearly
          */
         void Mark();
 
-        Handle<Request> request;
-        Handle<Response> response;
+        Request* request;
+        Response* response;
 
         /** Global variable scope. */
-        Handle<Scope> globals;
+        Scope* globals;
 
         Handle<Class> cBool;
         Handle<Class> cClass;

@@ -111,12 +111,12 @@ namespace tempearly
         }
     }
 
-    BlockNode::BlockNode(const std::vector<Handle<Node> >& nodes)
-        : m_nodes(nodes.begin(), nodes.end()) {}
+    BlockNode::BlockNode(const Vector<Handle<Node> >& nodes)
+        : m_nodes(nodes) {}
 
     Result BlockNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
         {
             Result result = m_nodes[i]->Execute(interpreter);
 
@@ -132,7 +132,7 @@ namespace tempearly
     void BlockNode::Mark()
     {
         Node::Mark();
-        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
         {
             Node* node = m_nodes[i];
 
@@ -523,11 +523,11 @@ namespace tempearly
 
     CallNode::CallNode(const Handle<Node>& receiver,
                        const String& id,
-                       const std::vector<Handle<Node> >& args,
+                       const Vector<Handle<Node> >& args,
                        bool null_safe)
         : m_receiver(receiver.Get())
         , m_id(id)
-        , m_args(args.begin(), args.end())
+        , m_args(args)
         , m_null_safe(null_safe) {}
 
     Result CallNode::Execute(const Handle<Interpreter>& interpreter) const
@@ -542,10 +542,10 @@ namespace tempearly
         {
             return Result();
         } else {
-            std::vector<Value> args;
+            Vector<Value> args;
 
-            args.reserve(m_args.size());
-            for (std::size_t i = 0; i < m_args.size(); ++i)
+            args.Reserve(m_args.GetSize());
+            for (std::size_t i = 0; i < m_args.GetSize(); ++i)
             {
                 Value argument = m_args[i]->Evaluate(interpreter);
 
@@ -553,7 +553,7 @@ namespace tempearly
                 {
                     return Result(Result::KIND_ERROR);
                 }
-                args.push_back(argument);
+                args.PushBack(argument);
             }
             if ((value = value.Call(interpreter, m_id, args)))
             {
@@ -571,7 +571,7 @@ namespace tempearly
         {
             m_receiver->Mark();
         }
-        for (std::size_t i = 0; i < m_args.size(); ++i)
+        for (std::size_t i = 0; i < m_args.GetSize(); ++i)
         {
             if (!m_args[i]->IsMarked())
             {
@@ -659,7 +659,7 @@ namespace tempearly
 
         if (!(container = m_container->Evaluate(interpreter))
             || !(index = m_index->Evaluate(interpreter))
-            || !(result = container.Call(interpreter, "__getitem__", std::vector<Value>(1, index))))
+            || !(result = container.Call(interpreter, "__getitem__", index)))
         {
             return Result(Result::KIND_ERROR);
         } else {
@@ -672,16 +672,16 @@ namespace tempearly
     {
         Value container;
         Value index;
-        std::vector<Value> args;
+        Vector<Value> args;
 
         if (!(container = m_container->Evaluate(interpreter))
             || !(index = m_index->Evaluate(interpreter)))
         {
             return false;
         }
-        args.reserve(2);
-        args.push_back(index);
-        args.push_back(value);
+        args.Reserve(2);
+        args.PushBack(index);
+        args.PushBack(value);
 
         return container.Call(interpreter, "__setitem__", args);
     }
@@ -812,16 +812,16 @@ namespace tempearly
         return false;
     }
 
-    ListNode::ListNode(const std::vector<Handle<Node> >& elements)
-        : m_elements(elements.begin(), elements.end()) {}
+    ListNode::ListNode(const Vector<Handle<Node> >& elements)
+        : m_elements(elements) {}
 
     bool ListNode::IsVariable() const
     {
-        if (m_elements.empty())
+        if (m_elements.IsEmpty())
         {
             return false;
         }
-        for (std::size_t i = 0; i < m_elements.size(); ++i)
+        for (std::size_t i = 0; i < m_elements.GetSize(); ++i)
         {
             if (!m_elements[i]->IsVariable())
             {
@@ -834,16 +834,16 @@ namespace tempearly
 
     Result ListNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        std::vector<Value> vector;
+        Vector<Value> vector;
         
-        vector.reserve(m_elements.size());
-        for (std::size_t i = 0; i < m_elements.size(); ++i)
+        vector.Reserve(m_elements.GetSize());
+        for (std::size_t i = 0; i < m_elements.GetSize(); ++i)
         {
             Value value = m_elements[i]->Evaluate(interpreter);
 
             if (value)
             {
-                vector.push_back(value);
+                vector.PushBack(value);
             } else {
                 return Result(Result::KIND_ERROR);
             }
@@ -852,8 +852,7 @@ namespace tempearly
         return Value::NewObject(new ListObject(interpreter->cList, vector));
     }
 
-    bool ListNode::Assign(const Handle<Interpreter>& interpreter,
-                          const Value& value) const
+    bool ListNode::Assign(const Handle<Interpreter>& interpreter, const Value& value) const
     {
         Value iterator = value.Call(interpreter, "__iter__");
         Value element;
@@ -865,7 +864,7 @@ namespace tempearly
         }
         while (iterator.GetNext(interpreter, element))
         {
-            if (index < m_elements.size())
+            if (index < m_elements.GetSize())
             {
                 if (!m_elements[index++]->Assign(interpreter, element))
                 {
@@ -882,7 +881,7 @@ namespace tempearly
     void ListNode::Mark()
     {
         Node::Mark();
-        for (std::size_t i = 0; i < m_elements.size(); ++i)
+        for (std::size_t i = 0; i < m_elements.GetSize(); ++i)
         {
             Node* node = m_elements[i];
 
@@ -893,8 +892,8 @@ namespace tempearly
         }
     }
 
-    MapNode::MapNode(const std::vector<Pair<Handle<Node> > >& entries)
-        : m_entries(entries.begin(), entries.end()) {}
+    MapNode::MapNode(const Vector<Pair<Handle<Node> > >& entries)
+        : m_entries(entries) {}
 
     Result MapNode::Execute(const Handle<Interpreter>& interpreter) const
     {
@@ -903,7 +902,7 @@ namespace tempearly
         Value value;
         i64 hash;
 
-        for (std::size_t i = 0; i < m_entries.size(); ++i)
+        for (std::size_t i = 0; i < m_entries.GetSize(); ++i)
         {
             const Pair<Node*>& entry = m_entries[i];
 
@@ -922,7 +921,7 @@ namespace tempearly
     void MapNode::Mark()
     {
         Node::Mark();
-        for (std::size_t i = 0; i < m_entries.size(); ++i)
+        for (std::size_t i = 0; i < m_entries.GetSize(); ++i)
         {
             const Pair<Node*>& entry = m_entries[i];
 
@@ -971,31 +970,27 @@ namespace tempearly
         }
     }
 
-    FunctionNode::FunctionNode(const std::vector<Handle<Parameter> >& parameters,
-                               const std::vector<Handle<Node> >& nodes)
-        : m_parameters(parameters.begin(), parameters.end())
-        , m_nodes(nodes.begin(), nodes.end()) {}
+    FunctionNode::FunctionNode(const Vector<Handle<Parameter> >& parameters,
+                               const Vector<Handle<Node> >& nodes)
+        : m_parameters(parameters)
+        , m_nodes(nodes) {}
 
     Result FunctionNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        return Value::NewObject(FunctionObject::NewScripted(
-            interpreter,
-            std::vector<Handle<Parameter> >(m_parameters.begin(), m_parameters.end()),
-            std::vector<Handle<Node> >(m_nodes.begin(), m_nodes.end())
-        ));
+        return Value::NewObject(FunctionObject::NewScripted(interpreter, m_parameters, m_nodes));
     }
 
     void FunctionNode::Mark()
     {
         Node::Mark();
-        for (std::size_t i = 0; i < m_parameters.size(); ++i)
+        for (std::size_t i = 0; i < m_parameters.GetSize(); ++i)
         {
             if (!m_parameters[i]->IsMarked())
             {
                 m_parameters[i]->Mark();
             }
         }
-        for (std::size_t i = 0; i < m_nodes.size(); ++i)
+        for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
         {
             if (!m_nodes[i]->IsMarked())
             {

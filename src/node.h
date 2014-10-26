@@ -117,14 +117,14 @@ namespace tempearly
     class BlockNode : public Node
     {
     public:
-        explicit BlockNode(const std::vector<Handle<Node> >& nodes);
+        explicit BlockNode(const Vector<Handle<Node> >& nodes);
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         void Mark();
 
     private:
-        const std::vector<Node*> m_nodes;
+        const Vector<Node*> m_nodes;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(BlockNode);
     };
 
@@ -304,7 +304,7 @@ namespace tempearly
     public:
         explicit CallNode(const Handle<Node>& receiver,
                           const String& id,
-                          const std::vector<Handle<Node> >& args = std::vector<Handle<Node> >(),
+                          const Vector<Handle<Node> >& args = Vector<Handle<Node> >(),
                           bool null_safe = false);
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
@@ -314,7 +314,7 @@ namespace tempearly
     private:
         Node* m_receiver;
         const String m_id;
-        const std::vector<Node*> m_args;
+        const Vector<Node*> m_args;
         const bool m_null_safe;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CallNode);
     };
@@ -421,7 +421,7 @@ namespace tempearly
     class ListNode : public Node
     {
     public:
-        explicit ListNode(const std::vector<Handle<Node> >& elements);
+        explicit ListNode(const Vector<Handle<Node> >& elements);
 
         bool IsVariable() const;
 
@@ -433,21 +433,21 @@ namespace tempearly
         void Mark();
 
     private:
-        const std::vector<Node*> m_elements;
+        const Vector<Node*> m_elements;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ListNode);
     };
 
     class MapNode : public Node
     {
     public:
-        explicit MapNode(const std::vector<Pair<Handle<Node> > >& entries);
+        explicit MapNode(const Vector<Pair<Handle<Node> > >& entries);
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         void Mark();
 
     private:
-        const std::vector<Pair<Node*> > m_entries;
+        const Vector<Pair<Node*> > m_entries;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(MapNode);
     };
 
@@ -472,16 +472,16 @@ namespace tempearly
     class FunctionNode : public Node
     {
     public:
-        explicit FunctionNode(const std::vector<Handle<Parameter> >& parameters,
-                              const std::vector<Handle<Node> >& nodes);
+        explicit FunctionNode(const Vector<Handle<Parameter> >& parameters,
+                              const Vector<Handle<Node> >& nodes);
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         void Mark();
 
     private:
-        const std::vector<Parameter*> m_parameters;
-        const std::vector<Node*> m_nodes;
+        const Vector<Parameter*> m_parameters;
+        const Vector<Node*> m_nodes;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FunctionNode);
     };
 }

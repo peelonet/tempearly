@@ -55,7 +55,7 @@ namespace tempearly
         /**
          * Destructor.
          */
-        virtual ~StringBuilder();
+        ~StringBuilder();
 
         /**
          * Returns true if the string builder does not contain any content.

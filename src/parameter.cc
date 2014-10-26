@@ -14,12 +14,12 @@ namespace tempearly
         , m_rest(rest) {}
 
     bool Parameter::Apply(const Handle<Interpreter>& interpreter,
-                          const std::vector<Handle<Parameter> >& parameters,
-                          const std::vector<Value>& arguments)
+                          const Vector<Handle<Parameter> >& parameters,
+                          const Vector<Value>& arguments)
     {
         const Handle<Scope> scope = interpreter->GetScope();
 
-        for (std::size_t i = 0; i < parameters.size(); ++i)
+        for (std::size_t i = 0; i < parameters.GetSize(); ++i)
         {
             const Handle<Parameter>& parameter = parameters[i];
 
@@ -27,7 +27,7 @@ namespace tempearly
             {
                 Handle<ListObject> list = new ListObject(interpreter->cList);
 
-                for (std::size_t j = i; j < arguments.size(); ++j)
+                for (std::size_t j = i; j < arguments.GetSize(); ++j)
                 {
                     const Value& value = arguments[j];
 
@@ -53,7 +53,7 @@ namespace tempearly
 
                 return true;
             }
-            else if (i < arguments.size())
+            else if (i < arguments.GetSize())
             {
                 const Value& value = arguments[i];
 
@@ -90,7 +90,7 @@ namespace tempearly
                 return false;
             }
         }
-        if (arguments.size() > parameters.size())
+        if (arguments.GetSize() > parameters.GetSize())
         {
             interpreter->Throw(interpreter->eValueError, "Too many arguments");
 

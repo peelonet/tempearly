@@ -90,7 +90,7 @@ namespace tempearly
          * Constructs empty dictionary.
          */
         Dictionary()
-            : m_bucket(new Entry*[kBucketSize])
+            : m_bucket(Memory::Allocate<Entry*>(kBucketSize))
             , m_front(0)
             , m_back(0)
         {
@@ -104,9 +104,40 @@ namespace tempearly
          * Copy constructor. Constructs dictionary from values taken from
          * another dictionary.
          */
+        Dictionary(const Dictionary<T>& that)
+            : m_bucket(Memory::Allocate<Entry*>(kBucketSize))
+            , m_front(0)
+            , m_back(0)
+        {
+            for (std::size_t i = 0; i < kBucketSize; ++i)
+            {
+                m_bucket[i] = 0;
+            }
+            for (const Entry* entry1 = that.m_front; entry1; entry1 = entry1->m_next)
+            {
+                Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
+                const std::size_t index = entry1->m_hash_code % kBucketSize;
+
+                entry2->m_next = 0;
+                if ((entry2->m_previous = m_back))
+                {
+                    m_back->m_next = entry2;
+                } else {
+                    m_front = entry2;
+                }
+                m_back = entry2;
+                entry2->m_child = m_bucket[index];
+                m_bucket[index] = entry2;
+            }
+        }
+
+        /**
+         * Copy constructor. Constructs dictionary from values taken from
+         * another dictionary.
+         */
         template< class U >
         Dictionary(const Dictionary<U>& that)
-            : m_bucket(new Entry*[kBucketSize])
+            : m_bucket(Memory::Allocate<Entry*>(kBucketSize))
             , m_front(0)
             , m_back(0)
         {
@@ -116,7 +147,7 @@ namespace tempearly
             }
             for (const typename Dictionary<U>::Entry* entry1 = that.GetFront();
                  entry1;
-                 entry1 = entry1->next)
+                 entry1 = entry1->m_next)
             {
                 Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
                 const std::size_t index = entry1->m_hash_code % kBucketSize;
@@ -140,19 +171,16 @@ namespace tempearly
         virtual ~Dictionary()
         {
             Clear();
-            delete[] m_bucket;
+            Memory::Unallocate<Entry*>(m_bucket);
         }
 
         /**
          * Copies contents from another dictionary into this one.
          */
-        template< class U >
-        Dictionary& Assign(const Dictionary<U>& that)
+        Dictionary& Assign(const Dictionary<T>& that)
         {
             Clear();
-            for (const typename Dictionary<U>::Entry* entry1 = that.GetFront();
-                 entry1;
-                 entry1 = entry1->next)
+            for (const Entry* entry1 = that.m_front; entry1; entry1 = entry1->m_next)
             {
                 Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
                 const std::size_t index = entry1->m_hash_code % kBucketSize;
@@ -170,6 +198,43 @@ namespace tempearly
             }
 
             return *this;
+        }
+
+        /**
+         * Copies contents from another dictionary into this one.
+         */
+        template< class U >
+        Dictionary& Assign(const Dictionary<U>& that)
+        {
+            Clear();
+            for (const typename Dictionary<U>::Entry* entry1 = that.GetFront();
+                 entry1;
+                 entry1 = entry1->m_next)
+            {
+                Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
+                const std::size_t index = entry1->m_hash_code % kBucketSize;
+
+                entry2->m_next = 0;
+                if ((entry2->m_previous = m_back))
+                {
+                    m_back->m_next = entry2;
+                } else {
+                    m_front = entry2;
+                }
+                m_back = entry2;
+                entry2->m_child = m_bucket[index];
+                m_bucket[index] = entry2;
+            }
+
+            return *this;
+        }
+
+        /**
+         * Assignment operator.
+         */
+        inline Dictionary& operator=(const Dictionary<T>& that)
+        {
+            return Assign(that);
         }
 
         /**

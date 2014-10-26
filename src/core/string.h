@@ -52,7 +52,7 @@ namespace tempearly
         /**
          * Destructor.
          */
-        virtual ~String();
+        ~String();
 
         /**
          * Copies contents of another string into this one.

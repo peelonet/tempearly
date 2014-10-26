@@ -150,9 +150,7 @@ namespace tempearly
 
     TEMPEARLY_NATIVE_METHOD(obj_eq)
     {
-        Value compare = args[0].Call(interpreter,
-                                     "__cmp__",
-                                     std::vector<Value>(1, args[1]));
+        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
 
         if (compare)
         {
@@ -164,9 +162,7 @@ namespace tempearly
 
     TEMPEARLY_NATIVE_METHOD(obj_lt)
     {
-        Value compare = args[0].Call(interpreter,
-                                     "__cmp__",
-                                     std::vector<Value>(1, args[1]));
+        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
 
         if (compare)
         {
@@ -178,9 +174,7 @@ namespace tempearly
 
     TEMPEARLY_NATIVE_METHOD(obj_gt)
     {
-        Value compare = args[0].Call(interpreter,
-                                     "__cmp__",
-                                     std::vector<Value>(1, args[1]));
+        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
 
         if (compare)
         {
@@ -192,9 +186,7 @@ namespace tempearly
 
     TEMPEARLY_NATIVE_METHOD(obj_lte)
     {
-        Value compare = args[0].Call(interpreter,
-                                     "__cmp__",
-                                     std::vector<Value>(1, args[1]));
+        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
 
         if (compare)
         {
@@ -206,9 +198,7 @@ namespace tempearly
 
     TEMPEARLY_NATIVE_METHOD(obj_gte)
     {
-        Value compare = args[0].Call(interpreter,
-                                     "__cmp__",
-                                     std::vector<Value>(1, args[1]));
+        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
 
         if (compare)
         {
@@ -220,20 +210,22 @@ namespace tempearly
 
     void init_object(Interpreter* i)
     {
-        i->cObject = i->AddClass("Object", Handle<Class>());
+        Handle<Class> cObject = i->AddClass("Object", Handle<Class>());
 
-        i->cObject->AddMethod(i, "__init__", 0, obj_init);
-        i->cObject->AddMethod(i, "__hash__", 0, obj_hash);
+        i->cObject = cObject.Get();
 
-        i->cObject->AddMethod(i, "__bool__", 0, obj_bool);
-        i->cObject->AddMethod(i, "__str__", 0, obj_str);
+        cObject->AddMethod(i, "__init__", 0, obj_init);
+        cObject->AddMethod(i, "__hash__", 0, obj_hash);
+
+        cObject->AddMethod(i, "__bool__", 0, obj_bool);
+        cObject->AddMethod(i, "__str__", 0, obj_str);
 
         // Comparison operators.
-        i->cObject->AddMethod(i, "__cmp__", 1, obj_cmp);
-        i->cObject->AddMethod(i, "__eq__", 1, obj_eq);
-        i->cObject->AddMethod(i, "__lt__", 1, obj_lt);
-        i->cObject->AddMethod(i, "__gt__", 1, obj_gt);
-        i->cObject->AddMethod(i, "__lte__", 1, obj_lte);
-        i->cObject->AddMethod(i, "__gte__", 1, obj_gte);
+        cObject->AddMethod(i, "__cmp__", 1, obj_cmp);
+        cObject->AddMethod(i, "__eq__", 1, obj_eq);
+        cObject->AddMethod(i, "__lt__", 1, obj_lt);
+        cObject->AddMethod(i, "__gt__", 1, obj_gt);
+        cObject->AddMethod(i, "__lte__", 1, obj_lte);
+        cObject->AddMethod(i, "__gte__", 1, obj_gte);
     }
 }
