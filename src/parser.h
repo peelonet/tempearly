@@ -27,9 +27,21 @@ namespace tempearly
             String text;
         };
 
-        explicit Parser(FILE* stream);
+        explicit Parser(const Handle<Stream>& stream);
 
         virtual ~Parser();
+
+        inline const String& GetErrorMessage() const
+        {
+            return m_error_message;
+        }
+
+        inline void SetErrorMessage(const String& error_message)
+        {
+            m_error_message = error_message;
+        }
+
+        Handle<Script> Compile();
 
         /**
          * Closes the underlying stream.
@@ -58,19 +70,20 @@ namespace tempearly
 
         void SkipToken();
 
-        Handle<Script> Compile(const Handle<Interpreter>& interpreter);
+        void Mark();
 
     private:
         /** Keyword lookup map. */
         Dictionary<Token::Kind> m_keywords;
         /** Stream where the input is read from. */
-        FILE* m_stream;
+        Stream* m_stream;
         std::queue<int> m_pushback_chars;
         std::queue<TokenDescriptor> m_pushback_tokens;
         bool m_seen_cr;
         /** Current position in source code. */
         SourcePosition m_position;
         StringBuilder m_buffer;
+        String m_error_message;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Parser);
     };
 }

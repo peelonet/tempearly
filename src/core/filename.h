@@ -198,7 +198,7 @@ namespace tempearly
          *             contents of the file, or NULL if file cannot be opened
          *             for some reason
          */
-        FILE* Open(const String& mode) const;
+        Handle<Stream> Open(const String& mode) const;
 
         /**
          * Returns true if filename is equal with another filename.

@@ -6,6 +6,7 @@
 #include "api/map.h"
 #include "core/bytestring.h"
 #include "core/filename.h"
+#include "io/stream.h"
 
 namespace tempearly
 {
@@ -78,12 +79,12 @@ namespace tempearly
 
     bool Interpreter::Include(const Filename& filename)
     {
-        FILE* handle = filename.Open("rb");
+        Handle<Stream> stream = filename.Open("rb");
 
-        if (handle)
+        if (stream)
         {
-            Handle<Parser> parser = new Parser(handle);
-            Handle<Script> script = parser->Compile(this);
+            Handle<Parser> parser = new Parser(stream);
+            Handle<Script> script = parser->Compile();
 
             parser->Close();
             if (script)
@@ -95,6 +96,8 @@ namespace tempearly
                 PopScope();
 
                 return result;
+            } else {
+                Throw(eSyntaxError, parser->GetErrorMessage());
             }
         } else {
             Throw(eImportError, "Unable to include file");
@@ -106,7 +109,7 @@ namespace tempearly
     Value Interpreter::Import(const Filename& filename)
     {
         const String& full_name = filename.GetFullName();
-        FILE* handle;
+        Handle<Stream> stream;
 
         if (m_imported_files)
         {
@@ -117,15 +120,17 @@ namespace tempearly
                 return entry->GetValue();
             }
         }
-        if ((handle = filename.Open("rb")))
+        if ((stream = filename.Open("rb")))
         {
-            Handle<Parser> parser = new Parser(handle);
-            Handle<Script> script = parser->Compile(this);
+            Handle<Parser> parser = new Parser(stream);
+            Handle<Script> script = parser->Compile();
             Value result;
 
             parser->Close();
             if (!script)
             {
+                Throw(eSyntaxError, parser->GetErrorMessage());
+
                 return Value();
             }
             PushScope(globals);

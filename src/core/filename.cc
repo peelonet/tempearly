@@ -2,6 +2,7 @@
 #include "core/datetime.h"
 #include "core/filename.h"
 #include "core/stringbuilder.h"
+#include "io/stream.h"
 #if defined(_WIN32)
 # define UNICODE
 # include <windows.h>
@@ -250,21 +251,110 @@ namespace tempearly
         return DateTime();
     }
 
-    FILE* Filename::Open(const String& mode) const
+    namespace
     {
+        class FileStream : public Stream
+        {
+        public:
+            enum Mode
+            {
+                MODE_READ   = 2,
+                MODE_WRITE  = 4,
+                MODE_APPEND = 8
+            };
+
+            explicit FileStream(unsigned int mode, FILE* handle)
+                : m_mode(mode)
+                , m_handle(handle) {}
+
+            ~FileStream()
+            {
+                if (m_handle)
+                {
+                    std::fclose(m_handle);
+                }
+            }
+
+            bool IsOpen() const
+            {
+                return m_handle;
+            }
+
+            bool IsReadable() const
+            {
+                return (m_mode & MODE_READ) != 0;
+            }
+
+            bool IsWritable() const
+            {
+                return (m_mode & (MODE_WRITE|MODE_APPEND)) != 0;
+            }
+
+            void Close()
+            {
+                if (m_handle)
+                {
+                    std::fclose(m_handle);
+                    m_mode = 0;
+                    m_handle = 0;
+                }
+            }
+
+            bool Read(byte* buffer, std::size_t size, std::size_t& read)
+            {
+                if (m_handle)
+                {
+                    return (read = std::fread(static_cast<void*>(buffer), sizeof(byte), size, m_handle)) > 0;
+                } else {
+                    return false;
+                }
+            }
+
+            bool Write(const byte* data, std::size_t size)
+            {
+                if (m_handle)
+                {
+                    return std::fwrite(static_cast<const void*>(data), sizeof(byte), size, m_handle) > 0;
+                } else {
+                    return false;
+                }
+            }
+
+        private:
+            unsigned int m_mode;
+            FILE* m_handle;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FileStream);
+        };
+    }
+
+    Handle<Stream> Filename::Open(const String& mode) const
+    {
+        unsigned int mode_flags = 0;
         FILE* handle;
 
         if (IsEmpty())
         {
-            return 0;
+            return Handle<Stream>();
         }
 #if defined(_WIN32)
         handle = ::_wfopen(m_full_name.Widen().c_str(), mode.Widen().c_str());
 #else
         handle = std::fopen(m_full_name.Encode().c_str(), mode.Encode().c_str());
 #endif
+        if (mode.IndexOf('r') != String::npos)
+        {
+            mode_flags |= FileStream::MODE_READ;
+        }
+        if (mode.IndexOf('w') != String::npos)
+        {
+            mode_flags |= FileStream::MODE_WRITE;
+        }
+        if (mode.IndexOf('a') != String::npos)
+        {
+            mode_flags |= FileStream::MODE_APPEND;
+        }
 
-        return handle;
+        return new FileStream(mode_flags, handle);
     }
 
     bool Filename::Equals(const Filename& that) const

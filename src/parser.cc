@@ -1,20 +1,20 @@
 #include <cctype>
 
-#include "interpreter.h"
 #include "parameter.h"
 #include "parser.h"
 #include "utils.h"
+#include "io/stream.h"
 
 namespace tempearly
 {
-    static bool parse_text_block(const Handle<Interpreter>&, Parser*, Vector<Handle<Node> >&, bool&);
-    static bool parse_script_block(const Handle<Interpreter>&, Parser*, Vector<Handle<Node> >&, bool&);
-    static Handle<Node> parse_stmt(const Handle<Interpreter>&, Parser*);
-    static Handle<Node> parse_expr(const Handle<Interpreter>&, Parser*);
-    static Handle<Node> parse_postfix(const Handle<Interpreter>&, Parser*);
+    static bool parse_text_block(const Handle<Parser>&, Vector<Handle<Node> >&, bool&);
+    static bool parse_script_block(const Handle<Parser>&, Vector<Handle<Node> >&, bool&);
+    static Handle<Node> parse_stmt(const Handle<Parser>&);
+    static Handle<Node> parse_expr(const Handle<Parser>&);
+    static Handle<Node> parse_postfix(const Handle<Parser>&);
 
-    Parser::Parser(FILE* stream)
-        : m_stream(stream)
+    Parser::Parser(const Handle<Stream>& stream)
+        : m_stream(stream.Get())
         , m_seen_cr(false)
     {
         m_keywords.Insert("break", Token::KW_BREAK);
@@ -35,14 +35,66 @@ namespace tempearly
 
     Parser::~Parser()
     {
-        Close();
+        if (m_stream)
+        {
+            m_stream->Close();
+        }
+    }
+
+    Handle<Script> Parser::Compile()
+    {
+        Handle<Parser> handle = this;
+        Vector<Handle<Node> > nodes;
+
+        // Skip leading shebang if such exists
+        if (ReadChar('#'))
+        {
+            if (ReadChar('!'))
+            {
+                int c;
+
+                while ((c = ReadChar()) != '\n' && c != '\r')
+                {
+                    if (c < 0)
+                    {
+                        return new Script(nodes);
+                    }
+                }
+            } else {
+                UnreadChar('#');
+            }
+        }
+        for (;;)
+        {
+            bool should_continue = false;
+
+            if (!parse_text_block(handle, nodes, should_continue))
+            {
+                return Handle<Script>();
+            }
+            else if (should_continue)
+            {
+                if (!parse_script_block(handle, nodes, should_continue))
+                {
+                    return Handle<Script>();
+                }
+                else if (!should_continue)
+                {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        return new Script(nodes);
     }
 
     void Parser::Close()
     {
         if (m_stream)
         {
-            std::fclose(m_stream);
+            m_stream->Close();
             m_stream = 0;
         }
     }
@@ -116,50 +168,55 @@ namespace tempearly
         }
         if (m_stream)
         {
-            int initial = std::fgetc(m_stream);
+            byte buffer[6];
+            std::size_t read;
             std::size_t size;
             rune result;
 
-            if (initial < 0)
+            if (!m_stream->Read(buffer, 1, read) || read < 1)
             {
+                m_stream->Close();
+
                 return -1;
             }
-            switch (size = utf8_size(initial))
+            switch (size = utf8_size(buffer[0]))
             {
                 case 1:
-                    result = static_cast<rune>(initial);
+                    result = static_cast<rune>(buffer[0]);
                     break;
 
                 case 2:
-                    result = static_cast<rune>(initial & 0x1f);
+                    result = static_cast<rune>(buffer[0] & 0x1f);
                     break;
 
                 case 3:
-                    result = static_cast<rune>(initial & 0x0f);
+                    result = static_cast<rune>(buffer[0] & 0x0f);
                     break;
 
                 case 4:
-                    result = static_cast<rune>(initial & 0x07);
+                    result = static_cast<rune>(buffer[0] & 0x07);
                     break;
 
                 case 5:
-                    result = static_cast<rune>(initial & 0x03);
+                    result = static_cast<rune>(buffer[0] & 0x03);
                     break;
 
                 case 6:
-                    result = static_cast<rune>(initial & 0x01);
+                    result = static_cast<rune>(buffer[0] & 0x01);
                     break;
 
                 default:
                     return 0xfffd; // Invalid code point
             }
+            if (size > 1 && (!m_stream->Read(buffer + 1, size - 1, read) || read < size - 1))
+            {
+                return 0xfffd;
+            }
             for (std::size_t i = 1; i < size; ++i)
             {
-                int next = std::fgetc(m_stream);
-
-                if ((next & 0xc0) == 0x80)
+                if ((buffer[i] & 0xc0) == 0x80)
                 {
-                    result = (result << 6) | (next & 0x3f);
+                    result = (result << 6) | (buffer[i] & 0x3f);
                 } else {
                     return 0xfffd;
                 }
@@ -277,6 +334,12 @@ READ_NEXT_CHAR:
             case '\n':
             case '\f':
                 goto READ_NEXT_CHAR;
+
+            // Invalid Unicode code point.
+            case 0xfffd:
+                m_error_message = "Malformed UTF-8 input";
+                token.kind = Token::ERROR;
+                break;
 
             // Single line comment.
             case '#':
@@ -411,8 +474,8 @@ READ_NEXT_CHAR:
                             sb << "Unterminated multi-line comment at "
                                << Utils::ToString(static_cast<i64>(token.position.line))
                                << "; Missing `*/'";
+                            m_error_message = sb.ToString();
                             token.kind = Token::ERROR;
-                            token.text = sb.ToString();
 
                             return token;
                         }
@@ -597,8 +660,8 @@ READ_NEXT_CHAR:
                            << "; missing `"
                            << separator
                            << "'";
+                        m_error_message = sb.ToString();
                         token.kind = Token::ERROR;
-                        token.text = sb.ToString();
 
                         return token;
                     }
@@ -636,8 +699,8 @@ READ_NEXT_CHAR:
                                 StringBuilder sb;
 
                                 sb << "Invalid binary digit: " << c;
+                                m_error_message = sb.ToString();
                                 token.kind = Token::ERROR;
-                                token.text = sb.ToString();
 
                                 return token;
                             } else {
@@ -680,8 +743,8 @@ READ_NEXT_CHAR:
                                 StringBuilder sb;
 
                                 sb << "Invalid octal digit: " << c;
+                                m_error_message = sb.ToString();
                                 token.kind = Token::ERROR;
-                                token.text = sb.ToString();
 
                                 return token;
                             } else {
@@ -697,8 +760,8 @@ READ_NEXT_CHAR:
                         StringBuilder sb;
 
                         sb << "Invalid octal digit: " << c;
+                        m_error_message = sb.ToString();
                         token.kind = Token::ERROR;
-                        token.text = sb.ToString();
 
                         return token;
                     }
@@ -756,8 +819,8 @@ SCAN_EXPONENT:
                                 c = ReadChar(); // isdigit() might be a macro
                                 if (!std::isdigit(c))
                                 {
+                                    m_error_message = "Invalid exponent";
                                     token.kind = Token::ERROR;
-                                    token.text = "Invalid exponent";
 
                                     return token;
                                 }
@@ -767,8 +830,8 @@ SCAN_EXPONENT:
                             {
                                 m_buffer << ReadChar();
                             } else {
+                                m_error_message = "Invalid exponent";
                                 token.kind = Token::ERROR;
-                                token.text = "Invalid exponent";
 
                                 return token;
                             }
@@ -820,8 +883,8 @@ SCAN_EXPONENT:
                         token.text = string;
                     }
                 } else {
+                    m_error_message = "Unexpected input";
                     token.kind = Token::ERROR;
-                    token.text = "Unexpected input";
                 }
         }
 
@@ -848,84 +911,35 @@ SCAN_EXPONENT:
         }
     }
 
-    Handle<Script> Parser::Compile(const Handle<Interpreter>& interpreter)
+    void Parser::Mark()
     {
-        Vector<Handle<Node> > nodes;
-
-        // Skip leading shebang if such exists
-        if (ReadChar('#'))
+        CountedObject::Mark();
+        if (m_stream && !m_stream->IsMarked())
         {
-            if (ReadChar('!'))
-            {
-                int c;
-
-                while ((c = ReadChar()) != '\n' && c != '\r')
-                {
-                    if (c < 0)
-                    {
-                        return new Script(nodes);
-                    }
-                }
-            } else {
-                UnreadChar('#');
-            }
+            m_stream->Mark();
         }
-        for (;;)
-        {
-            bool should_continue = false;
-
-            if (!parse_text_block(interpreter, this, nodes, should_continue))
-            {
-                return Handle<Script>();
-            }
-            else if (should_continue)
-            {
-                if (!parse_script_block(interpreter, this, nodes, should_continue))
-                {
-                    return Handle<Script>();
-                }
-                else if (!should_continue)
-                {
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-
-        return new Script(nodes);
     }
 
-    static bool expect_token(const Handle<Interpreter>& interpreter,
-                             Parser* parser,
-                             Token::Kind expected)
+    static bool expect_token(const Handle<Parser>& parser, Token::Kind expected)
     {
         Parser::TokenDescriptor token = parser->ReadToken();
 
-        if (token.kind == Token::ERROR)
-        {
-            interpreter->Throw(interpreter->eSyntaxError, token.text);
-        }
-        else if (token.kind == expected)
+        if (token.kind == expected)
         {
             return true;
-        } else {
-            interpreter->Throw(
-                interpreter->eSyntaxError,
-                String("Unexpected ")
-                + Token::What(token.kind)
-                + "; Missing "
-                + Token::What(expected)
-            );
+        }
+        else if (token.kind != Token::ERROR)
+        {
+            parser->SetErrorMessage(String("Unexpected ")
+                                    + Token::What(token.kind)
+                                    + "; Missing "
+                                    + Token::What(expected));
         }
 
         return false;
     }
 
-    static bool parse_text_block(const Handle<Interpreter>& interpreter,
-                                 Parser* parser,
-                                 Vector<Handle<Node> >& nodes,
-                                 bool& should_continue)
+    static bool parse_text_block(const Handle<Parser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
     {
         StringBuilder text;
         int c = parser->ReadChar();
@@ -961,7 +975,7 @@ SCAN_EXPONENT:
                         nodes.PushBack(new TextNode(text.ToString()));
                         text.Clear();
                     }
-                    if (!(expr = parse_expr(interpreter, parser)))
+                    if (!(expr = parse_expr(parser)))
                     {
                         return false;
                     }
@@ -971,8 +985,12 @@ SCAN_EXPONENT:
                     }
                     else if (parser->ReadChar() != escape ? '!' : '}')
                     {
-                        interpreter->Throw(interpreter->eSyntaxError,
-                                           "Unterminated expression: Missing `}'");
+                        if (escape)
+                        {
+                            parser->SetErrorMessage("Unterminated expression: Missing `!'");
+                        } else {
+                            parser->SetErrorMessage("Unterminated expression: Missing `}'");
+                        }
 
                         return false;
                     }
@@ -1031,10 +1049,7 @@ SCAN_EXPONENT:
         return true;
     }
 
-    static bool parse_script_block(const Handle<Interpreter>& interpreter,
-                                   Parser* parser,
-                                   Vector<Handle<Node> >& nodes,
-                                   bool& should_continue)
+    static bool parse_script_block(const Handle<Parser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
     {
         for (;;)
         {
@@ -1055,7 +1070,7 @@ SCAN_EXPONENT:
             {
                 parser->SkipToken();
             } else {
-                Handle<Node> stmt = parse_stmt(interpreter, parser);
+                Handle<Node> stmt = parse_stmt(parser);
 
                 if (!stmt)
                 {
@@ -1069,8 +1084,7 @@ SCAN_EXPONENT:
         return true;
     }
 
-    static Handle<Node> parse_block(const Handle<Interpreter>& interpreter,
-                                    Parser* parser)
+    static Handle<Node> parse_block(const Handle<Parser>& parser)
     {
         Vector<Handle<Node> > nodes;
 
@@ -1080,18 +1094,17 @@ SCAN_EXPONENT:
             {
                 bool should_continue = false;
 
-                if (!parse_text_block(interpreter, parser, nodes, should_continue))
+                if (!parse_text_block(parser, nodes, should_continue))
                 {
                     return Handle<Node>();
                 }
                 else if (should_continue)
                 {
-                    if (parser->PeekToken(Token::KW_END)
-                        || parser->PeekToken(Token::KW_ELSE))
+                    if (parser->PeekToken(Token::KW_END) || parser->PeekToken(Token::KW_ELSE))
                     {
                         break;
                     }
-                    else if (!parse_script_block(interpreter, parser, nodes, should_continue))
+                    else if (!parse_script_block(parser, nodes, should_continue))
                     {
                         return Handle<Node>();
                     }
@@ -1106,7 +1119,7 @@ SCAN_EXPONENT:
         } else {
             while (!parser->PeekToken(Token::KW_END) && !parser->PeekToken(Token::KW_ELSE))
             {
-                Handle<Node> statement = parse_stmt(interpreter, parser);
+                Handle<Node> statement = parse_stmt(parser);
 
                 if (!statement)
                 {
@@ -1128,17 +1141,16 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_if(const Handle<Interpreter>& interpreter,
-                                 Parser* parser)
+    static Handle<Node> parse_if(const Handle<Parser>& parser)
     {
         Handle<Node> condition;
         Handle<Node> then_statement;
         Handle<Node> else_statement;
 
-        if (!expect_token(interpreter, parser, Token::KW_IF)
-            || !(condition = parse_expr(interpreter, parser))
-            || !expect_token(interpreter, parser, Token::COLON)
-            || !(then_statement = parse_block(interpreter, parser)))
+        if (!expect_token(parser, Token::KW_IF)
+            || !(condition = parse_expr(parser))
+            || !expect_token(parser, Token::COLON)
+            || !(then_statement = parse_block(parser)))
         {
             return Handle<Node>();
         }
@@ -1146,18 +1158,17 @@ SCAN_EXPONENT:
         {
             if (parser->PeekToken(Token::KW_IF))
             {
-                else_statement = parse_if(interpreter, parser);
+                else_statement = parse_if(parser);
             }
-            else if (!expect_token(interpreter, parser, Token::COLON)
-                    || !(else_statement = parse_block(interpreter, parser))
-                    || !expect_token(interpreter, parser, Token::KW_END)
-                    || !expect_token(interpreter, parser, Token::KW_IF))
+            else if (!expect_token(parser, Token::COLON)
+                    || !(else_statement = parse_block(parser))
+                    || !expect_token(parser, Token::KW_END)
+                    || !expect_token(parser, Token::KW_IF))
             {
                 return Handle<Node>();
             }
         }
-        else if (!expect_token(interpreter, parser, Token::KW_END)
-                || !expect_token(interpreter, parser, Token::KW_IF))
+        else if (!expect_token(parser, Token::KW_END) || !expect_token(parser, Token::KW_IF))
         {
             return Handle<Node>();
         }
@@ -1166,18 +1177,17 @@ SCAN_EXPONENT:
         return new IfNode(condition, then_statement, else_statement);
     }
 
-    static Handle<Node> parse_while(const Handle<Interpreter>& interpreter,
-                                    Parser* parser)
+    static Handle<Node> parse_while(const Handle<Parser>& parser)
     {
         Handle<Node> condition;
         Handle<Node> statement;
 
-        if (!expect_token(interpreter, parser, Token::KW_IF)
-            || !(condition = parse_expr(interpreter, parser))
-            || !expect_token(interpreter, parser, Token::COLON)
-            || !(statement = parse_block(interpreter, parser))
-            || !expect_token(interpreter, parser, Token::KW_END)
-            || !expect_token(interpreter, parser, Token::KW_WHILE))
+        if (!expect_token(parser, Token::KW_IF)
+            || !(condition = parse_expr(parser))
+            || !expect_token(parser, Token::COLON)
+            || !(statement = parse_block(parser))
+            || !expect_token(parser, Token::KW_END)
+            || !expect_token(parser, Token::KW_WHILE))
         {
             return Handle<Node>();
         }
@@ -1186,31 +1196,28 @@ SCAN_EXPONENT:
         return new WhileNode(condition, statement);
     }
 
-    static Handle<Node> parse_for(const Handle<Interpreter>& interpreter,
-                                  Parser* parser)
+    static Handle<Node> parse_for(const Handle<Parser>& parser)
     {
         Handle<Node> variable;
         Handle<Node> collection;
         Handle<Node> statement;
 
-        if (!expect_token(interpreter, parser, Token::KW_FOR)
-            || !(variable = parse_expr(interpreter, parser)))
+        if (!expect_token(parser, Token::KW_FOR) || !(variable = parse_expr(parser)))
         {
             return Handle<Node>();
         }
         if (!variable->IsVariable())
         {
-            interpreter->Throw(interpreter->eSyntaxError,
-                               "'for' loop requires variable");
+            parser->SetErrorMessage("'for' loop requires variable");
 
             return Handle<Node>();
         }
-        if (!expect_token(interpreter, parser, Token::COLON)
-            || !(collection = parse_expr(interpreter, parser))
-            || !expect_token(interpreter, parser, Token::COLON)
-            || !(statement = parse_block(interpreter, parser))
-            || !expect_token(interpreter, parser, Token::KW_END)
-            || !expect_token(interpreter, parser, Token::KW_FOR))
+        if (!expect_token(parser, Token::COLON)
+            || !(collection = parse_expr(parser))
+            || !expect_token(parser, Token::COLON)
+            || !(statement = parse_block(parser))
+            || !expect_token(parser, Token::KW_END)
+            || !expect_token(parser, Token::KW_FOR))
         {
             return Handle<Node>();
         }
@@ -1219,8 +1226,7 @@ SCAN_EXPONENT:
         return new ForNode(variable, collection, statement);
     }
 
-    static Handle<Node> parse_stmt(const Handle<Interpreter>& interpreter,
-                                   Parser* parser)
+    static Handle<Node> parse_stmt(const Handle<Parser>& parser)
     {
         const Parser::TokenDescriptor& token = parser->PeekToken();
         Handle<Node> node;
@@ -1228,14 +1234,10 @@ SCAN_EXPONENT:
         switch (token.kind)
         {
             case Token::ERROR:
-                interpreter->Throw(interpreter->eSyntaxError, token.text);
                 return Handle<Node>();
 
             case Token::END_OF_INPUT:
-                interpreter->Throw(
-                    interpreter->eSyntaxError,
-                    "Unexpected end of input; Missing statement"
-                );
+                parser->SetErrorMessage("Unexpected end of input; Missing statement");
                 return Handle<Node>();
 
             case Token::SEMICOLON:
@@ -1243,13 +1245,13 @@ SCAN_EXPONENT:
                 return new EmptyNode();
 
             case Token::KW_IF:
-                return parse_if(interpreter, parser);
+                return parse_if(parser);
 
             case Token::KW_WHILE:
-                return parse_while(interpreter, parser);
+                return parse_while(parser);
 
             case Token::KW_FOR:
-                return parse_for(interpreter, parser);
+                return parse_for(parser);
 
             case Token::KW_BREAK:
                 node = new BreakNode();
@@ -1266,7 +1268,7 @@ SCAN_EXPONENT:
                 parser->SkipToken();
                 if (!parser->PeekToken(Token::SEMICOLON))
                 {
-                    if (!(value = parse_expr(interpreter, parser)))
+                    if (!(value = parse_expr(parser)))
                     {
                         return Handle<Node>();
                     }
@@ -1278,9 +1280,9 @@ SCAN_EXPONENT:
             //TODO:case Token::KW_THROW:
 
             default:
-                node = parse_expr(interpreter, parser);
+                node = parse_expr(parser);
         }
-        if (expect_token(interpreter, parser, Token::SEMICOLON))
+        if (expect_token(parser, Token::SEMICOLON))
         {
             return node;
         } else {
@@ -1288,8 +1290,7 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_list(const Handle<Interpreter>& interpreter,
-                                   Parser* parser)
+    static Handle<Node> parse_list(const Handle<Parser>& parser)
     {
         Vector<Handle<Node> > elements;
 
@@ -1297,7 +1298,7 @@ SCAN_EXPONENT:
         {
             for (;;)
             {
-                Handle<Node> node = parse_expr(interpreter, parser);
+                Handle<Node> node = parse_expr(parser);
 
                 if (!node)
                 {
@@ -1312,8 +1313,7 @@ SCAN_EXPONENT:
                 {
                     break;
                 }
-                interpreter->Throw(interpreter->eSyntaxError,
-                                   "Unterminated list literal");
+                parser->SetErrorMessage("Unterminated list literal");
 
                 return Handle<Node>();
             }
@@ -1322,8 +1322,7 @@ SCAN_EXPONENT:
         return new ListNode(elements);
     }
 
-    static Handle<Node> parse_map(const Handle<Interpreter>& interpreter,
-                                  Parser* parser)
+    static Handle<Node> parse_map(const Handle<Parser>& parser)
     {
         Vector<Pair<Handle<Node> > > entries;
         Handle<Node> key;
@@ -1333,9 +1332,9 @@ SCAN_EXPONENT:
         {
             for (;;)
             {
-                if (!(key = parse_expr(interpreter, parser))
-                    || !expect_token(interpreter, parser, Token::COLON)
-                    || !(value = parse_expr(interpreter, parser)))
+                if (!(key = parse_expr(parser))
+                    || !expect_token(parser, Token::COLON)
+                    || !(value = parse_expr(parser)))
                 {
                     return Handle<Node>();
                 }
@@ -1348,8 +1347,7 @@ SCAN_EXPONENT:
                 {
                     break;
                 }
-                interpreter->Throw(interpreter->eSyntaxError,
-                                   "Unterminated map literal");
+                parser->SetErrorMessage("Unterminated map literal");
 
                 return Handle<Node>();
             }
@@ -1358,10 +1356,9 @@ SCAN_EXPONENT:
         return new MapNode(entries);
     }
 
-    static Handle<TypeHint> parse_typehint(const Handle<Interpreter>& interpreter,
-                                           Parser* parser)
+    static Handle<TypeHint> parse_typehint(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_postfix(interpreter, parser);
+        Handle<Node> node = parse_postfix(parser);
         Handle<TypeHint> hint;
 
         if (!node)
@@ -1375,7 +1372,7 @@ SCAN_EXPONENT:
         }
         if (parser->ReadToken(Token::BIT_AND))
         {
-            Handle<TypeHint> other = parse_typehint(interpreter, parser);
+            Handle<TypeHint> other = parse_typehint(parser);
 
             if (!other)
             {
@@ -1385,7 +1382,7 @@ SCAN_EXPONENT:
         }
         else if (parser->ReadToken(Token::BIT_OR))
         {
-            Handle<TypeHint> other = parse_typehint(interpreter, parser);
+            Handle<TypeHint> other = parse_typehint(parser);
 
             if (!other)
             {
@@ -1397,11 +1394,9 @@ SCAN_EXPONENT:
         return hint;
     }
 
-    static bool parse_parameters(const Handle<Interpreter>& interpreter,
-                                 Parser* parser,
-                                 Vector<Handle<Parameter> >& parameters)
+    static bool parse_parameters(const Handle<Parser>& parser, Vector<Handle<Parameter> >& parameters)
     {
-        if (!expect_token(interpreter, parser, Token::LPAREN))
+        if (!expect_token(parser, Token::LPAREN))
         {
             return false;
         }
@@ -1419,26 +1414,23 @@ SCAN_EXPONENT:
 
             if (token.kind != Token::IDENTIFIER)
             {
-                StringBuilder sb;
-
-                sb << "Unexpected "
-                   << Token::What(token.kind)
-                   << "; Missing identifier";
-                interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
+                parser->SetErrorMessage(String("Unexpected ")
+                                        + Token::What(token.kind)
+                                        + "; Missing identifier");
 
                 return false;
             }
             name = token.text;
             if (parser->ReadToken(Token::COLON))
             {
-                if (!(type = parse_typehint(interpreter, parser)))
+                if (!(type = parse_typehint(parser)))
                 {
                     return false;
                 }
             }
             if (parser->ReadToken(Token::ASSIGN))
             {
-                if (!(default_value = parse_expr(interpreter, parser)))
+                if (!(default_value = parse_expr(parser)))
                 {
                     return false;
                 }
@@ -1452,26 +1444,24 @@ SCAN_EXPONENT:
             {
                 return true;
             }
-            interpreter->Throw(interpreter->eSyntaxError,
-                               "Unterminated parameter list");
+            parser->SetErrorMessage("Unterminated parameter list");
 
             return false;
         }
     }
 
-    static Handle<Node> parse_function(const Handle<Interpreter>& interpreter,
-                                       Parser* parser)
+    static Handle<Node> parse_function(const Handle<Parser>& parser)
     {
         Vector<Handle<Parameter> > parameters;
         Vector<Handle<Node> > nodes;
 
-        if (parser->PeekToken(Token::LPAREN) && !parse_parameters(interpreter, parser, parameters))
+        if (parser->PeekToken(Token::LPAREN) && !parse_parameters(parser, parameters))
         {
             return Handle<Node>();
         }
         if (parser->ReadToken(Token::ARROW))
         {
-            Handle<Node> node = parse_expr(interpreter, parser);
+            Handle<Node> node = parse_expr(parser);
 
             if (!node)
             {
@@ -1479,7 +1469,7 @@ SCAN_EXPONENT:
             }
             nodes.PushBack(new ReturnNode(node));
         } else {
-            if (!expect_token(interpreter, parser, Token::COLON))
+            if (!expect_token(parser, Token::COLON))
             {
                 return Handle<Node>();
             }
@@ -1489,18 +1479,17 @@ SCAN_EXPONENT:
                 {
                     bool should_continue = false;
 
-                    if (!parse_text_block(interpreter, parser, nodes, should_continue))
+                    if (!parse_text_block(parser, nodes, should_continue))
                     {
                         return Handle<Node>();
                     }
                     else if (should_continue)
                     {
-                        if (parser->PeekToken(Token::KW_END)
-                            || parser->PeekToken(Token::KW_ELSE))
+                        if (parser->PeekToken(Token::KW_END) || parser->PeekToken(Token::KW_ELSE))
                         {
                             break;
                         }
-                        else if (!parse_script_block(interpreter, parser, nodes, should_continue))
+                        else if (!parse_script_block(parser, nodes, should_continue))
                         {
                             return Handle<Node>();
                         }
@@ -1515,7 +1504,7 @@ SCAN_EXPONENT:
             } else {
                 while (!parser->PeekToken(Token::KW_END))
                 {
-                    Handle<Node> statement = parse_stmt(interpreter, parser);
+                    Handle<Node> statement = parse_stmt(parser);
 
                     if (!statement)
                     {
@@ -1524,8 +1513,7 @@ SCAN_EXPONENT:
                     nodes.PushBack(statement);
                 }
             }
-            if (!expect_token(interpreter, parser, Token::KW_END)
-                || !expect_token(interpreter, parser, Token::KW_FUNCTION))
+            if (!expect_token(parser, Token::KW_END) || !expect_token(parser, Token::KW_FUNCTION))
             {
                 return Handle<Node>();
             }
@@ -1534,8 +1522,7 @@ SCAN_EXPONENT:
         return new FunctionNode(parameters, nodes);
     }
 
-    static Handle<Node> parse_primary(const Handle<Interpreter>& interpreter,
-                                      Parser* parser)
+    static Handle<Node> parse_primary(const Handle<Parser>& parser)
     {
         Parser::TokenDescriptor token = parser->ReadToken();
         Handle<Node> node;
@@ -1543,14 +1530,10 @@ SCAN_EXPONENT:
         switch (token.kind)
         {
             case Token::ERROR:
-                interpreter->Throw(interpreter->eSyntaxError, token.text);
                 break;
 
             case Token::END_OF_INPUT:
-                interpreter->Throw(
-                    interpreter->eSyntaxError,
-                    "Unexpected end of input; Missing expression"
-                );
+                parser->SetErrorMessage("Unexpected end of input; Missing expression");
                 break;
 
             case Token::KW_TRUE:
@@ -1575,8 +1558,7 @@ SCAN_EXPONENT:
 
                 if (!Utils::ParseInt(token.text, value))
                 {
-                    interpreter->Throw(interpreter->eSyntaxError,
-                                       "Integer overflow");
+                    parser->SetErrorMessage("Integer overflow");
 
                     return Handle<Node>();
                 }
@@ -1590,8 +1572,7 @@ SCAN_EXPONENT:
 
                 if (!Utils::ParseFloat(token.text, value))
                 {
-                    interpreter->Throw(interpreter->eSyntaxError,
-                                       "Float overflow");
+                    parser->SetErrorMessage("Float overflow");
 
                     return Handle<Node>();
                 }
@@ -1600,19 +1581,18 @@ SCAN_EXPONENT:
             }
 
             case Token::LPAREN:
-                if (!(node = parse_expr(interpreter, parser))
-                    || !expect_token(interpreter, parser, Token::RPAREN))
+                if (!(node = parse_expr(parser)) || !expect_token(parser, Token::RPAREN))
                 {
                     return Handle<Node>();
                 }
                 break;
 
             case Token::LBRACK:
-                node = parse_list(interpreter, parser);
+                node = parse_list(parser);
                 break;
 
             case Token::LBRACE:
-                node = parse_map(interpreter, parser);
+                node = parse_map(parser);
                 break;
 
             case Token::IDENTIFIER:
@@ -1620,27 +1600,22 @@ SCAN_EXPONENT:
                 break;
 
             case Token::KW_FUNCTION:
-                node = parse_function(interpreter, parser);
+                node = parse_function(parser);
                 break;
             
             default:
-                interpreter->Throw(
-                    interpreter->eSyntaxError,
-                    String("Unexpected ")
-                    + Token::What(token.kind)
-                    + "; Missing expression"
-                );
+                parser->SetErrorMessage(String("Unexpected ")
+                                        + Token::What(token.kind)
+                                        + "; Missing expression");
                 break;
         }
 
         return node;
     }
 
-    static bool parse_args(const Handle<Interpreter>& interpreter,
-                           Parser* parser,
-                           Vector<Handle<Node> >& args)
+    static bool parse_args(const Handle<Parser>& parser, Vector<Handle<Node> >& args)
     {
-        if (!expect_token(interpreter, parser, Token::LPAREN))
+        if (!expect_token(parser, Token::LPAREN))
         {
             return false;
         }
@@ -1650,7 +1625,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            Handle<Node> node = parse_expr(interpreter, parser);
+            Handle<Node> node = parse_expr(parser);
 
             if (!node)
             {
@@ -1665,17 +1640,13 @@ SCAN_EXPONENT:
             {
                 return true;
             }
-            interpreter->Throw(interpreter->eSyntaxError,
-                               "Unterminated argument list");
+            parser->SetErrorMessage("Unterminated argument list");
 
             return false;
         }
     }
 
-    static Handle<Node> parse_selection(const Handle<Interpreter>& interpreter,
-                                        Parser* parser,
-                                        const Handle<Node>& node,
-                                        bool safe)
+    static Handle<Node> parse_selection(const Handle<Parser>& parser, const Handle<Node>& node, bool safe)
     {
         const Parser::TokenDescriptor token = parser->ReadToken();
 
@@ -1683,10 +1654,8 @@ SCAN_EXPONENT:
         {
             StringBuilder sb;
 
-            sb << "Unexpected "
-               << Token::What(token.kind)
-               << "; Missing identifier";
-            interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
+            sb << "Unexpected " << Token::What(token.kind) << "; Missing identifier";
+            parser->SetErrorMessage(sb.ToString());
 
             return Handle<Node>();
         }
@@ -1694,7 +1663,7 @@ SCAN_EXPONENT:
         {
             Vector<Handle<Node> > args;
 
-            if (parse_args(interpreter, parser, args))
+            if (parse_args(parser, args))
             {
                 return new CallNode(node, token.text, args, safe);
             } else {
@@ -1714,10 +1683,9 @@ SCAN_EXPONENT:
      * postfix-expression "++"
      * postfix-expression "--"
      */
-    static Handle<Node> parse_postfix(const Handle<Interpreter>& interpreter,
-                                      Parser* parser)
+    static Handle<Node> parse_postfix(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_primary(interpreter, parser);
+        Handle<Node> node = parse_primary(parser);
 
         if (!node)
         {
@@ -1731,7 +1699,7 @@ SCAN_EXPONENT:
             {
                 Vector<Handle<Node> > args;
 
-                if (!parse_args(interpreter, parser, args))
+                if (!parse_args(parser, args))
                 {
                     return Handle<Node>();
                 }
@@ -1742,26 +1710,23 @@ SCAN_EXPONENT:
                 Handle<Node> index;
 
                 parser->SkipToken();
-                if (!(index = parse_expr(interpreter, parser))
-                    || !expect_token(interpreter, parser, Token::RBRACK))
+                if (!(index = parse_expr(parser)) || !expect_token(parser, Token::RBRACK))
                 {
                     return Handle<Node>();
                 }
                 node = new SubscriptNode(node, index);
             }
-            else if (token.kind == Token::DOT
-                    || token.kind == Token::DOT_CONDITIONAL)
+            else if (token.kind == Token::DOT || token.kind == Token::DOT_CONDITIONAL)
             {
                 const bool safe = token.kind == Token::DOT_CONDITIONAL;
 
                 parser->SkipToken();
-                if (!(node = parse_selection(interpreter, parser, node, safe)))
+                if (!(node = parse_selection(parser, node, safe)))
                 {
                     return Handle<Node>();
                 }
             }
-            else if (token.kind == Token::INCREMENT
-                    || token.kind == Token::DECREMENT)
+            else if (token.kind == Token::INCREMENT || token.kind == Token::DECREMENT)
             {
                 const PostfixNode::Kind kind = token.kind == Token::INCREMENT ?
                     PostfixNode::INCREMENT : PostfixNode::DECREMENT;
@@ -1769,8 +1734,7 @@ SCAN_EXPONENT:
                 parser->SkipToken();
                 if (!node->IsVariable())
                 {
-                    interpreter->Throw(interpreter->eSyntaxError,
-                                       "Node is not assignable");
+                    parser->SetErrorMessage("Node is not assignable");
 
                     return Handle<Node>();
                 }
@@ -1790,8 +1754,7 @@ SCAN_EXPONENT:
      * "++" unary-expression
      * "--" unary-expression
      */
-    static Handle<Node> parse_unary(const Handle<Interpreter>& interpreter,
-                                    Parser* parser)
+    static Handle<Node> parse_unary(const Handle<Parser>& parser)
     {
         const Parser::TokenDescriptor& token = parser->PeekToken();
         Handle<Node> node;
@@ -1806,7 +1769,7 @@ SCAN_EXPONENT:
                 Handle<Node> receiver;
 
                 parser->SkipToken();
-                if (!(receiver = parse_unary(interpreter, parser)))
+                if (!(receiver = parse_unary(parser)))
                 {
                     return Handle<Node>();
                 }
@@ -1823,7 +1786,7 @@ SCAN_EXPONENT:
                 Handle<Node> condition;
 
                 parser->SkipToken();
-                if (!(condition = parse_unary(interpreter, parser)))
+                if (!(condition = parse_unary(parser)))
                 {
                     return Handle<Node>();
                 }
@@ -1838,14 +1801,13 @@ SCAN_EXPONENT:
                     PrefixNode::INCREMENT : PrefixNode::DECREMENT;
 
                 parser->SkipToken();
-                if (!(node = parse_unary(interpreter, parser)))
+                if (!(node = parse_unary(parser)))
                 {
                     return Handle<Node>();
                 }
                 else if (!node->IsVariable())
                 {
-                    interpreter->Throw(interpreter->eSyntaxError,
-                                       "Node is not assignable");
+                    parser->SetErrorMessage("Node is not assignable");
 
                     return Handle<Node>();
                 }
@@ -1854,7 +1816,7 @@ SCAN_EXPONENT:
             }
 
             default:
-                node = parse_postfix(interpreter, parser);
+                node = parse_postfix(parser);
         }
 
         return node;
@@ -1866,10 +1828,9 @@ SCAN_EXPONENT:
      * multiplicative-expression "/" unary-expression
      * multiplicative-expression "%" unary-expression
      */
-    static Handle<Node> parse_multiplicative(const Handle<Interpreter>& interpreter,
-                                             Parser* parser)
+    static Handle<Node> parse_multiplicative(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_unary(interpreter, parser);
+        Handle<Node> node = parse_unary(parser);
 
         if (!node)
         {
@@ -1879,15 +1840,13 @@ SCAN_EXPONENT:
         {
             const Parser::TokenDescriptor& token = parser->PeekToken();
 
-            if (token.kind == Token::MUL
-                || token.kind == Token::DIV
-                || token.kind == Token::MOD)
+            if (token.kind == Token::MUL || token.kind == Token::DIV || token.kind == Token::MOD)
             {
                 const Token::Kind kind = token.kind;
                 Handle<Node> operand;
 
                 parser->SkipToken();
-                if (!(operand = parse_unary(interpreter, parser)))
+                if (!(operand = parse_unary(parser)))
                 {
                     return Handle<Node>();
                 }
@@ -1908,10 +1867,9 @@ SCAN_EXPONENT:
      * additive-expression "+" multiplicative-expression
      * additive-expression "-" multiplicative-expression
      */
-    static Handle<Node> parse_additive(const Handle<Interpreter>& interpreter,
-                                       Parser* parser)
+    static Handle<Node> parse_additive(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_multiplicative(interpreter, parser);
+        Handle<Node> node = parse_multiplicative(parser);
 
         if (!node)
         {
@@ -1927,7 +1885,7 @@ SCAN_EXPONENT:
                 Handle<Node> operand;
 
                 parser->SkipToken();
-                if (!(operand = parse_multiplicative(interpreter, parser)))
+                if (!(operand = parse_multiplicative(parser)))
                 {
                     return Handle<Node>();
                 }
@@ -1947,10 +1905,9 @@ SCAN_EXPONENT:
      * shift-expression "<<" additive-expression
      * shift-expression ">>" additive-expression
      */
-    static Handle<Node> parse_shift(const Handle<Interpreter>& interpreter,
-                                    Parser* parser)
+    static Handle<Node> parse_shift(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_additive(interpreter, parser);
+        Handle<Node> node = parse_additive(parser);
 
         if (!node)
         {
@@ -1966,7 +1923,7 @@ SCAN_EXPONENT:
                 Handle<Node> operand;
 
                 parser->SkipToken();
-                if (!(operand = parse_additive(interpreter, parser)))
+                if (!(operand = parse_additive(parser)))
                 {
                     return Handle<Node>();
                 }
@@ -1985,10 +1942,9 @@ SCAN_EXPONENT:
      * shift-expression
      * bit-and-expression "&" shift-expression
      */
-    static Handle<Node> parse_bit_and(const Handle<Interpreter>& interpreter,
-                                      Parser* parser)
+    static Handle<Node> parse_bit_and(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_shift(interpreter, parser);
+        Handle<Node> node = parse_shift(parser);
 
         if (!node)
         {
@@ -1996,7 +1952,7 @@ SCAN_EXPONENT:
         }
         while (parser->ReadToken(Token::BIT_AND))
         {
-            Handle<Node> operand = parse_shift(interpreter, parser);
+            Handle<Node> operand = parse_shift(parser);
 
             if (!operand)
             {
@@ -2016,10 +1972,9 @@ SCAN_EXPONENT:
      * bit-and-expression
      * bit-xor-expression "^" bit-and-expression
      */
-    static Handle<Node> parse_bit_xor(const Handle<Interpreter>& interpreter,
-                                      Parser* parser)
+    static Handle<Node> parse_bit_xor(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_bit_and(interpreter, parser);
+        Handle<Node> node = parse_bit_and(parser);
 
         if (!node)
         {
@@ -2027,7 +1982,7 @@ SCAN_EXPONENT:
         }
         while (parser->ReadToken(Token::BIT_XOR))
         {
-            Handle<Node> operand = parse_bit_and(interpreter, parser);
+            Handle<Node> operand = parse_bit_and(parser);
 
             if (!operand)
             {
@@ -2047,10 +2002,9 @@ SCAN_EXPONENT:
      * bit-xor-expression
      * bit-or-expression "|" bit-xor-expression
      */
-    static Handle<Node> parse_bit_or(const Handle<Interpreter>& interpreter,
-                                     Parser* parser)
+    static Handle<Node> parse_bit_or(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_bit_xor(interpreter, parser);
+        Handle<Node> node = parse_bit_xor(parser);
 
         if (!node)
         {
@@ -2058,7 +2012,7 @@ SCAN_EXPONENT:
         }
         while (parser->ReadToken(Token::BIT_OR))
         {
-            Handle<Node> operand = parse_bit_xor(interpreter, parser);
+            Handle<Node> operand = parse_bit_xor(parser);
 
             if (!operand)
             {
@@ -2081,10 +2035,9 @@ SCAN_EXPONENT:
      * relational-expression "<=" bit-or-expression
      * relational-expression ">=" bit-or-expression
      */
-    static Handle<Node> parse_relational(const Handle<Interpreter>& interpreter,
-                                         Parser* parser)
+    static Handle<Node> parse_relational(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_bit_or(interpreter, parser);
+        Handle<Node> node = parse_bit_or(parser);
 
         if (!node)
         {
@@ -2105,7 +2058,7 @@ SCAN_EXPONENT:
                     Handle<Node> operand;
 
                     parser->SkipToken();
-                    if (!(operand = parse_bit_or(interpreter, parser)))
+                    if (!(operand = parse_bit_or(parser)))
                     {
                         return Handle<Node>();
                     }
@@ -2134,10 +2087,9 @@ SCAN_EXPONENT:
      * equality-expression "!~" relational-expression
      * equality-expression "<=>" relational-expression
      */
-    static Handle<Node> parse_equality(const Handle<Interpreter>& interpreter,
-                                       Parser* parser)
+    static Handle<Node> parse_equality(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_relational(interpreter, parser);
+        Handle<Node> node = parse_relational(parser);
 
         if (!node)
         {
@@ -2157,7 +2109,7 @@ SCAN_EXPONENT:
                     Handle<Node> operand;
 
                     parser->SkipToken();
-                    if (!(operand = parse_relational(interpreter, parser)))
+                    if (!(operand = parse_relational(parser)))
                     {
                         return Handle<Node>();
                     }
@@ -2178,7 +2130,7 @@ SCAN_EXPONENT:
                     Handle<Node> operand;
 
                     parser->SkipToken();
-                    if (!(operand = parse_relational(interpreter, parser)))
+                    if (!(operand = parse_relational(parser)))
                     {
                         return Handle<Node>();
                     }
@@ -2202,10 +2154,9 @@ SCAN_EXPONENT:
      * equality-expression
      * logical-and-expression "&&" equality-expression
      */
-    static Handle<Node> parse_logical_and(const Handle<Interpreter>& interpreter,
-                                          Parser* parser)
+    static Handle<Node> parse_logical_and(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_equality(interpreter, parser);
+        Handle<Node> node = parse_equality(parser);
 
         if (!node)
         {
@@ -2213,7 +2164,7 @@ SCAN_EXPONENT:
         }
         while (parser->ReadToken(Token::AND))
         {
-            Handle<Node> operand = parse_equality(interpreter, parser);
+            Handle<Node> operand = parse_equality(parser);
 
             if (operand)
             {
@@ -2230,10 +2181,9 @@ SCAN_EXPONENT:
      * logical-and-expression
      * logical-or-expression "||" logical-and-expression
      */
-    static Handle<Node> parse_logical_or(const Handle<Interpreter>& interpreter,
-                                         Parser* parser)
+    static Handle<Node> parse_logical_or(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_logical_and(interpreter, parser);
+        Handle<Node> node = parse_logical_and(parser);
 
         if (!node)
         {
@@ -2241,7 +2191,7 @@ SCAN_EXPONENT:
         }
         while (parser->ReadToken(Token::OR))
         {
-            Handle<Node> operand = parse_logical_and(interpreter, parser);
+            Handle<Node> operand = parse_logical_and(parser);
 
             if (operand)
             {
@@ -2259,20 +2209,18 @@ SCAN_EXPONENT:
      * range-expression ".." logical-or-expression
      * range-expression "..." logical-or-expression
      */
-    static Handle<Node> parse_range(const Handle<Interpreter>& interpreter,
-                                    Parser* parser)
+    static Handle<Node> parse_range(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_logical_or(interpreter, parser);
+        Handle<Node> node = parse_logical_or(parser);
 
         if (!node)
         {
             return Handle<Node>();
         }
-        if (parser->PeekToken(Token::DOT_DOT)
-            || parser->PeekToken(Token::DOT_DOT_DOT))
+        if (parser->PeekToken(Token::DOT_DOT) || parser->PeekToken(Token::DOT_DOT_DOT))
         {
             const bool exclusive = parser->ReadToken().kind == Token::DOT_DOT_DOT;
-            Handle<Node> operand = parse_logical_or(interpreter, parser);
+            Handle<Node> operand = parse_logical_or(parser);
 
             if (operand)
             {
@@ -2289,10 +2237,9 @@ SCAN_EXPONENT:
      * range-expression
      * range-expression "?" expression ":" expression
      */
-    static Handle<Node> parse_ternary(const Handle<Interpreter>& interpreter,
-                                      Parser* parser)
+    static Handle<Node> parse_ternary(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_range(interpreter, parser);
+        Handle<Node> node = parse_range(parser);
 
         if (!node)
         {
@@ -2303,9 +2250,9 @@ SCAN_EXPONENT:
             Handle<Node> then_node;
             Handle<Node> else_node;
 
-            if (!(then_node = parse_expr(interpreter, parser))
-                || !expect_token(interpreter, parser, Token::COLON)
-                || !(else_node = parse_expr(interpreter, parser)))
+            if (!(then_node = parse_expr(parser))
+                || !expect_token(parser, Token::COLON)
+                || !(else_node = parse_expr(parser)))
             {
                 return Handle<Node>();
             }
@@ -2332,10 +2279,9 @@ SCAN_EXPONENT:
      * assignment-expression "%=" expression
      * assignment-expression "**=" expression
      */
-    static Handle<Node> parse_expr(const Handle<Interpreter>& interpreter,
-                                   Parser* parser)
+    static Handle<Node> parse_expr(const Handle<Parser>& parser)
     {
-        Handle<Node> node = parse_ternary(interpreter, parser);
+        Handle<Node> node = parse_ternary(parser);
 
         if (!node)
         {
@@ -2344,8 +2290,6 @@ SCAN_EXPONENT:
         switch (parser->PeekToken().kind)
         {
             case Token::ERROR:
-                interpreter->Throw(interpreter->eSyntaxError,
-                                   parser->PeekToken().text);
                 return Handle<Node>();
 
             case Token::ASSIGN:
@@ -2353,14 +2297,13 @@ SCAN_EXPONENT:
                 Handle<Node> operand;
 
                 parser->SkipToken();
-                if (!(operand = parse_expr(interpreter, parser)))
+                if (!(operand = parse_expr(parser)))
                 {
                     return Handle<Node>();
                 }
                 else if (!node->IsVariable())
                 {
-                    interpreter->Throw(interpreter->eSyntaxError,
-                                       "Missing variable expression before '='");
+                    parser->SetErrorMessage("Missing variable expression before '='");
 
                     return Handle<Node>();
                 }
@@ -2372,7 +2315,7 @@ SCAN_EXPONENT:
             case Token::ASSIGN_OR:
             {
                 const Token::Kind kind = parser->ReadToken().kind;
-                Handle<Node> operand = parse_expr(interpreter, parser);
+                Handle<Node> operand = parse_expr(parser);
 
                 if (!operand)
                 {
@@ -2380,11 +2323,7 @@ SCAN_EXPONENT:
                 }
                 else if (!node->IsVariable())
                 {
-                    StringBuilder sb;
-
-                    sb << "Missing variable expression before "
-                       << Token::What(kind);
-                    interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
+                    parser->SetErrorMessage(String("Missing variable expression before ") + Token::What(kind));
 
                     return Handle<Node>();
                 }
@@ -2408,7 +2347,7 @@ SCAN_EXPONENT:
             case Token::ASSIGN_MOD:
             {
                 const Token::Kind kind = parser->ReadToken().kind;
-                Handle<Node> operand = parse_expr(interpreter, parser);
+                Handle<Node> operand = parse_expr(parser);
 
                 if (!operand)
                 {
@@ -2416,11 +2355,7 @@ SCAN_EXPONENT:
                 }
                 else if (!node->IsVariable())
                 {
-                    StringBuilder sb;
-
-                    sb << "Missing variable expression before "
-                       << Token::What(kind);
-                    interpreter->Throw(interpreter->eSyntaxError, sb.ToString());
+                    parser->SetErrorMessage(String("Missing variable expression before ") + Token::What(kind));
 
                     return Handle<Node>();
                 }
