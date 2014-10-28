@@ -135,7 +135,7 @@ namespace tempearly
         /** Current uncaught exception. */
         ExceptionObject* m_exception;
         /** Current local variable scope. */
-        Handle<Scope> m_scope;
+        Scope* m_scope;
         /** Shared instance of empty iterator. */
         IteratorObject* m_empty_iterator;
         /** Container for imported files. */
