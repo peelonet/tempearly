@@ -33,6 +33,7 @@ namespace tempearly
         , response(0)
         , globals(0)
         , m_exception(0)
+        , m_scope(0)
         , m_empty_iterator(0)
         , m_imported_files(0) {}
 
