@@ -27,9 +27,12 @@ namespace tempearly
         class Generation
         {
         public:
+            /** Number of examinations performed in this generation. */
+            unsigned int counter;
+
             explicit Generation()
-                : m_head(0)
-                , m_counter(0) {}
+                : counter(0)
+                , m_head(0) {}
 
             ~Generation()
             {
@@ -62,8 +65,12 @@ namespace tempearly
                 return static_cast<void*>(slot->object);
             }
 
-            int Examine(Generation& that)
+            void Examine(Generation& that)
             {
+#if defined(TEMPEARLY_GC_DEBUG)
+                int destroyed_count = 0;
+                int saved_count = 0;
+#endif
                 Slot* current = m_head;
                 Slot* next;
                 Slot* saved_head = 0;
@@ -83,9 +90,15 @@ namespace tempearly
                             saved_head = current;
                         }
                         saved_tail = current;
+#if defined(TEMPEARLY_GC_DEBUG)
+                        ++saved_count;
+#endif
                     } else {
                         current->object->~CountedObject();
                         std::free(static_cast<void*>(current));
+#if defined(TEMPEARLY_GC_DEBUG)
+                        ++destroyed_count;
+#endif
                     }
                 }
                 if (saved_tail)
@@ -93,13 +106,9 @@ namespace tempearly
                     saved_tail->next = that.m_head;
                     that.m_head = saved_head;
                 }
-
-                return ++m_counter;
-            }
-
-            void ResetCounter()
-            {
-                m_counter = 0;
+#if defined(TEMPEARLY_GC_DEBUG)
+                std::fprintf(stderr, "GC: Examination: %d saved, %d destroyed\n", saved_count, destroyed_count);
+#endif
             }
 
             void Mark()
@@ -126,8 +135,6 @@ namespace tempearly
         private:
             /** Pointer to first object in the generation. */
             Slot* m_head;
-            /** Number of examinations performed in this generation. */
-            int m_counter;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Generation);
         };
     }
@@ -135,8 +142,6 @@ namespace tempearly
     static Generation generation0;
     static Generation generation1;
     static Generation generation2;
-
-    static std::size_t allocation_counter = 0;
 
     CountedObject::CountedObject()
         : m_flags(0)
@@ -150,7 +155,6 @@ namespace tempearly
         {
             handle->m_pointer = 0;
         }
-        --allocation_counter;
     }
 
     void CountedObject::Mark()
@@ -160,18 +164,29 @@ namespace tempearly
 
     void* CountedObject::operator new(std::size_t size)
     {
-        if (allocation_counter++ >= TEMPEARLY_GC_THRESHOLD0)
+        if (++generation0.counter >= TEMPEARLY_GC_THRESHOLD0)
         {
-            allocation_counter = 0;
+#if defined(TEMPEARLY_GC_DEBUG)
+            std::fprintf(stderr, "GC: Generation 0 reached threshold.\n");
+#endif
+            generation0.counter = 0;
             generation0.Mark();
             generation1.Mark();
             generation2.Mark();
-            if (generation0.Examine(generation1) >= TEMPEARLY_GC_THRESHOLD1)
+            generation0.Examine(generation1);
+            if (++generation1.counter >= TEMPEARLY_GC_THRESHOLD1)
             {
-                generation0.ResetCounter();
-                if (generation1.Examine(generation2) >= TEMPEARLY_GC_THRESHOLD2)
+#if defined(TEMPEARLY_GC_DEBUG)
+                std::fprintf(stderr, "GC: Generation 1 reached threshold.\n");
+#endif
+                generation1.counter = 0;
+                generation1.Examine(generation2);
+                if (++generation2.counter >= TEMPEARLY_GC_THRESHOLD2)
                 {
-                    generation1.ResetCounter();
+#if defined(TEMPEARLY_GC_DEBUG)
+                    std::fprintf(stderr, "GC: Generation 2 reached threshold.\n");
+#endif
+                    generation2.counter = 0;
                     generation2.Examine(generation2);
                 }
             } else {
