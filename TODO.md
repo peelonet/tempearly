@@ -2,11 +2,12 @@
 
 ## Interpreter
 
-- Modify parser so that it doesn't require `Interpreter` instance. This enables us to compile
-  and cache scripts before any requests are being made.
 - Builtin support for SQLite
 - Interfaces/mixins for classes
 - More detailed error messages. (Include source position.)
+- Streams: Buffered input.
+- Streams: Line number counting.
+- Streams: Methods for reading UTF-8 text.
 
 ## API
 
@@ -19,7 +20,7 @@
 
 ## Server APIs
 
-- AST caching in FastCGI and Apache SAPIs.
+- AST caching in Apache and built-in HTTPD SAPIs.
 - Process multipart HTTP requests.
 - Parse request parameters (especially POSTed ones) only when requested in the
   script.
