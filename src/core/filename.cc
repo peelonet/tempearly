@@ -1,3 +1,5 @@
+#include <cerrno>
+
 #include "core/bytestring.h"
 #include "core/datetime.h"
 #include "core/filename.h"
@@ -300,21 +302,39 @@ namespace tempearly
                 }
             }
 
-            bool Read(byte* buffer, std::size_t size, std::size_t& read)
+            bool ReadData(byte* buffer, std::size_t size, std::size_t& read)
             {
                 if (m_handle)
                 {
-                    return (read = std::fread(static_cast<void*>(buffer), sizeof(byte), size, m_handle)) > 0;
+                    if (!(read = std::fread(static_cast<void*>(buffer), sizeof(byte), size, m_handle)))
+                    {
+                        if (!std::feof(m_handle))
+                        {
+                            SetErrorMessage(std::strerror(errno));
+                            errno = 0;
+
+                            return false;
+                        }
+                    }
+
+                    return true;
                 } else {
                     return false;
                 }
             }
 
-            bool Write(const byte* data, std::size_t size)
+            bool WriteData(const byte* data, std::size_t size)
             {
                 if (m_handle)
                 {
-                    return std::fwrite(static_cast<const void*>(data), sizeof(byte), size, m_handle) > 0;
+                    if (std::fwrite(static_cast<const void*>(data), sizeof(byte), size, m_handle))
+                    {
+                        return true;
+                    }
+                    SetErrorMessage(std::strerror(errno));
+                    errno = 0;
+
+                    return false;
                 } else {
                     return false;
                 }

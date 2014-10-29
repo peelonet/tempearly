@@ -162,7 +162,7 @@ static void serve(const Handle<Socket>& socket, const Filename& root_path)
     byte* data;
     Filename path;
 
-    if (!socket->Receive(buffer, HTTPD_MAX_REQUEST_SIZE, buffer_size))
+    if (!socket->ReadData(buffer, HTTPD_MAX_REQUEST_SIZE, buffer_size))
     {
         socket->Close();
         return;
@@ -231,8 +231,7 @@ static void httpd_loop(const Handle<Socket>& server_socket, const Filename& root
         {
             serve(client_socket, root_path);
         } else {
-            std::fprintf(stderr, "%s\n",
-                         server_socket->GetErrorMessage().Encode().c_str());
+            std::fprintf(stderr, "%s\n", server_socket->GetErrorMessage().Encode().c_str());
         }
     }
 }
@@ -244,7 +243,7 @@ static void send_error(const Handle<Socket>& socket, const char* status, const S
     socket->Printf("HTTP/1.0 %s\r\n", status);
     socket->Printf("Content-Type: text/plain; charset=utf-8\r\n");
     socket->Printf("Content-Length: %ld\r\n\r\n", content.GetLength());
-    socket->Send(content.c_str(), content.GetLength());
+    socket->Write(content);
     socket->Close();
 }
 
@@ -263,9 +262,9 @@ static void send_file(const Handle<Socket>& socket,
         socket->Printf("HTTP/1.0 200 OK\r\n");
         socket->Printf("Content-Type: %s\r\n", mime_type.Encode().c_str());
         socket->Printf("Content-Length: %ld\r\n\r\n", path.GetSize());
-        while (stream->Read(buffer, sizeof(buffer), read))
+        while (stream->ReadData(buffer, sizeof(buffer), read))
         {
-            if (!socket->Send(buffer, read))
+            if (!socket->WriteData(buffer, read))
             {
                 break;
             }

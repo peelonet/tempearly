@@ -122,40 +122,6 @@ namespace tempearly
         return PeekChar() == c;
     }
 
-    static inline std::size_t utf8_size(unsigned char input)
-    {
-        if ((input & 0x80) == 0x00)
-        {
-            return 1;
-        }
-        else if ((input & 0xc0) == 0x80)
-        {
-            return 0;
-        }
-        else if ((input & 0xe0) == 0xc0)
-        {
-            return 2;
-        }
-        else if ((input & 0xf0) == 0xe0)
-        {
-            return 3;
-        }
-        else if ((input & 0xf8) == 0xf0)
-        {
-            return 4;
-        }
-        else if ((input & 0xfc) == 0xf8)
-        {
-            return 5;
-        }
-        else if ((input & 0xfe) == 0xfc)
-        {
-            return 6;
-        } else {
-            return 0;
-        }
-    }
-
     int Parser::ReadChar()
     {
         if (!m_pushback_chars.empty())
@@ -168,60 +134,16 @@ namespace tempearly
         }
         if (m_stream)
         {
-            byte buffer[6];
-            std::size_t read;
-            std::size_t size;
-            rune result;
+            rune slot;
 
-            if (!m_stream->Read(buffer, 1, read) || read < 1)
+            if (!m_stream->ReadRune(slot))
             {
                 m_stream->Close();
+                m_stream = 0;
 
                 return -1;
             }
-            switch (size = utf8_size(buffer[0]))
-            {
-                case 1:
-                    result = static_cast<rune>(buffer[0]);
-                    break;
-
-                case 2:
-                    result = static_cast<rune>(buffer[0] & 0x1f);
-                    break;
-
-                case 3:
-                    result = static_cast<rune>(buffer[0] & 0x0f);
-                    break;
-
-                case 4:
-                    result = static_cast<rune>(buffer[0] & 0x07);
-                    break;
-
-                case 5:
-                    result = static_cast<rune>(buffer[0] & 0x03);
-                    break;
-
-                case 6:
-                    result = static_cast<rune>(buffer[0] & 0x01);
-                    break;
-
-                default:
-                    return 0xfffd; // Invalid code point
-            }
-            if (size > 1 && (!m_stream->Read(buffer + 1, size - 1, read) || read < size - 1))
-            {
-                return 0xfffd;
-            }
-            for (std::size_t i = 1; i < size; ++i)
-            {
-                if ((buffer[i] & 0xc0) == 0x80)
-                {
-                    result = (result << 6) | (buffer[i] & 0x3f);
-                } else {
-                    return 0xfffd;
-                }
-            }
-            switch (result)
+            switch (slot)
             {
                 case '\r':
                     ++m_position.line;
@@ -247,7 +169,7 @@ namespace tempearly
                     }
             }
 
-            return result;
+            return slot;
         }
 
         return -1;
