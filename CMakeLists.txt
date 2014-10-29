@@ -109,6 +109,7 @@ SET(
     src/http/cookie.cc
     src/http/method.cc
     src/http/version.cc
+    src/io/stream.cc
     src/net/socket.cc
     src/sapi/request.cc
     src/sapi/response.cc
