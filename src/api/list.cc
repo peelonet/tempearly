@@ -294,7 +294,7 @@ namespace tempearly
             iterator = new ListIterator(interpreter->cIterator, list);
         }
 
-        return Value::NewObject(iterator);
+        return Value(iterator);
     }
 
     /**
@@ -328,7 +328,7 @@ namespace tempearly
             return Value();
         }
 
-        return Value::NewObject(result);
+        return Value(result);
     }
 
     /**

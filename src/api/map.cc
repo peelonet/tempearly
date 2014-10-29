@@ -147,7 +147,7 @@ namespace tempearly
             set->Add(e->GetHash(), e->GetKey());
         }
 
-        return Value::NewObject(set);
+        return Value(set);
     }
 
     /**
@@ -167,7 +167,7 @@ namespace tempearly
             list->Append(e->GetValue());
         }
 
-        return Value::NewObject(list);
+        return Value(list);
     }
 
     /**
@@ -355,7 +355,7 @@ namespace tempearly
                     list->Append(entry->GetKey());
                     list->Append(entry->GetValue());
 
-                    return Result(Result::KIND_SUCCESS, Value::NewObject(list));
+                    return Result(Result::KIND_SUCCESS, Value(list));
                 }
 
                 return Result(Result::KIND_BREAK);
@@ -398,7 +398,7 @@ namespace tempearly
             iterator = new MapIterator(interpreter, map);
         }
 
-        return Value::NewObject(iterator);
+        return Value(iterator);
     }
 
     /**
@@ -512,7 +512,7 @@ namespace tempearly
             result->Insert(entry->GetHash(), entry->GetKey(), entry->GetValue());
         }
 
-        return Value::NewObject(result);
+        return Value(result);
     }
 
     void init_map(Interpreter* i)

@@ -575,7 +575,7 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                return Value::NewObject(list);
+                return Value(list);
             }
         }
 
@@ -615,7 +615,7 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                return Value::NewObject(list);
+                return Value(list);
             }
         }
 
@@ -761,7 +761,7 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                return Value::NewObject(list);
+                return Value(list);
             }
         }
 
@@ -949,12 +949,12 @@ namespace tempearly
                 {
                     if (quicksort(interpreter, vector, 0, vector.GetSize()))
                     {
-                        return Value::NewObject(new ListObject(interpreter->cList, vector));
+                        return Value(new ListObject(interpreter->cList, vector));
                     }
                 }
                 else if (quicksort_callback(interpreter, vector, 0, vector.GetSize(), args[1]))
                 {
-                    return Value::NewObject(new ListObject(interpreter->cList, vector));
+                    return Value(new ListObject(interpreter->cList, vector));
                 }
             }
         }
@@ -1003,10 +1003,10 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                result->Append(Value::NewObject(a));
-                result->Append(Value::NewObject(b));
+                result->Append(Value(a));
+                result->Append(Value(b));
 
-                return Value::NewObject(result);
+                return Value(result);
             }
         }
 

@@ -40,6 +40,23 @@ namespace tempearly
         Value(const Value& that);
 
         /**
+         * Constructs value from object.
+         *
+         * \param object Handle to the object
+         */
+        Value(const Handle<CoreObject>& object);
+
+        /**
+         * Destructor.
+         */
+        virtual ~Value();
+
+        /**
+         * Returns null value.
+         */
+        static const Value& NullValue();
+
+        /**
          * Constructs boolean value.
          */
         static Value NewBool(bool b);
@@ -58,23 +75,6 @@ namespace tempearly
          * Constructs string value.
          */
         static Value NewString(const String& string);
-
-        /**
-         * Constructs value from object.
-         *
-         * \param object Handle to the object
-         */
-        static Value NewObject(const Handle<CoreObject>& object);
-
-        /**
-         * Destructor.
-         */
-        virtual ~Value();
-
-        /**
-         * Returns null value.
-         */
-        static const Value& NullValue();
 
         /**
          * Assignment operator.

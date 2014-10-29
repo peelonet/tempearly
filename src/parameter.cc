@@ -49,7 +49,7 @@ namespace tempearly
                     }
                     list->Append(value);
                 }
-                scope->SetVariable(parameter->m_name, Value::NewObject(list));
+                scope->SetVariable(parameter->m_name, Value(list));
 
                 return true;
             }

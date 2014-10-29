@@ -35,6 +35,40 @@ namespace tempearly
         }
     }
 
+    Value::Value(const Handle<CoreObject>& object)
+        : m_kind(KIND_NULL)
+    {
+        if (object)
+        {
+            m_kind = KIND_OBJECT;
+            (m_data.o = object.Get())->IncReferenceCount();
+        }
+    }
+
+    Value::~Value()
+    {
+        if (m_kind == KIND_STRING)
+        {
+            delete m_data.s;
+        }
+        else if (m_kind == KIND_OBJECT)
+        {
+            m_data.o->DecReferenceCount();
+        }
+    }
+
+    const Value& Value::NullValue()
+    {
+        static Value value;
+
+        if (value.m_kind == Value::KIND_ERROR)
+        {
+            value.m_kind = Value::KIND_NULL;
+        }
+
+        return value;
+    }
+
     Value Value::NewBool(bool b)
     {
         Value value;
@@ -71,46 +105,6 @@ namespace tempearly
 
         value.m_kind = KIND_STRING;
         value.m_data.s = new String(string);
-
-        return value;
-    }
-
-    Value Value::NewObject(const Handle<CoreObject>& object)
-    {
-        Value value;
-
-        if (object)
-        {
-            value.m_kind = KIND_OBJECT;
-            value.m_data.o = object.Get();
-            value.m_data.o->IncReferenceCount();
-        } else {
-            value.m_kind = KIND_NULL;
-        }
-
-        return value;
-    }
-
-    Value::~Value()
-    {
-        if (m_kind == KIND_STRING)
-        {
-            delete m_data.s;
-        }
-        else if (m_kind == KIND_OBJECT)
-        {
-            m_data.o->DecReferenceCount();
-        }
-    }
-
-    const Value& Value::NullValue()
-    {
-        static Value value;
-
-        if (value.m_kind == Value::KIND_ERROR)
-        {
-            value.m_kind = Value::KIND_NULL;
-        }
 
         return value;
     }

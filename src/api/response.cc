@@ -151,7 +151,7 @@ namespace tempearly
         Handle<Class> cResponse = new Class(i->cObject);
         Handle<Object> instance = new Object(cResponse);
 
-        i->globals->SetVariable("response", Value::NewObject(instance));
+        i->globals->SetVariable("response", Value(instance));
 
         cResponse->SetAllocator(Class::kNoAlloc);
 

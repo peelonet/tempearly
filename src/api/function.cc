@@ -141,7 +141,7 @@ namespace tempearly
 
     Value FunctionObject::Curry(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
     {
-        return Value::NewObject(new CurryFunction(interpreter, this, args));
+        return Value(new CurryFunction(interpreter, this, args));
     }
 
     /**
