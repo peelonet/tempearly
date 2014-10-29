@@ -7,8 +7,6 @@
 - More detailed error messages. (Include source position.)
 - Streams: Buffered input.
 - Streams: Line number counting.
-- Streams: Methods for reading UTF-8 text.
-- Sockets and streams: Convert `Socket` to subclass of `Stream`.
 
 ## API
 
