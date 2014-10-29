@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "core/bytestring.h"
 #include "core/filename.h"
+#include "io/stream.h"
 #include "http/method.h"
 #include "http/version.h"
 #include "net/socket.h"
@@ -252,17 +253,17 @@ static void send_file(const Handle<Socket>& socket,
                       const Filename& path,
                       const String& mime_type)
 {
-    FILE* handle = path.Open("rb");
+    Handle<Stream> stream = path.Open("rb");
     
-    if (handle)
+    if (stream)
     {
-        char buffer[4096];
+        byte buffer[4096];
         std::size_t read;
 
         socket->Printf("HTTP/1.0 200 OK\r\n");
         socket->Printf("Content-Type: %s\r\n", mime_type.Encode().c_str());
         socket->Printf("Content-Length: %ld\r\n\r\n", path.GetSize());
-        while ((read = std::fread(buffer, 1, sizeof(buffer), handle)) > 0)
+        while (stream->Read(buffer, sizeof(buffer), read))
         {
             if (!socket->Send(buffer, read))
             {
@@ -296,8 +297,10 @@ static void send_script(const Handle<Socket>& socket,
         data,
         data_size
     );
+
     interpreter->response = new HttpServerResponse(socket);
     interpreter->Initialize();
+
     if (!interpreter->Include(path))
     {
         interpreter->response->SendException(interpreter->GetException());
@@ -306,6 +309,7 @@ static void send_script(const Handle<Socket>& socket,
     {
         interpreter->response->Commit();
     }
+
     socket->Close();
 }
 
