@@ -28,7 +28,7 @@ namespace tempearly
                              entry->GetName().Encode().c_str(),
                              entry->GetValue().Encode().c_str());
         }
-        m_socket->Send("\r\n", 2);
+        m_socket->Write("\r\n", 2);
     }
 
     void HttpServerResponse::Write(std::size_t size, const char* data)
@@ -37,7 +37,7 @@ namespace tempearly
         {
             Commit();
         }
-        m_socket->Send(data, size);
+        m_socket->Write(data, size);
     }
 
     void HttpServerResponse::Mark()
