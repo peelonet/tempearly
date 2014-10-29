@@ -10,46 +10,6 @@ namespace tempearly
         , m_front(0)
         , m_back(0) {}
 
-    ListObject::ListObject(const Handle<Class>& cls, const Vector<Value>& vector)
-        : Object(cls)
-        , m_size(vector.GetSize())
-        , m_front(0)
-        , m_back(0)
-    {
-        for (std::size_t i = 0; i < m_size; ++i)
-        {
-            Handle<Link> link = new Link(vector[i]);
-
-            if (m_back)
-            {
-                m_back->m_next = link;
-            } else {
-                m_front = link;
-            }
-            m_back = link;
-        }
-    }
-
-    ListObject::ListObject(const Handle<Class>& cls, const Handle<ListObject>& that)
-        : Object(cls)
-        , m_size(that->m_size)
-        , m_front(0)
-        , m_back(0)
-    {
-        for (const Link* a = that->m_front; a; a = a->m_next)
-        {
-            Handle<Link> b = new Link(a->m_value);
-
-            if (m_back)
-            {
-                m_back->m_next = b;
-            } else {
-                m_front = b;
-            }
-            m_back = b;
-        }
-    }
-
     void ListObject::Append(const Value& value)
     {
         Handle<Link> link = new Link(value);
@@ -87,6 +47,27 @@ namespace tempearly
             m_back = back;
             m_size += vector.GetSize();
         }
+    }
+
+    void ListObject::Append(const Handle<ListObject>& that)
+    {
+        if (!that || this == that.Get())
+        {
+            return;
+        }
+        for (const Link* a = that->m_front; a; a = a->m_next)
+        {
+            Handle<Link> b = new Link(a->m_value);
+
+            if (m_back)
+            {
+                m_back->m_next = b;
+            } else {
+                m_front = b;
+            }
+            m_back = b;
+        }
+        m_size += that->m_size;
     }
 
     void ListObject::Prepend(const Value& value)
@@ -318,7 +299,8 @@ namespace tempearly
         {
             return Value();
         }
-        result = new ListObject(interpreter->cList, original);
+        result = new ListObject(interpreter->cList);
+        result->Append(original);
         while (iterator.GetNext(interpreter, element))
         {
             result->Append(element);

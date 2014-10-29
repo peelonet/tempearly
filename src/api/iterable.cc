@@ -949,12 +949,20 @@ namespace tempearly
                 {
                     if (quicksort(interpreter, vector, 0, vector.GetSize()))
                     {
-                        return Value(new ListObject(interpreter->cList, vector));
+                        Handle<ListObject> list = new ListObject(interpreter->cList);
+
+                        list->Append(vector);
+
+                        return Value(list);
                     }
                 }
                 else if (quicksort_callback(interpreter, vector, 0, vector.GetSize(), args[1]))
                 {
-                    return Value(new ListObject(interpreter->cList, vector));
+                    Handle<ListObject> list = new ListObject(interpreter->cList);
+
+                    list->Append(vector);
+
+                    return Value(list);
                 }
             }
         }
