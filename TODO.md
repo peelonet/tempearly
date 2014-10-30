@@ -19,12 +19,10 @@
 
 ## Server APIs
 
-- AST caching in Apache and built-in HTTPD SAPIs.
+- AST caching in Apache module.
 - Process multipart HTTP requests.
 - Parse request parameters (especially POSTed ones) only when requested in the
   script.
-- Built-in HTTPD: Return `505 HTTP Version Not Supported` if client sends HTTP
-  request with unrecognized HTTP version.
 
 # Maybe list
 
