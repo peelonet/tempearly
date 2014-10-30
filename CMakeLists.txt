@@ -175,6 +175,7 @@ IF (ENABLE_HTTPD_SAPI)
         src/sapi/httpd/main.cc
         src/sapi/httpd/request.cc
         src/sapi/httpd/response.cc
+        src/sapi/httpd/server.cc
         ${INTERPRETER_SOURCES}
     )
 ENDIF()
