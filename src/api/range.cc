@@ -37,7 +37,7 @@ namespace tempearly
             return Value();
         }
 
-        return Value::NewObject(new RangeObject(interpreter, begin, end, exclusive));
+        return Value(new RangeObject(interpreter, begin, end, exclusive));
     }
 
     /**
@@ -197,7 +197,7 @@ namespace tempearly
                                          range->IsExclusive());
         }
 
-        return Value::NewObject(iterator);
+        return Value(iterator);
     }
 
     /**

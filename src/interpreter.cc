@@ -167,7 +167,7 @@ namespace tempearly
         }
         if (globals)
         {
-            globals->SetVariable(name, Value::NewObject(cls.Get()));
+            globals->SetVariable(name, Value(cls));
         }
 
         return cls;
@@ -237,7 +237,7 @@ namespace tempearly
 
         if (globals)
         {
-            globals->SetVariable(name, Value::NewObject(function));
+            globals->SetVariable(name, Value(function));
         }
     }
 

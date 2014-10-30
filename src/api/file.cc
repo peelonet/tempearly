@@ -39,7 +39,7 @@ namespace tempearly
 
             if (!path.IsEmpty())
             {
-                return Value::NewObject(new FileObject(interpreter, path));
+                return Value(new FileObject(interpreter, path));
             }
             interpreter->Throw(interpreter->eValueError,
                                "Unable to parse given string into path");
@@ -81,7 +81,7 @@ namespace tempearly
         path = buffer;
 #endif
 
-        return Value::NewObject(new FileObject(interpreter, path));
+        return Value(new FileObject(interpreter, path));
     }
 
     /**
@@ -101,7 +101,7 @@ namespace tempearly
             list->Append(Value::NewString(parts[i]));
         }
 
-        return Value::NewObject(list);
+        return Value(list);
     }
 
     /**
@@ -265,10 +265,7 @@ namespace tempearly
                     {
                         if (::wscmp(m_find_data.cFileName, L".") && ::wscmp(m_find_data.cFileName, L".."))
                         {
-                            return Result(
-                                Result::KIND_SUCCESS,
-                                Value::NewObject(new FileObject(interpreter, String::Narrow(m_find_data.cFileName)))
-                            );
+                            return Value(new FileObject(interpreter, String::Narrow(m_find_data.cFileName)));
                         }
                     }
                     ::FindClose(m_handle);
@@ -313,10 +310,7 @@ namespace tempearly
                     {
                         if (std::strcmp(data->d_name, ".") && std::strcmp(data->d_name, ".."))
                         {
-                            return Result(
-                                Result::KIND_SUCCESS,
-                                Value::NewObject(new FileObject(interpreter, m_parent + data->d_name))
-                            );
+                            return Value(new FileObject(interpreter, m_parent + data->d_name));
                         }
                     }
                     ::closedir(m_handle);
@@ -355,18 +349,16 @@ namespace tempearly
         {
             Handle<IteratorObject> iterator = new WinFileIterator(interpreter->cIterator, parent, handle);
 
-            iterator->Feed(Value::NewObject(
-                new FileObject(interpreter, parent + String::Narrow(find_data.cFileName)))
-            );
+            iterator->Feed(Value(new FileObject(interpreter, parent + String::Narrow(find_data.cFileName))));
 
-            return Value::NewObject(iterator);
+            return Value(iterator);
         }
 #else
         DIR* handle = ::opendir(parent.GetFullName().Encode().c_str());
 
         if (handle)
         {
-            return Value::NewObject(new PosixFileIterator(interpreter->cIterator, parent, handle));
+            return Value(new PosixFileIterator(interpreter->cIterator, parent, handle));
         }
 #endif
         interpreter->Throw(interpreter->eIOError, "Unable to iterate directory");

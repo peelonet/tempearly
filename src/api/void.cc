@@ -10,7 +10,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(void_iter)
     {
-        return Value::NewObject(interpreter->GetEmptyIterator());
+        return Value(interpreter->GetEmptyIterator());
     }
 
     /**

@@ -834,22 +834,21 @@ namespace tempearly
 
     Result ListNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Vector<Value> vector;
+        Handle<ListObject> list = new ListObject(interpreter->cList);
         
-        vector.Reserve(m_elements.GetSize());
         for (std::size_t i = 0; i < m_elements.GetSize(); ++i)
         {
             Value value = m_elements[i]->Evaluate(interpreter);
 
             if (value)
             {
-                vector.PushBack(value);
+                list->Append(value);
             } else {
                 return Result(Result::KIND_ERROR);
             }
         }
 
-        return Value::NewObject(new ListObject(interpreter->cList, vector));
+        return Value(list);
     }
 
     bool ListNode::Assign(const Handle<Interpreter>& interpreter, const Value& value) const
@@ -915,7 +914,7 @@ namespace tempearly
             map->Insert(hash, key, value);
         }
 
-        return Value::NewObject(map);
+        return Value(map);
     }
 
     void MapNode::Mark()
@@ -954,7 +953,7 @@ namespace tempearly
             return Result(Result::KIND_ERROR);
         }
 
-        return Value::NewObject(new RangeObject(interpreter, begin, end, m_exclusive));
+        return Value(new RangeObject(interpreter, begin, end, m_exclusive));
     }
 
     void RangeNode::Mark()
@@ -977,7 +976,7 @@ namespace tempearly
 
     Result FunctionNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        return Value::NewObject(FunctionObject::NewScripted(interpreter, m_parameters, m_nodes));
+        return Value(FunctionObject::NewScripted(interpreter, m_parameters, m_nodes));
     }
 
     void FunctionNode::Mark()

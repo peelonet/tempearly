@@ -183,10 +183,7 @@ namespace tempearly
                           int arity,
                           MethodCallback callback)
     {
-        Value method = Value::NewObject(new Method(interpreter,
-                                                   this,
-                                                   arity,
-                                                   callback));
+        Value method = Value(new Method(interpreter, this, arity, callback));
 
         if (!m_attributes)
         {
@@ -273,10 +270,7 @@ namespace tempearly
                                 int arity,
                                 MethodCallback callback)
     {
-        Value method = Value::NewObject(new StaticMethod(interpreter,
-                                                         this,
-                                                         arity,
-                                                         callback));
+        Value method = Value(new StaticMethod(interpreter, this, arity, callback));
 
         if (!m_attributes)
         {
@@ -318,7 +312,7 @@ namespace tempearly
                                const String& alias_name,
                                const String& aliased_name)
     {
-        Value method = Value::NewObject(new AliasMethod(interpreter, aliased_name));
+        Value method = Value(new AliasMethod(interpreter, aliased_name));
 
         if (!m_attributes)
         {
@@ -383,7 +377,7 @@ namespace tempearly
             instance = new Object(cls);
         }
 
-        return Value::NewObject(instance);
+        return Value(instance);
     }
 
     /**

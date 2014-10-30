@@ -117,7 +117,7 @@ namespace tempearly
             list->Append(Value::NewString(s.SubString(begin)));
         }
 
-        return Value::NewObject(list);
+        return Value(list);
     }
 
     /**
@@ -138,7 +138,7 @@ namespace tempearly
             list->Append(Value::NewInt(s[i]));
         }
 
-        return Value::NewObject(list);
+        return Value(list);
     }
 
     /**
@@ -174,7 +174,7 @@ namespace tempearly
             list->Append(Value::NewString(s.SubString(begin)));
         }
 
-        return Value::NewObject(list);
+        return Value(list);
     }
 
     /**
@@ -531,7 +531,7 @@ namespace tempearly
             iterator = new StringIterator(interpreter->cIterator, s);
         }
 
-        return Value::NewObject(iterator);
+        return Value(iterator);
     }
 
     /**

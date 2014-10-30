@@ -70,20 +70,6 @@ namespace tempearly
         explicit ListObject(const Handle<Class>& cls);
 
         /**
-         * Constructs list from vector of objects.
-         *
-         * \param cls Class of the list object
-         */
-        explicit ListObject(const Handle<Class>& cls, const Vector<Value>& vector);
-
-        /**
-         * Constructs copy of existing list.
-         *
-         * \param cls Class of the list object
-         */
-        explicit ListObject(const Handle<Class>& cls, const Handle<ListObject>& that);
-
-        /**
          * Returns true if the list is empty.
          */
         inline bool IsEmpty() const
@@ -126,6 +112,11 @@ namespace tempearly
          * Inserts all elements from given vector to the end of the list.
          */
         void Append(const Vector<Value>& vector);
+
+        /**
+         * Inserts all elements from another list to the end of this one.
+         */
+        void Append(const Handle<ListObject>& that);
 
         /**
          * Inserts given value in begining of the list.
