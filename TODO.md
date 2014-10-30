@@ -23,6 +23,8 @@
 - Process multipart HTTP requests.
 - Parse request parameters (especially POSTed ones) only when requested in the
   script.
+- FastCGI: AST caching which watches for modifications in the script similiar
+  to what's found in built-in HTTPD.
 
 # Maybe list
 
