@@ -284,6 +284,14 @@ namespace tempearly
         }
 
         /**
+         * Returns true if every rune in the string matches with given
+         * callback.
+         *
+         * Empty strings return false.
+         */
+        bool Matches(bool (*callback)(rune)) const;
+
+        /**
          * Constructs new string from contents of the string with given
          * callback.
          */

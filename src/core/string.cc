@@ -665,6 +665,23 @@ namespace tempearly
         }
     }
 
+    bool String::Matches(bool (*callback)(rune)) const
+    {
+        if (!m_length)
+        {
+            return false;
+        }
+        for (std::size_t i = 0; i < m_length; ++i)
+        {
+            if (!callback(m_runes[m_offset + i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     String String::Map(rune (*callback)(rune)) const
     {
         String result;

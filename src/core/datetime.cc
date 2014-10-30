@@ -117,15 +117,36 @@ namespace tempearly
 
                 // Year as 4 digit decimal number
                 case 'Y':
-                    result << Utils::ToString(
-                        static_cast<i64>(m_date.GetYear()),
-                        10
-                    );
+                    result << Utils::ToString(static_cast<i64>(m_date.GetYear()));
                     break;
 
-                case 'y': // TODO: last 2 digits of year
+                // Last 2 digits of year
+                case 'y':
+                {
+                    const String year = Utils::ToString(static_cast<i64>(m_date.GetYear()));
 
-                case 'C': // TODO: first 2 digits of year
+                    if (year.GetLength() >= 2)
+                    {
+                        result.Append(year.GetRunes() + year.GetLength() - 2, 2);
+                    } else {
+                        result << '0' << year;
+                    }
+                    break;
+                }
+
+                // First 2 digits of year
+                case 'C':
+                {
+                    const String year = Utils::ToString(static_cast<i64>(m_date.GetYear()));
+
+                    if (year.GetLength() >= 2)
+                    {
+                        result.Append(year.GetRunes(), 2);
+                    } else {
+                        result << '0' << year;
+                    }
+                    break;
+                }
 
                 case 'G': // TODO: ISO 8601 week-based year
 
@@ -378,10 +399,7 @@ namespace tempearly
 
                 // Weekday as decimal, Monday is 1 (1-7)
                 case 'u':
-                    result << Utils::ToString(
-                        static_cast<i64>(m_date.GetWeekday()),
-                        10
-                    );
+                    result << Utils::ToString(static_cast<i64>(m_date.GetWeekday()));
                     break;
 
                 // Hour, minute, second
@@ -399,8 +417,22 @@ namespace tempearly
                     break;
                 }
 
-                case 'I': // TODO: hour as decimal, 12 hour clock (01-12)
+                // Hour as decimal, 12 hour clock (01-12)
+                case 'I':
+                {
+                    i64 hour = m_time.GetHour();
+
+                    if (hour > 12)
+                    {
+                        hour -= 12;
+                    }
+                    if (hour < 10)
+                    {
+                        result << '0';
+                    }
+                    result << Utils::ToString(hour, 10);
                     break;
+                }
 
                 // Minute as decimal (00-59)
                 case 'M':

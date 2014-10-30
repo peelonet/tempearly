@@ -28,8 +28,13 @@ namespace tempearly
         {
             fill_method_map();
         }
-        // TODO: make this case ignorant
-        if ((entry = method_map.Find(string)))
+        if (string.Matches(String::IsUpper))
+        {
+            entry = method_map.Find(string);
+        } else {
+            entry = method_map.Find(string.Map(String::ToUpper));
+        }
+        if (entry)
         {
             slot = entry->GetValue();
 
