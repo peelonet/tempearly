@@ -15,6 +15,10 @@ namespace tempearly
 
         static double NextDouble();
 
+        static u8 NextU8();
+
+        static i8 NextI8();
+
         static u64 NextU64();
 
         static i64 NextI64();

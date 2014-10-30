@@ -23,7 +23,8 @@ namespace tempearly
             KIND_INT    = 3,
             KIND_FLOAT  = 4,
             KIND_STRING = 5,
-            KIND_OBJECT = 6
+            KIND_BINARY = 6,
+            KIND_OBJECT = 7
         };
 
         /**
@@ -77,6 +78,11 @@ namespace tempearly
         static Value NewString(const String& string);
 
         /**
+         * Constructs binary value.
+         */
+        static Value NewBinary(const ByteString& bytes);
+
+        /**
          * Assignment operator.
          */
         Value& operator=(const Value& that);
@@ -105,12 +111,16 @@ namespace tempearly
         /**
          * Tests whether the value is instance of given class.
          */
-        bool IsInstance(const Handle<Interpreter>& interpreter,
-                        const Handle<Class>& cls) const;
+        bool IsInstance(const Handle<Interpreter>& interpreter, const Handle<Class>& cls) const;
 
         inline bool IsNull() const
         {
             return m_kind == KIND_NULL;
+        }
+
+        inline bool IsBinary() const
+        {
+            return m_kind == KIND_BINARY;
         }
 
         inline bool IsBool() const
@@ -268,6 +278,13 @@ namespace tempearly
             return static_cast<T*>(m_data.o);
         }
 
+        inline const ByteString& AsBinary() const
+        {
+            return *m_data.b;
+        }
+
+        bool AsBinary(const Handle<Interpreter>& interpreter, ByteString& slot) const;
+
         inline bool AsBool() const
         {
             return m_data.i != 0;
@@ -337,6 +354,7 @@ namespace tempearly
             i64 i;
             double f;
             String* s;
+            ByteString* b;
             CoreObject* o;
         } m_data;
     };

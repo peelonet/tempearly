@@ -2,6 +2,7 @@
 
 #include "interpreter.h"
 #include "api/function.h"
+#include "core/bytestring.h"
 
 namespace tempearly
 {
@@ -24,6 +25,10 @@ namespace tempearly
 
             case KIND_STRING:
                 m_data.s = new String(*that.m_data.s);
+                break;
+
+            case KIND_BINARY:
+                m_data.b = new ByteString(*that.m_data.b);
                 break;
 
             case KIND_OBJECT:
@@ -50,6 +55,10 @@ namespace tempearly
         if (m_kind == KIND_STRING)
         {
             delete m_data.s;
+        }
+        else if (m_kind == KIND_BINARY)
+        {
+            delete m_data.b;
         }
         else if (m_kind == KIND_OBJECT)
         {
@@ -109,6 +118,16 @@ namespace tempearly
         return value;
     }
 
+    Value Value::NewBinary(const ByteString& bytes)
+    {
+        Value value;
+
+        value.m_kind = KIND_BINARY;
+        value.m_data.b = new ByteString(bytes);
+
+        return value;
+    }
+
     Value& Value::operator=(const Value& that)
     {
         Clear();
@@ -125,6 +144,10 @@ namespace tempearly
 
             case KIND_STRING:
                 m_data.s = new String(*that.m_data.s);
+                break;
+
+            case KIND_BINARY:
+                m_data.b = new ByteString(*that.m_data.b);
                 break;
 
             case KIND_OBJECT:
@@ -179,6 +202,9 @@ namespace tempearly
 
             case KIND_STRING:
                 return interpreter->cString;
+
+            case KIND_BINARY:
+                return interpreter->cBinary;
 
             case KIND_OBJECT:
                 return m_data.o->GetClass(interpreter);
@@ -396,6 +422,22 @@ namespace tempearly
         {
             m_data.o->Mark();
         }
+    }
+
+    bool Value::AsBinary(const Handle<Interpreter>& interpreter, ByteString& slot) const
+    {
+        if (m_kind == KIND_BINARY)
+        {
+            slot = *m_data.b;
+
+            return true;
+        }
+        interpreter->Throw(interpreter->eTypeError,
+                           "'Binary' required instead of '"
+                           + GetClass(interpreter)->GetName()
+                           + "'");
+
+        return false;
     }
 
     bool Value::AsBool(const Handle<Interpreter>& interpreter, bool& slot) const
