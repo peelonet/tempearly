@@ -60,6 +60,38 @@ namespace tempearly
         return r;
     }
 
+    u8 Random::NextU8()
+    {
+        u8 x;
+
+        if (!initialized)
+        {
+#if defined(_WIN32)
+            seed((::GetTickCount() >> 8) ^ ::GetTickCount());
+#else
+            seed((std::time(0) >> 8) ^ std::time(0));
+#endif
+        }
+        if (offset == n)
+        {
+            gen_state();
+        }
+        x = state[offset++];
+        x ^= (x >> 11);
+        x ^= (x << 7) & 0x9D2C5680ULL;
+        x ^= (x << 15) & 0xEFC60000ULL;
+
+        return x ^ (x >> 18);
+    }
+
+    i8 Random::NextI8()
+    {
+        const bool sign = NextBool();
+        const u8 value = NextU8();
+
+        return sign ? value : -value;
+    }
+
     u64 Random::NextU64()
     {
         u64 x;

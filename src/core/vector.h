@@ -335,6 +335,26 @@ namespace tempearly
         }
 
         /**
+         * Inserts values from given array to the end of the vector.
+         *
+         * \param t Pointer to the array
+         * \param n Size of the array
+         */
+        void PushBack(const T* t, std::size_t n)
+        {
+            if (n == 0)
+            {
+                return;
+            }
+            Reserve(m_size + n);
+            for (std::size_t i = 0; i < n; ++i)
+            {
+                new (static_cast<void*>(m_data + m_size + i)) T(t[i]);
+            }
+            m_size += n;
+        }
+
+        /**
          * Removes value from specified index.
          */
         void Erase(std::size_t index)

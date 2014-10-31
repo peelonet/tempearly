@@ -10,6 +10,7 @@
 
 namespace tempearly
 {
+    void init_binary(Interpreter*);
     void init_bool(Interpreter*);
     void init_class(Interpreter*);
     void init_core(Interpreter*);
@@ -60,6 +61,7 @@ namespace tempearly
         init_bool(this);
         init_number(this);
         init_string(this);
+        init_binary(this);
         init_void(this);
         init_iterator(this);
         init_list(this);

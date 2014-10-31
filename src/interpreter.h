@@ -99,6 +99,7 @@ namespace tempearly
         /** Global variable scope. */
         Scope* globals;
 
+        Handle<Class> cBinary;
         Handle<Class> cBool;
         Handle<Class> cClass;
         Handle<Class> cException;
@@ -121,6 +122,7 @@ namespace tempearly
         Handle<Class> eAttributeError;
         Handle<Class> eKeyError;
         Handle<Class> eImportError;
+        Handle<Class> eIndexError;
         Handle<Class> eIOError;
         Handle<Class> eLookupError;
         Handle<Class> eNameError;
