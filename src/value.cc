@@ -7,10 +7,14 @@
 namespace tempearly
 {
     Value::Value()
-        : m_kind(KIND_ERROR) {}
+        : m_kind(KIND_ERROR)
+        , m_previous(0)
+        , m_next(0) {}
 
     Value::Value(const Value& that)
         : m_kind(that.m_kind)
+        , m_previous(0)
+        , m_next(0)
     {
         switch (m_kind)
         {
@@ -32,7 +36,13 @@ namespace tempearly
                 break;
 
             case KIND_OBJECT:
-                (m_data.o = that.m_data.o)->IncReferenceCount();
+                if (that.m_data.o)
+                {
+                    m_data.o = that.m_data.o;
+                    m_data.o->RegisterValue(this);
+                } else {
+                    m_kind = KIND_NULL;
+                }
                 break;
 
             default:
@@ -42,11 +52,14 @@ namespace tempearly
 
     Value::Value(const Handle<CoreObject>& object)
         : m_kind(KIND_NULL)
+        , m_previous(0)
+        , m_next(0)
     {
         if (object)
         {
             m_kind = KIND_OBJECT;
-            (m_data.o = object.Get())->IncReferenceCount();
+            m_data.o = object.Get();
+            m_data.o->RegisterValue(this);
         }
     }
 
@@ -62,7 +75,10 @@ namespace tempearly
         }
         else if (m_kind == KIND_OBJECT)
         {
-            m_data.o->DecReferenceCount();
+            if (m_data.o)
+            {
+                m_data.o->UnregisterValue(this);
+            }
         }
     }
 
@@ -151,7 +167,13 @@ namespace tempearly
                 break;
 
             case KIND_OBJECT:
-                (m_data.o = that.m_data.o)->IncReferenceCount();
+                if (that.m_data.o)
+                {
+                    m_data.o = that.m_data.o;
+                    m_data.o->RegisterValue(this);
+                } else {
+                    m_kind = KIND_NULL;
+                }
                 break;
 
             default:
@@ -166,7 +188,7 @@ namespace tempearly
         Clear();
         if ((m_data.o = object.Get()))
         {
-            m_data.o->IncReferenceCount();
+            m_data.o->RegisterValue(this);
             m_kind = KIND_OBJECT;
         } else {
             m_kind = KIND_NULL;
@@ -175,8 +197,7 @@ namespace tempearly
         return *this;
     }
 
-    bool Value::IsInstance(const Handle<Interpreter>& interpreter,
-                           const Handle<Class>& cls) const
+    bool Value::IsInstance(const Handle<Interpreter>& interpreter, const Handle<Class>& cls) const
     {
         return GetClass(interpreter)->IsSubclassOf(cls);
     }
@@ -251,8 +272,7 @@ namespace tempearly
 
                 return value = value.As<FunctionObject>()->Invoke(interpreter, args);
             }
-            interpreter->Throw(interpreter->eAttributeError,
-                               "Missing attribute: " + id);
+            interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
 
             return false;
         }
@@ -411,7 +431,10 @@ namespace tempearly
         }
         else if (m_kind == KIND_OBJECT)
         {
-            m_data.o->DecReferenceCount();
+            if (m_data.o)
+            {
+                m_data.o->UnregisterValue(this);
+            }
         }
         m_kind = KIND_ERROR;
     }

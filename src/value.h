@@ -357,6 +357,11 @@ namespace tempearly
             ByteString* b;
             CoreObject* o;
         } m_data;
+        /** Pointer to previous value in object's value list. */
+        Value* m_previous;
+        /** Pointer to next value in object's value list. */
+        Value* m_next;
+        friend class CoreObject;
     };
 }
 
