@@ -12,13 +12,14 @@ namespace tempearly
 
         explicit CoreObject();
 
+        virtual ~CoreObject();
+
         virtual Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const = 0;
 
         /**
          * Returns true if object is instance of given class.
          */
-        bool IsInstance(const Handle<Interpreter>& interpreter,
-                        const Handle<Class>& cls) const;
+        bool IsInstance(const Handle<Interpreter>& interpreter, const Handle<Class>& cls) const;
 
         virtual bool HasAttribute(const String& id) const = 0;
 
@@ -76,7 +77,15 @@ namespace tempearly
             return false;
         }
 
+        void RegisterValue(Value* value);
+
+        void UnregisterValue(Value* value);
+
     private:
+        /** Pointer to first value which references this object. */
+        Value* m_value_head;
+        /** Pointer to last value which references this object. */
+        Value* m_value_tail;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CoreObject);
     };
 }
