@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
 static Handle<Script> compile_script(const Filename& filename, String& error_message)
 {
-    Handle<Stream> stream = filename.Open("rb");
+    Handle<Stream> stream = filename.Open(Filename::MODE_READ);
 
     if (stream)
     {

@@ -12,6 +12,13 @@ namespace tempearly
     class Filename
     {
     public:
+        enum OpenMode
+        {
+            MODE_READ,
+            MODE_WRITE,
+            MODE_READ_WRITE
+        };
+
         /**
          * Platform specific filename separator.
          */
@@ -190,15 +197,17 @@ namespace tempearly
         DateTime GetLastModified() const;
 
         /**
-         * Passes filename into std::fopen and returns resulting file handle.
+         * Opens file which the file name represents and returns it as a
+         * stream.
          *
-         * \param mode Open mode, see manual page for std::fopen for more
-         *             details
-         * \return     Pointer to file handle which can be used to read/write
-         *             contents of the file, or NULL if file cannot be opened
-         *             for some reason
+         * \param mode   In which mode the file should be opened
+         * \param append Whether existing files should be appended instead of
+         *               overwritten when opening for writing
+         * \return       Pointer to file handle which can be used to read/write
+         *               contents of the file, or NULL if file cannot be opened
+         *               for some reason
          */
-        Handle<Stream> Open(const String& mode) const;
+        Handle<Stream> Open(OpenMode mode, bool append = false) const;
 
         /**
          * Returns true if filename is equal with another filename.
