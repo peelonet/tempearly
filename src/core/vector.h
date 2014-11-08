@@ -283,11 +283,7 @@ namespace tempearly
             }
             old = m_data;
             m_data = Memory::Allocate<T>(m_capacity = n);
-            for (std::size_t i = 0; i < m_size; ++i)
-            {
-                new (static_cast<void*>(m_data + i)) T(old[i]);
-                old[i].~T();
-            }
+            Memory::Copy<T>(m_data, old, m_size);
             Memory::Unallocate<T>(old);
         }
 
@@ -303,11 +299,7 @@ namespace tempearly
                 T* old = m_data;
 
                 m_data = Memory::Allocate<T>(m_capacity += 16);
-                for (std::size_t i = 0; i < m_size; ++i)
-                {
-                    new (static_cast<void*>(m_data + i + 1)) T(old[i]);
-                    old[i].~T();
-                }
+                Memory::Copy<T>(m_data + 1, old, m_size);
                 Memory::Unallocate<T>(old);
             }
             ++m_size;
@@ -324,11 +316,7 @@ namespace tempearly
                 T* old = m_data;
 
                 m_data = Memory::Allocate<T>(m_capacity += 16);
-                for (std::size_t i = 0; i < m_size; ++i)
-                {
-                    new (static_cast<void*>(m_data + i)) T(old[i]);
-                    old[i].~T();
-                }
+                Memory::Copy<T>(m_data, old, m_size);
                 Memory::Unallocate<T>(old);
             }
             new (static_cast<void*>(m_data + m_size++)) T(value);
