@@ -81,7 +81,7 @@ namespace tempearly
 
     bool Interpreter::Include(const Filename& filename)
     {
-        Handle<Stream> stream = filename.Open("rb");
+        Handle<Stream> stream = filename.Open(Filename::MODE_READ);
 
         if (stream)
         {
@@ -122,7 +122,7 @@ namespace tempearly
                 return entry->GetValue();
             }
         }
-        if ((stream = filename.Open("rb")))
+        if ((stream = filename.Open(Filename::MODE_READ)))
         {
             Handle<Parser> parser = new Parser(stream);
             Handle<Script> script = parser->Compile();

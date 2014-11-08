@@ -152,7 +152,7 @@ namespace tempearly
                                const Filename& path,
                                const String& mime_type)
     {
-        Handle<Stream> stream = path.Open("rb");
+        Handle<Stream> stream = path.Open(Filename::MODE_READ);
 
         if (stream)
         {
@@ -411,7 +411,7 @@ namespace tempearly
 
     static void compile_script(HttpServer::ScriptMapping& mapping)
     {
-        Handle<Stream> stream = mapping.filename.Open("rb");
+        Handle<Stream> stream = mapping.filename.Open(Filename::MODE_READ);
 
         if (stream)
         {

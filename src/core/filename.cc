@@ -8,6 +8,9 @@
 #if defined(_WIN32)
 # define UNICODE
 # include <windows.h>
+#else
+# include <fcntl.h>
+# include <unistd.h>
 #endif
 
 namespace tempearly
@@ -255,126 +258,129 @@ namespace tempearly
 
     namespace
     {
-        class FileStream : public Stream
+#if !defined(_WIN32)
+        class PosixFileStream : public Stream
         {
         public:
-            enum Mode
-            {
-                MODE_READ   = 2,
-                MODE_WRITE  = 4,
-                MODE_APPEND = 8
-            };
-
-            explicit FileStream(unsigned int mode, FILE* handle)
+            explicit PosixFileStream(Filename::OpenMode mode, int handle)
                 : m_mode(mode)
                 , m_handle(handle) {}
 
-            ~FileStream()
+            ~PosixFileStream()
             {
-                if (m_handle)
+                if (m_handle >= 0)
                 {
-                    std::fclose(m_handle);
+                    ::close(m_handle);
                 }
             }
 
             bool IsOpen() const
             {
-                return m_handle;
+                return m_handle >= 0;
             }
 
             bool IsReadable() const
             {
-                return (m_mode & MODE_READ) != 0;
+                return m_mode == Filename::MODE_READ || m_mode == Filename::MODE_READ_WRITE;
             }
 
             bool IsWritable() const
             {
-                return (m_mode & (MODE_WRITE|MODE_APPEND)) != 0;
+                return m_mode == Filename::MODE_READ || m_mode == Filename::MODE_READ_WRITE;
             }
 
             void Close()
             {
-                if (m_handle)
+                if (m_handle >= 0)
                 {
-                    std::fclose(m_handle);
-                    m_mode = 0;
+                    ::close(m_handle);
                     m_handle = 0;
                 }
             }
 
             bool ReadData(byte* buffer, std::size_t size, std::size_t& read)
             {
-                if (m_handle)
+                if (m_handle >= 0)
                 {
-                    if (!(read = std::fread(static_cast<void*>(buffer), sizeof(byte), size, m_handle)))
-                    {
-                        if (!std::feof(m_handle))
-                        {
-                            SetErrorMessage(std::strerror(errno));
-                            errno = 0;
+                    ::ssize_t result = ::read(m_handle, static_cast<void*>(buffer), sizeof(byte) * size);
 
-                            return false;
-                        }
+                    if (result < 0)
+                    {
+                        SetErrorMessage(std::strerror(errno));
+                        errno = 0;
+
+                        return false;
                     }
+                    read = static_cast<std::size_t>(result);
 
                     return true;
-                } else {
-                    return false;
                 }
+
+                return false;
             }
 
             bool WriteData(const byte* data, std::size_t size)
             {
-                if (m_handle)
+                if (m_handle >= 0)
                 {
-                    if (std::fwrite(static_cast<const void*>(data), sizeof(byte), size, m_handle))
-                    {
-                        return true;
-                    }
-                    SetErrorMessage(std::strerror(errno));
-                    errno = 0;
+                    ::ssize_t result = ::write(m_handle, static_cast<const void*>(data), sizeof(byte) * size);
 
-                    return false;
-                } else {
-                    return false;
+                    if (result < 0)
+                    {
+                        SetErrorMessage(std::strerror(errno));
+                        errno = 0;
+
+                        return false;
+                    }
+                    
+                    return true;
                 }
+
+                return false;
             }
 
         private:
-            unsigned int m_mode;
-            FILE* m_handle;
-            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FileStream);
+            const Filename::OpenMode m_mode;
+            int m_handle;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(PosixFileStream);
         };
+#endif
     }
 
-    Handle<Stream> Filename::Open(const String& mode) const
+    Handle<Stream> Filename::Open(OpenMode mode, bool append) const
     {
-        unsigned int mode_flags = 0;
-        FILE* handle;
-
         if (IsEmpty())
         {
             return Handle<Stream>();
         }
 #if defined(_WIN32)
-        handle = ::_wfopen(m_full_name.Widen().c_str(), mode.Widen().c_str());
+# error "Windows implementation is missing"
 #else
-        handle = std::fopen(m_full_name.Encode().c_str(), mode.Encode().c_str());
-#endif
-        if (mode.IndexOf('r') != String::npos)
-        {
-            mode_flags |= FileStream::MODE_READ;
-        }
-        if (mode.IndexOf('w') != String::npos)
-        {
-            mode_flags |= FileStream::MODE_WRITE;
-        }
-        if (mode.IndexOf('a') != String::npos)
-        {
-            mode_flags |= FileStream::MODE_APPEND;
-        }
+        int handle;
+        int flags;
 
-        return new FileStream(mode_flags, handle);
+        if (mode == MODE_READ)
+        {
+            flags = O_RDONLY;
+        } else {
+            if (mode == MODE_WRITE)
+            {
+                flags = O_WRONLY;
+            } else {
+                flags = O_RDWR;
+            }
+            if (append)
+            {
+                flags |= O_APPEND;
+            }
+        }
+        if ((handle = ::open(m_full_name.Encode().c_str(), flags)) < 0)
+        {
+            return Handle<Stream>();
+        } else {
+            return new PosixFileStream(mode, handle);
+        }
+#endif
     }
 
     bool Filename::Equals(const Filename& that) const
