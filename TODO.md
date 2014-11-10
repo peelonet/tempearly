@@ -5,8 +5,6 @@
 - Builtin support for SQLite
 - Interfaces/mixins for classes
 - More detailed error messages. (Include source position.)
-- Streams: Buffered input.
-- Streams: Line number counting.
 
 ## API
 
