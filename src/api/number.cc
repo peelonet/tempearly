@@ -303,31 +303,56 @@ namespace tempearly
     }
 
     /**
-     * Int#__cmp__(other) => Int
+     * Int#__eq__(other) => Bool
      *
-     * Compares two numbers against each other.
+     * Compares two numbers against each other and returns true if they are
+     * equal.
      */
-    TEMPEARLY_NATIVE_METHOD(int_cmp)
+    TEMPEARLY_NATIVE_METHOD(int_eq)
     {
         const Value& self = args[0];
         const Value& operand = args[1];
 
         if (operand.IsInt())
         {
-            const i64 a = self.AsInt();
-            const i64 b = operand.AsInt();
-
-            return Value::NewInt(a > b ? 1 : a < b ? -1 : 0);
+            return Value::NewBool(self.AsInt() == operand.AsInt());
         }
         else if (operand.IsFloat())
         {
-            const double a = static_cast<double>(self.AsInt());
-            const double b = operand.AsFloat();
-
-            return Value::NewInt(a > b ? 1 : a < b ? -1 : 0);
+            return Value::NewBool(static_cast<double>(self.AsFloat()) == operand.AsFloat());
+        } else {
+            return Value::NewBool(false);
         }
+    }
 
-        return Value::NullValue();
+    /**
+     * Int#__lt__(other) => Bool
+     *
+     * Compares two numbers against each other and returns true if receiving
+     * number is less than the number given as argument.
+     *
+     * Throws: TypeError - If value given as argument is not integer or
+     * floating point number.
+     */
+    TEMPEARLY_NATIVE_METHOD(int_lt)
+    {
+        const Value& self = args[0];
+        const Value& operand = args[1];
+
+        if (operand.IsInt())
+        {
+            return Value::NewBool(self.AsInt() < operand.AsInt());
+        }
+        else if (operand.IsFloat())
+        {
+            return Value::NewBool(static_cast<double>(self.AsInt()) < operand.AsFloat());
+        }
+        interpreter->Throw(
+            interpreter->eTypeError,
+            "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Int'"
+        );
+
+        return Value();
     }
 
     /**
@@ -522,24 +547,46 @@ namespace tempearly
     }
 
     /**
-     * Float#__cmp__(other) => Int
+     * Float#__eq__(other) => Bool
      *
-     * Compares two numbers against each other.
+     * Compares two numbers against each other and returns true if they are
+     * equal.
      */
-    TEMPEARLY_NATIVE_METHOD(flo_cmp)
+    TEMPEARLY_NATIVE_METHOD(flo_eq)
     {
         const Value& operand = args[1];
-        const double a = args[0].AsFloat();
-        double b;
 
         if (operand.IsFloat() || operand.IsInt())
         {
-            b = operand.AsFloat();
+            return Value::NewBool(args[0].AsFloat() == operand.AsFloat());
         } else {
-            return Value::NullValue();
+            return Value::NewBool(false);
         }
+    }
 
-        return Value::NewInt(a > b ? 1 : a < b ? -1 : 0);
+    /**
+     * Float#__lt__(other) => Bool
+     *
+     * Compares two numbers against each other and returns true if receiving
+     * number is less than the number given as argument.
+     *
+     * Throws: TypeError - If value given as argument is not integer or
+     * floating point number.
+     */
+    TEMPEARLY_NATIVE_METHOD(flo_lt)
+    {
+        const Value& operand = args[1];
+
+        if (operand.IsFloat() || operand.IsInt())
+        {
+            return Value::NewBool(args[0].AsFloat() < operand.AsFloat());
+        }
+        interpreter->Throw(
+            interpreter->eTypeError,
+            "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Float'"
+        );
+
+        return Value();
     }
 
     /**
@@ -593,7 +640,8 @@ namespace tempearly
         i->cInt->AddMethod(i, "__xor__", 1, int_xor);
         i->cInt->AddMethod(i, "__lsh__", 1, int_lsh);
         i->cInt->AddMethod(i, "__rsh__", 1, int_rsh);
-        i->cInt->AddMethod(i, "__cmp__", 1, int_cmp);
+        i->cInt->AddMethod(i, "__eq__", 1, int_eq);
+        i->cInt->AddMethod(i, "__lt__", 1, int_lt);
         i->cInt->AddMethod(i, "__inc__", 0, int_inc);
         i->cInt->AddMethod(i, "__dec__", 0, int_dec);
         i->cInt->AddMethod(i, "__neg__", 0, int_neg);
@@ -611,7 +659,8 @@ namespace tempearly
         i->cFloat->AddMethod(i, "__mul__", 1, flo_mul);
         i->cFloat->AddMethod(i, "__div__", 1, flo_div);
         i->cFloat->AddMethod(i, "__mod__", 1, flo_mod);
-        i->cFloat->AddMethod(i, "__cmp__", 1, flo_cmp);
+        i->cFloat->AddMethod(i, "__eq__", 1, flo_eq);
+        i->cFloat->AddMethod(i, "__lt__", 1, flo_lt);
         i->cFloat->AddMethod(i, "__inc__", 0, flo_inc);
         i->cFloat->AddMethod(i, "__dec__", 0, flo_dec);
         i->cFloat->AddMethod(i, "__neg__", 0, flo_neg);

@@ -776,7 +776,7 @@ namespace tempearly
         std::size_t left;
         std::size_t right;
         std::size_t pivot;
-        int cmp;
+        bool slot;
 
         if (slice_size < 2)
         {
@@ -796,17 +796,17 @@ namespace tempearly
 
         while (left < right)
         {
-            if (!vector[left].Compare(interpreter, vector[pivot], cmp))
+            if (!vector[pivot].IsLessThan(interpreter, vector[left], slot))
             {
                 return false;
             }
-            else if (cmp > 0)
+            else if (slot)
             {
-                if (!vector[right].Compare(interpreter, vector[pivot], cmp))
+                if (!vector[right].IsLessThan(interpreter, vector[pivot], slot))
                 {
                     return false;
                 }
-                else if (cmp < 0)
+                else if (slot)
                 {
                     vector.Swap(left++, right--);
                 } else {
@@ -821,11 +821,11 @@ namespace tempearly
 
         while (left - offset < slice_size - 1)
         {
-            if (!vector[pivot].Compare(interpreter, vector[left], cmp))
+            if (!vector[pivot].IsLessThan(interpreter, vector[left], slot))
             {
                 return false;
             }
-            else if (cmp < 0)
+            else if (slot)
             {
                 vector.Swap(pivot, left);
                 break;
@@ -849,7 +849,7 @@ namespace tempearly
         std::size_t pivot;
         Vector<Value> args;
         Value result;
-        i64 cmp;
+        bool slot;
 
         if (slice_size < 2)
         {
@@ -873,20 +873,20 @@ namespace tempearly
             args.Clear();
             args.PushBack(vector[left]);
             args.PushBack(vector[pivot]);
-            if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
+            if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsBool(interpreter, slot))
             {
                 return false;
             }
-            else if (cmp > 0)
+            else if (!slot)
             {
                 args.Clear();
                 args.PushBack(vector[right]);
                 args.PushBack(vector[pivot]);
-                if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
+                if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsBool(interpreter, slot))
                 {
                     return false;
                 }
-                else if (cmp < 0)
+                else if (slot)
                 {
                     vector.Swap(left++, right--);
                 } else {
@@ -904,11 +904,11 @@ namespace tempearly
             args.Clear();
             args.PushBack(vector[pivot]);
             args.PushBack(vector[left]);
-            if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsInt(interpreter, cmp))
+            if (!(result = function.Call(interpreter, "__call__", args)) || !result.AsBool(interpreter, slot))
             {
                 return false;
             }
-            else if (cmp < 0)
+            else if (slot)
             {
                 vector.Swap(pivot, left);
                 break;
@@ -925,8 +925,8 @@ namespace tempearly
      * Iterable#sort([function(element1, element2)]) => List
      *
      * Creates a list which has all elements from the iteration in order sorted
-     * by the "__cmp__" method. An optional function can be given as argument
-     * which is used for comparison instead of the "__cmp__" method.
+     * with the "__lt__" method. An optional function can be given as argument
+     * which is used for comparison instead of the "__lt__" method.
      *
      *     [3, 2, 1].sort();    #=> [1, 2, 3]
      */

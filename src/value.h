@@ -225,8 +225,9 @@ namespace tempearly
         bool Equals(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const;
 
         /**
-         * Compares two values against each other. This is done by invoking the
-         * "__cmp__" method with given value as argument.
+         * Compares two values against each other using "__lt__" method and
+         * assigns <code>true</code> to <em>slot</em> if this value is less
+         * than the value given as argument.
          *
          * \param interpreter Script interpreter
          * \param that        Other value to compare this one against
@@ -235,7 +236,7 @@ namespace tempearly
          *                    was successfull or whether an exception was
          *                    thrown
          */
-        bool Compare(const Handle<Interpreter>& interpreter, const Value& that, int& slot) const;
+        bool IsLessThan(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const;
 
         /**
          * Treats object as iterator and attempts to retrieve it's next value.

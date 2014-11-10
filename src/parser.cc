@@ -483,12 +483,7 @@ READ_NEXT_CHAR:
                 }
                 else if (ReadChar('='))
                 {
-                    if (ReadChar('>'))
-                    {
-                        token.kind = Token::CMP;
-                    } else {
-                        token.kind = Token::LTE;
-                    }
+                    token.kind = Token::LTE;
                 } else {
                     token.kind = Token::LT;
                 }
@@ -2025,7 +2020,6 @@ SCAN_EXPONENT:
             {
                 case Token::EQ:
                 case Token::MATCH:
-                case Token::CMP:
                 {
                     const Token::Kind kind = token.kind;
                     Handle<Node> operand;
@@ -2037,9 +2031,7 @@ SCAN_EXPONENT:
                     }
                     node = new CallNode(
                         node,
-                        kind == Token::EQ    ? "__eq__"    :
-                        kind == Token::MATCH ? "__match__" :
-                                               "__cmp__",
+                        kind == Token::EQ ? "__eq__" : "__match__",
                         Vector<Handle<Node> >(1, operand)
                     );
                     break;

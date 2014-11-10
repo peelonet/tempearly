@@ -356,29 +356,22 @@ namespace tempearly
         return true;
     }
 
-    bool Value::Compare(const Handle<Interpreter>& interpreter, const Value& that, int& slot) const
+    bool Value::IsLessThan(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const
     {
-        Value result = Call(interpreter, "__cmp__", that);
+        Value result = Call(interpreter, "__lt__", that);
 
-        if (result)
+        if (!result)
         {
-            if (result.IsNull())
-            {
-                slot = 0;
-            } else {
-                i64 i;
-
-                if (!result.AsInt(interpreter, i))
-                {
-                    return false;
-                }
-                slot = static_cast<int>(i);
-            }
-
-            return true;
+            return false;
+        }
+        else if (result.IsBool())
+        {
+            slot = result.AsBool();
+        } else {
+            slot = false;
         }
 
-        return false;
+        return true;
     }
 
     bool Value::GetNext(const Handle<Interpreter>& interpreter, Value& slot) const

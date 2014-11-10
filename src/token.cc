@@ -57,7 +57,6 @@ namespace tempearly
             case GT: return "`>'";
             case LTE: return "`<='";
             case GTE: return "`>='";
-            case CMP: return "`<=>'";
             case MATCH: return "`=~'";
             case NO_MATCH: return "`!~'";
 
