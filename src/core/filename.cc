@@ -263,7 +263,8 @@ namespace tempearly
         {
         public:
             explicit PosixFileStream(Filename::OpenMode mode, int handle)
-                : m_mode(mode)
+                : Stream(mode == Filename::MODE_WRITE ? 0 : Stream::kBufferSize)
+                , m_mode(mode)
                 , m_handle(handle) {}
 
             ~PosixFileStream()
@@ -298,7 +299,7 @@ namespace tempearly
                 }
             }
 
-            bool ReadData(byte* buffer, std::size_t size, std::size_t& read)
+            bool DirectRead(byte* buffer, std::size_t size, std::size_t& read)
             {
                 if (m_handle >= 0)
                 {
@@ -319,7 +320,7 @@ namespace tempearly
                 return false;
             }
 
-            bool WriteData(const byte* data, std::size_t size)
+            bool DirectWrite(const byte* data, std::size_t size)
             {
                 if (m_handle >= 0)
                 {
