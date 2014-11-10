@@ -311,18 +311,46 @@ namespace tempearly
     }
 
     /**
-     * Binary#__cmp__(other) => Int
+     * Binary#__eq__(other) => Bool
      *
-     * Compares two binary datas lexicographically.
+     * Tests whether two binary objects are equal.
      */
-    TEMPEARLY_NATIVE_METHOD(bin_cmp)
+    TEMPEARLY_NATIVE_METHOD(bin_eq)
     {
-        if (args[1].IsBinary())
+        const Value& self = args[0];
+        const Value& operand = args[1];
+
+        if (operand.IsBinary())
         {
-            return Value::NewInt(args[0].AsBinary().Compare(args[1].AsBinary()));
+            return Value::NewBool(self.AsBinary().Equals(operand.AsBinary()));
         } else {
-            return Value::NullValue();
+            return Value::NewBool(false);
         }
+    }
+
+    /**
+     * Binary#__lt__(other) => Bool
+     *
+     * Compares two binary datas lexicographically and returns true if receiving
+     * value is less than value given as argument.
+     *
+     * Throws: TypeError - If other object is not instance of Binary.
+     */
+    TEMPEARLY_NATIVE_METHOD(bin_lt)
+    {
+        const Value& self = args[0];
+        const Value& operand = args[1];
+
+        if (operand.IsBinary())
+        {
+            return Value::NewBool(self.AsBinary().Compare(operand.AsBinary()) < 0);
+        }
+        interpreter->Throw(
+            interpreter->eTypeError,
+            "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Binary'"
+        );
+
+        return Value();
     }
 
     /**
@@ -423,7 +451,8 @@ namespace tempearly
         // Operators
         i->cBinary->AddMethod(i, "__add__", 1, bin_add);
         i->cBinary->AddMethod(i, "__mul__", 1, bin_mul);
-        i->cBinary->AddMethod(i, "__cmp__", 1, bin_cmp);
+        i->cBinary->AddMethod(i, "__eq__", 1, bin_eq);
+        i->cBinary->AddMethod(i, "__lt__", 1, bin_lt);
         i->cBinary->AddMethod(i, "__getitem__", 1, bin_getitem);
 
         i->cBinary->AddMethodAlias(i, "__str__", "join");

@@ -620,23 +620,46 @@ namespace tempearly
     }
 
     /**
-     * String#__cmp__(other) => Int
+     * String#__eq__(other) => Bool
      *
-     * Compares two strings lexicographically against each other.
+     * Compares two strings against each other and returns true if they are
+     * equal.
      */
-    TEMPEARLY_NATIVE_METHOD(str_cmp)
+    TEMPEARLY_NATIVE_METHOD(str_eq)
     {
+        const Value& self = args[0];
         const Value& operand = args[1];
 
         if (operand.IsString())
         {
-            const String& a = args[0].AsString();
-            const String& b = operand.AsString();
-
-            return Value::NewInt(a.Compare(b));
+            return Value::NewBool(self.AsString().Equals(operand.AsString()));
+        } else {
+            return Value::NewBool(false);
         }
-        interpreter->Throw(interpreter->eTypeError,
-                           "Values are not comparable");
+    }
+
+    /**
+     * String#__lt__(other) => Bool
+     *
+     * Compares two strings lexicographically against each other and returns
+     * true if receiving value is less than value given as argument.
+     *
+     * Throws: TypeError - If value given as argument is not instance of
+     * String.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_lt)
+    {
+        const Value& self = args[0];
+        const Value& operand = args[1];
+
+        if (operand.IsString())
+        {
+            return Value::NewBool(self.AsString().Compare(operand.AsString()) < 0);
+        }
+        interpreter->Throw(
+            interpreter->eTypeError,
+            "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'String'"
+        );
 
         return Value();
     }
@@ -675,6 +698,7 @@ namespace tempearly
         // Operators.
         i->cString->AddMethod(i, "__add__", 1, str_add);
         i->cString->AddMethod(i, "__mul__", 1, str_mul);
-        i->cString->AddMethod(i, "__cmp__", 1, str_cmp);
+        i->cString->AddMethod(i, "__eq__", 1, str_eq);
+        i->cString->AddMethod(i, "__lt__", 1, str_lt);
     }
 }

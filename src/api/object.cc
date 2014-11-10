@@ -125,86 +125,122 @@ namespace tempearly
         }
     }
 
-    TEMPEARLY_NATIVE_METHOD(obj_cmp)
+    /**
+     * Object#__eq__(other) => Bool
+     *
+     * Magic method used for equality comparison. Default implementation does
+     * not test equality, but rather whether the two objects are same instance.
+     */
+    TEMPEARLY_NATIVE_METHOD(obj_eq)
     {
         const Value& self = args[0];
         const Value& operand = args[1];
+        bool result;
 
-        if (self.IsInstance(interpreter, operand.GetClass(interpreter)))
+        if (self.Is(Value::KIND_NULL))
         {
-            if (operand.Is(Value::KIND_OBJECT)
-                && self.Is(Value::KIND_OBJECT)
-                && self.AsObject() == operand.AsObject())
-            {
-                return Value::NewInt(0);
-            } else {
-                return Value::NewInt(-1);
-            }
-        } else {
-            interpreter->Throw(interpreter->eTypeError,
-                               "Values are not comparable");
-
-            return Value();
+            result = operand.Is(Value::KIND_NULL);
         }
+        else if (self.Is(Value::KIND_BOOL))
+        {
+            result = operand.Is(Value::KIND_BOOL) && self.AsBool() == operand.AsBool();
+        }
+        else if (self.Is(Value::KIND_OBJECT))
+        {
+            result = self.IsInstance(interpreter, operand.GetClass(interpreter))
+                && operand.Is(Value::KIND_OBJECT)
+                && self.AsObject() == operand.AsObject();
+        } else {
+            result = false;
+        }
+
+        return Value::NewBool(result);
     }
 
-    TEMPEARLY_NATIVE_METHOD(obj_eq)
-    {
-        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
-
-        if (compare)
-        {
-            return Value::NewBool(compare.IsInt() && compare.AsInt() == 0);
-        } else {
-            return Value();
-        }
-    }
-
-    TEMPEARLY_NATIVE_METHOD(obj_lt)
-    {
-        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
-
-        if (compare)
-        {
-            return Value::NewBool(compare.IsInt() && compare.AsInt() < 0);
-        } else {
-            return Value();
-        }
-    }
-
+    /**
+     * Object#__gt__(other) => Bool
+     *
+     * Returns true if receiving object is greater than the object given as
+     * argument. Default implementation requires "__lt__" and "__eq__" methods
+     * in order to function.
+     */
     TEMPEARLY_NATIVE_METHOD(obj_gt)
     {
-        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
+        const Value& self = args[0];
+        const Value& operand = args[1];
+        bool slot;
 
-        if (compare)
+        if (!self.IsLessThan(interpreter, operand, slot))
         {
-            return Value::NewBool(compare.IsInt() && compare.AsInt() > 0);
-        } else {
             return Value();
+        }
+        else if (slot)
+        {
+            return Value::NewBool(false);
+        }
+        else if (!self.Equals(interpreter, operand, slot))
+        {
+            return Value();
+        } else {
+            return Value::NewBool(!slot);
         }
     }
 
+    /**
+     * Object#__lte__(other) => Bool
+     *
+     * Returns true if receiving object is less than or equal to object given
+     * as argument. Default implementation requires "__lt__" and "__eq__"
+     * methods in order to function.
+     */
     TEMPEARLY_NATIVE_METHOD(obj_lte)
     {
-        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
+        const Value& self = args[0];
+        const Value& operand = args[1];
+        bool slot;
 
-        if (compare)
+        if (!self.IsLessThan(interpreter, operand, slot))
         {
-            return Value::NewBool(compare.IsInt() && compare.AsInt() <= 0);
-        } else {
             return Value();
+        }
+        else if (slot)
+        {
+            return Value::NewBool(true);
+        }
+        else if (!self.Equals(interpreter, operand, slot))
+        {
+            return Value();
+        } else {
+            return Value::NewBool(slot);
         }
     }
 
+    /**
+     * Object#__gte__(other) => Bool
+     *
+     * Returns true if receiving object is greater than or equal to object
+     * given as argument. Default implementation requires "__lt__" and "__eq__"
+     * methods in order to function.
+     */
     TEMPEARLY_NATIVE_METHOD(obj_gte)
     {
-        Value compare = args[0].Call(interpreter, "__cmp__", args[1]);
+        const Value& self = args[0];
+        const Value& operand = args[1];
+        bool slot;
 
-        if (compare)
+        if (!self.IsLessThan(interpreter, operand, slot))
         {
-            return Value::NewBool(compare.IsInt() && compare.AsInt() >= 0);
-        } else {
             return Value();
+        }
+        else if (slot)
+        {
+            return Value::NewBool(false);
+        }
+        else if (!self.Equals(interpreter, operand, slot))
+        {
+            return Value();
+        } else {
+            return Value::NewBool(slot);
         }
     }
 
@@ -221,9 +257,7 @@ namespace tempearly
         cObject->AddMethod(i, "__str__", 0, obj_str);
 
         // Comparison operators.
-        cObject->AddMethod(i, "__cmp__", 1, obj_cmp);
         cObject->AddMethod(i, "__eq__", 1, obj_eq);
-        cObject->AddMethod(i, "__lt__", 1, obj_lt);
         cObject->AddMethod(i, "__gt__", 1, obj_gt);
         cObject->AddMethod(i, "__lte__", 1, obj_lte);
         cObject->AddMethod(i, "__gte__", 1, obj_gte);

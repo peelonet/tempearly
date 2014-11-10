@@ -367,21 +367,22 @@ namespace tempearly
     }
 
     /**
-     * File#__cmp__(other) => Int
+     * File#__eq__(other) => Bool
      *
-     * Compares two filenames lexicographically against each other.
+     * Compares two filenames lexicographically against each other and returns
+     * true if they are equal.
      */
-    TEMPEARLY_NATIVE_METHOD(file_cmp)
+    TEMPEARLY_NATIVE_METHOD(file_eq)
     {
-        if (args[1].IsFile())
+        const Value& self = args[0];
+        const Value& operand = args[1];
+
+        if (operand.IsFile())
         {
-            const Filename a = args[0].As<FileObject>()->GetPath();
-            const Filename b = args[1].As<FileObject>()->GetPath();
-
-            return Value::NewInt(a.Compare(b));
+            return Value::NewBool(self.As<FileObject>()->GetPath().Equals(operand.As<FileObject>()->GetPath()));
+        } else {
+            return Value::NewBool(false);
         }
-
-        return Value::NullValue();
     }
 
     /**
@@ -417,7 +418,7 @@ namespace tempearly
         i->cFile->AddMethod(i, "__iter__", 0, file_iter);
 
         // Operators
-        i->cFile->AddMethod(i, "__cmp__", 1, file_cmp);
+        i->cFile->AddMethod(i, "__eq__", 1, file_eq);
 
         // Conversion methods
         i->cFile->AddMethod(i, "__str__", 0, file_str);

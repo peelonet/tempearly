@@ -65,7 +65,6 @@ namespace tempearly
             GT,
             LTE,
             GTE,
-            CMP,
             MATCH,
             NO_MATCH,
 
