@@ -4,9 +4,85 @@
 #include "core/string.h"
 #include "io/stream.h"
 
+#if !defined(BUFSIZ)
+# define BUFSIZ 1024
+#endif
+
 namespace tempearly
 {
-    Stream::Stream() {}
+    const std::size_t Stream::kBufferSize = BUFSIZ;
+
+    Stream::Stream(std::size_t buffer_size)
+        : m_buffer_size(buffer_size)
+        , m_buffer(m_buffer_size ? static_cast<byte*>(std::malloc(m_buffer_size)) : 0)
+        , m_offset(0)
+        , m_remain(0)
+        , m_line(1) {}
+
+    Stream::~Stream()
+    {
+        if (m_buffer)
+        {
+            std::free(static_cast<void*>(m_buffer));
+        }
+    }
+
+    void Stream::Flush()
+    {
+        m_offset = m_remain = 0;
+    }
+
+    bool Stream::Read(byte* buffer, std::size_t size, std::size_t& read)
+    {
+        read = 0;
+        if (m_buffer)
+        {
+            while (size > 0)
+            {
+                std::size_t n = size;
+
+                if (!m_remain)
+                {
+                    m_offset = 0;
+                    if (!DirectRead(m_buffer, m_buffer_size, m_remain))
+                    {
+                        return false;
+                    }
+                    else if (!m_remain)
+                    {
+                        break;
+                    }
+                }
+                if (n > m_remain)
+                {
+                    n = m_remain;
+                }
+                Memory::Copy<byte>(buffer + read, m_buffer + m_offset, n);
+                m_offset += n;
+                m_remain -= n;
+                read += n;
+                size -= n;
+            }
+        }
+        else if (!DirectRead(buffer, size, read))
+        {
+            return false;
+        }
+        for (std::size_t i = 0; i < read; ++i)
+        {
+            if (i + 1 < read && buffer[i] == '\r' && buffer[i + 1] == '\n')
+            {
+                ++m_line;
+                ++i;
+            }
+            else if (buffer[i] == '\n' || buffer[i] == '\r')
+            {
+                ++m_line;
+            }
+        }
+
+        return true;
+    }
 
     static inline std::size_t utf8_size(unsigned char input)
     {
@@ -48,7 +124,7 @@ namespace tempearly
         std::size_t read;
         std::size_t size;
         
-        if (!ReadData(buffer, 1, read) || read < 1)
+        if (!Read(buffer, 1, read) || read < 1)
         {
             return false;
         }
@@ -82,7 +158,7 @@ namespace tempearly
                 slot = 0xfffd; // Invalid code point
                 return true;
         }
-        if (size > 1 && (!ReadData(buffer + 1, size - 1, read) || read < size - 1))
+        if (size > 1 && (!Read(buffer + 1, size - 1, read) || read < size - 1))
         {
             slot = 0xfffd;
 
@@ -103,14 +179,31 @@ namespace tempearly
         return true;
     }
 
-    bool Stream::Write(const char* data, std::size_t size)
+    bool Stream::Write(const byte* data, std::size_t size)
     {
-        return WriteData(reinterpret_cast<const byte*>(data), size);
+        if (!DirectWrite(data, size))
+        {
+            return false;
+        }
+        for (std::size_t i = 0; i < size; ++i)
+        {
+            if (i + 1 < size && data[i] == '\r' && data[i + 1] == '\n')
+            {
+                ++m_line;
+                ++i;
+            }
+            else if (data[i] == '\n' || data[i] == '\r')
+            {
+                ++m_line;
+            }
+        }
+
+        return true;
     }
 
     bool Stream::Write(const ByteString& data)
     {
-        return WriteData(data.GetBytes(), data.GetLength());
+        return Write(data.GetBytes(), data.GetLength());
     }
 
     bool Stream::Write(const String& text)
@@ -128,6 +221,6 @@ namespace tempearly
         length = vsnprintf(buffer, sizeof(buffer), format, ap);
         va_end(ap);
 
-        return WriteData(reinterpret_cast<byte*>(buffer), length);
+        return Write(reinterpret_cast<byte*>(buffer), length);
     }
 }

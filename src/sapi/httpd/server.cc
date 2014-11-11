@@ -85,7 +85,7 @@ namespace tempearly
         byte* data;
         Filename path;
 
-        if (!client->ReadData(buffer, HTTPD_MAX_REQUEST_SIZE, buffer_size))
+        if (!client->Read(buffer, HTTPD_MAX_REQUEST_SIZE, buffer_size))
         {
             client->Close();
             return;
@@ -163,9 +163,9 @@ namespace tempearly
                 byte buffer[4096];
                 std::size_t read;
 
-                while (stream->ReadData(buffer, sizeof(buffer), read))
+                while (stream->Read(buffer, sizeof(buffer), read))
                 {
-                    if (!client->WriteData(buffer, read))
+                    if (!client->Write(buffer, read))
                     {
                         break;
                     }

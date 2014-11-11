@@ -8,7 +8,8 @@
 namespace tempearly
 {
     Socket::Socket()
-        : m_handle(-1) {}
+        : Stream(0)
+        , m_handle(-1) {}
 
     Socket::~Socket()
     {
@@ -43,7 +44,7 @@ namespace tempearly
         }
     }
 
-    bool Socket::ReadData(byte* buffer, std::size_t size, std::size_t& read)
+    bool Socket::DirectRead(byte* buffer, std::size_t size, std::size_t& read)
     {
         if (m_handle >= 0)
         {
@@ -66,7 +67,7 @@ namespace tempearly
         return false;
     }
 
-    bool Socket::WriteData(const byte* data, std::size_t size)
+    bool Socket::DirectWrite(const byte* data, std::size_t size)
     {
         if (m_handle >= 0)
         {

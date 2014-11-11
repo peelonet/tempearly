@@ -33,9 +33,9 @@ namespace tempearly
 
         void Close();
 
-        bool ReadData(byte* buffer, std::size_t size, std::size_t& read);
+        bool DirectRead(byte* buffer, std::size_t size, std::size_t& read);
 
-        bool WriteData(const byte* data, std::size_t size);
+        bool DirectWrite(const byte* data, std::size_t size);
 
         bool Create(int port, int type, const String& host);
 
