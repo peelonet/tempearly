@@ -82,7 +82,7 @@ namespace tempearly
             case STRING: return "string literal";
             case INT:
             case FLOAT: return "number literal";
-            case CLOSE_TAG: return "`%>'";
+            case CLOSE_TAG: return "`%}'";
             case ERROR: return "error";
             case END_OF_INPUT: return "end of input";
         }

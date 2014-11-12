@@ -11,29 +11,29 @@
         <h2>Random integers</h2>
         <p>Int.rand():</p>
         <ul>
-        <% for i : 0..10: %>
-            <li>${Int.rand()}</li>
-        <% end for; %>
+        {% for i : 0..5: %}
+            <li>{{Int.rand()}}</li>
+        {% end for; %}
         </ul>
         <p>Int.rand(1000):</p>
         <ul>
-        <% for i : 0..10: %>
-            <li>${Int.rand(1000)}</li>
-        <% end for; %>
+        {% for i : 0..5: %}
+            <li>{{Int.rand(1000)}}</li>
+        {% end for; %}
         </ul>
 
         <h2>Random floats</h2>
         <p>Float.rand():</p>
         <ul>
-        <% for i : 0..10: %>
-            <li>${Float.rand()}</li>
-        <% end for; %>
+        {% for i : 0..5: %}
+            <li>{{Float.rand()}}</li>
+        {% end for; %}
         </ul>
         <p>Float.rand(1000):</p>
         <ul>
-        <% for i: 0..10: %>
-            <li>${Float.rand(1000)}</li>
-        <% end for; %>
+        {% for i: 0..5: %}
+            <li>{{Float.rand(1000)}}</li>
+        {% end for; %}
         </ul>
     </div>
 </body>
