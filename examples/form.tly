@@ -9,11 +9,11 @@
 <body>
     <div class="container">
         <h1>Form test</h1>
-        <% if request.method() == "POST": %>
-            <p>Welcome $!request["name"]!</p>
-            <p>Your e-mail address is: $!request["email"]!</p>
-        <% else: %>
-            <form class="form-horizontal" method="post" action="$!request.path()!" role="form">
+        {% if request.method() == "POST": %}
+            <p>Welcome {{request["name"]}}</p>
+            <p>Your e-mail address is: {{request["email"]}}</p>
+        {% else: %}
+            <form class="form-horizontal" method="post" action="{{request.path()}}" role="form">
                 <div class="form-group">
                     <label for="name">Name:</label>
                     <input type="text" class="form-control" name="name" id="name" autofocus required>
@@ -24,7 +24,7 @@
                 </div>
                 <button type="submit" class="btn btn-lg btn-primary">Submit</button>
             </form>
-        <% end if %>
+        {% end if; %}
     </div>
 </body>
 </html>

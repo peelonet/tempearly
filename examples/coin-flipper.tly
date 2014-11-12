@@ -1,5 +1,5 @@
 #!/usr/bin/env tempearly-cgi
-<%
+{%
 if request.is_ajax():
     response["Content-Type"] = "application/json";
     if Bool.rand():
@@ -10,7 +10,7 @@ if request.is_ajax():
     response.write('{"image": "' + image + '"}');
     return;
 end if;
-%>
+%}
 <!DOCTYPE html>
 <html>
 <head>
@@ -33,7 +33,7 @@ end if;
             $("img").fadeOut(function()
             {
                 $.ajax({
-                    url: "${request.path()}",
+                    url: "{{request.path()}}",
                     success: function(data)
                     {
                         $("img").attr("src", data.image).fadeIn();

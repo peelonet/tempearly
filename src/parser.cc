@@ -356,7 +356,7 @@ READ_NEXT_CHAR:
                 {
                     token.kind = Token::ASSIGN_MOD;
                 }
-                else if (ReadChar('>'))
+                else if (ReadChar('}'))
                 {
                     token.kind = Token::CLOSE_TAG;
                     // Eat possible new line following the close tag.
@@ -863,9 +863,9 @@ SCAN_EXPONENT:
 
         while (c > 0)
         {
-            if (c == '<')
+            if (c == '{')
             {
-                if (parser->ReadChar('%'))
+                if ((c = parser->ReadChar()) == '%')
                 {
                     if (!text.IsEmpty())
                     {
@@ -875,16 +875,10 @@ SCAN_EXPONENT:
                     should_continue = true;
 
                     return true;
-                } else {
-                    text << '<';
-                    c = parser->ReadChar();
                 }
-            }
-            else if (c == '$')
-            {
-                if ((c = parser->ReadChar()) == '{' || c == '!')
+                else if (c == '{' || c == '!')
                 {
-                    const bool escape = c == '!';
+                    const bool escape = c != '!';
                     Handle<Node> expr;
 
                     if (!text.IsEmpty())
@@ -896,25 +890,59 @@ SCAN_EXPONENT:
                     {
                         return false;
                     }
-                    if (parser->PeekToken(escape ? Token::NOT : Token::RBRACE))
+                    if (parser->PeekToken(escape ? Token::RBRACE : Token::NOT))
                     {
                         parser->SkipToken();
+                        if (parser->ReadChar() != '}')
+                        {
+                            if (escape)
+                            {
+                                parser->SetErrorMessage("Unterminated expression: Missing '}}'");
+                            } else {
+                                parser->SetErrorMessage("Unterminated expression: Missing '!}'");
+                            }
+
+                            return false;
+                        }
                     }
-                    else if (parser->ReadChar() != escape ? '!' : '}')
+                    else if (parser->ReadChar() == (escape ? '}' : '!'))
                     {
                         if (escape)
                         {
-                            parser->SetErrorMessage("Unterminated expression: Missing `!'");
+                            parser->SetErrorMessage("Unterminated expression: Missing '}}'");
                         } else {
-                            parser->SetErrorMessage("Unterminated expression: Missing `}'");
+                            parser->SetErrorMessage("Unterminated expression: Missing '!}'");
                         }
 
                         return false;
                     }
                     nodes.PushBack(new ExpressionNode(expr, escape));
                     c = parser->ReadChar();
+                }
+                else if (c == '#')
+                {
+                    c = parser->ReadChar();
+                    for (;;)
+                    {
+                        if (c < 0)
+                        {
+                            parser->SetErrorMessage("Unterminated comment: Missing '#}'");
+
+                            return false;
+                        }
+                        else if (c == '#')
+                        {
+                            if ((c = parser->ReadChar()) == '}')
+                            {
+                                c = parser->ReadChar();
+                                break;
+                            }
+                        } else {
+                            c = parser->ReadChar();
+                        }
+                    }
                 } else {
-                    text << '$';
+                    text << '{';
                 }
             }
             else if (c == '\\')
@@ -930,25 +958,10 @@ SCAN_EXPONENT:
                 {
                     c = parser->ReadChar();
                 }
-                else if (c == '<')
+                else if (c == '{')
                 {
-                    if ((c = parser->ReadChar()) == '%')
-                    {
-                        text << '<' << '%';
-                        c = parser->ReadChar();
-                    } else {
-                        text << '\\' << '<';
-                    }
-                }
-                else if (c == '$')
-                {
-                    if ((c = parser->ReadChar()) == '{' || c == '!')
-                    {
-                        text << '$' << c;
-                        c = parser->ReadChar();
-                    } else {
-                        text << '\\' << '$';
-                    }
+                    text << '{';
+                    c = parser->ReadChar();
                 } else {
                     text << '\\';
                 }
