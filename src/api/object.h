@@ -17,6 +17,8 @@ namespace tempearly
             return m_class;
         }
 
+        Dictionary<Value> GetAllAttributes() const;
+
         bool HasAttribute(const String& id) const;
 
         bool GetAttribute(const String& id, Value& value) const;

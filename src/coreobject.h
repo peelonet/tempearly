@@ -21,6 +21,11 @@ namespace tempearly
          */
         bool IsInstance(const Handle<Interpreter>& interpreter, const Handle<Class>& cls) const;
 
+        /**
+         * Returns all attributes which the object has in an dictionary.
+         */
+        virtual Dictionary<Value> GetAllAttributes() const = 0;
+
         virtual bool HasAttribute(const String& id) const = 0;
 
         virtual bool GetAttribute(const String& id, Value& value) const = 0;

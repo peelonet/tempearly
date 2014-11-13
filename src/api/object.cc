@@ -14,6 +14,16 @@ namespace tempearly
         }
     }
 
+    Dictionary<Value> Object::GetAllAttributes() const
+    {
+        if (m_attributes)
+        {
+            return *m_attributes;
+        } else {
+            return Dictionary<Value>();
+        }
+    }
+
     bool Object::HasAttribute(const String& id) const
     {
         return m_attributes && m_attributes->Find(id);

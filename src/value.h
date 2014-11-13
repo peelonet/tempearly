@@ -195,6 +195,11 @@ namespace tempearly
 
         Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const;
 
+        /**
+         * Returns all attributes which the value has in a dictionary.
+         */
+        Dictionary<Value> GetAllAttributes() const;
+
         bool HasAttribute(const String& id) const;
 
         bool GetAttribute(const Handle<Interpreter>& interpreter,

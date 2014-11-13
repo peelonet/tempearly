@@ -234,6 +234,16 @@ namespace tempearly
         return interpreter->cObject;
     }
 
+    Dictionary<Value> Value::GetAllAttributes() const
+    {
+        if (m_kind == KIND_OBJECT)
+        {
+            return m_data.o->GetAllAttributes();
+        } else {
+            return Dictionary<Value>();
+        }
+    }
+
     bool Value::HasAttribute(const String& id) const
     {
         return m_kind == KIND_OBJECT && m_data.o->HasAttribute(id);
