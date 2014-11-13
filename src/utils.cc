@@ -340,6 +340,74 @@ namespace tempearly
         return string;
     }
 
+    static void json_escape(StringBuilder& result, const rune r)
+    {
+        switch (r)
+        {
+            case '"':
+            case '\\':
+                result << '\\' << r;
+                break;
+
+            case '\b':
+                result << '\\' << 'b';
+                break;
+
+            case '\f':
+                result << '\\' << 'f';
+                break;
+
+            case '\n':
+                result << '\\' << 'n';
+                break;
+
+            case '\r':
+                result << '\\' << 'r';
+                break;
+
+            case '\t':
+                result << '\\' << 't';
+                break;
+
+            default:
+                if (String::IsControl(r))
+                {
+                    char buffer[7];
+
+                    std::sprintf(buffer, "\\u%04x", r);
+                    result << buffer;
+                } else {
+                    result << r;
+                }
+        }
+    }
+
+    String Utils::JsonEscape(const String& string)
+    {
+        const std::size_t length = string.GetLength();
+
+        for (std::size_t i = 0; i < length; ++i)
+        {
+            const rune r = string[i];
+
+            if (String::IsControl(r) || r == '"' || r == '\\')
+            {
+                StringBuilder result(length + 4);
+
+                result.Append(string.GetRunes(), length - i);
+                json_escape(result, r);
+                for (std::size_t j = i + 1; j < length; ++j)
+                {
+                    json_escape(result, string[j]);
+                }
+
+                return result.ToString();
+            }
+        }
+
+        return string;
+    }
+
     bool Utils::UrlDecode(const String& string, String& slot)
     {
         // First check if the string has any encoding.

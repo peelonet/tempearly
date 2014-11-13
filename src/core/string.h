@@ -308,6 +308,11 @@ namespace tempearly
         static bool IsUpper(rune c);
 
         /**
+         * Tests for control character.
+         */
+        static bool IsControl(rune c);
+
+        /**
          * Converts given character into lower case.
          */
         static rune ToLower(rune c);

@@ -1054,6 +1054,30 @@ namespace tempearly
         return false;
     }
 
+    bool String::IsControl(rune c)
+    {
+        static const rune cntrl_table[19][2] =
+        {
+            { 0x0000, 0x001f }, { 0x007f, 0x009f }, { 0x00ad, 0x00ad },
+            { 0x0600, 0x0603 }, { 0x06dd, 0x06dd }, { 0x070f, 0x070f },
+            { 0x17b4, 0x17b5 }, { 0x200b, 0x200f }, { 0x202a, 0x202e },
+            { 0x2060, 0x2063 }, { 0x206a, 0x206f }, { 0xd800, 0xf8ff },
+            { 0xfeff, 0xfeff }, { 0xfff9, 0xfffb }, { 0x1d173, 0x1d17a },
+            { 0xe0001, 0xe0001 }, { 0xe0020, 0xe007f }, { 0xf0000, 0xffffd },
+            { 0x100000, 0x10fffd }
+        };
+
+        for (int i = 0; i < 19; ++i)
+        {
+            if (c >= cntrl_table[i][0] && c <= cntrl_table[i][1])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     rune String::ToLower(rune c)
     {
         if (c >= 'A' && c <= 'Z')
