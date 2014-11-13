@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "core/bytestring.h"
 #include "core/stringbuilder.h"
+#include "net/url.h"
 
 #if defined(TEMPEARLY_HAVE_CLIMITS)
 # include <climits>
@@ -289,185 +290,6 @@ namespace tempearly
         }
     }
 
-    String Utils::XmlEscape(const String& string)
-    {
-        if (string.IndexOf('&') != String::npos
-            || string.IndexOf('<') != String::npos
-            || string.IndexOf('>') != String::npos
-            || string.IndexOf('"') != String::npos
-            || string.IndexOf('\'') != String::npos)
-        {
-            StringBuilder result;
-
-            result.Reserve(string.GetLength() + 16);
-            for (std::size_t i = 0; i < string.GetLength(); ++i)
-            {
-                const rune r = string[i];
-
-                switch (r)
-                {
-                    case '&':
-                        result << "&amp;";
-                        break;
-
-                    case '<':
-                        result << "&lt;";
-                        break;
-
-                    case '>':
-                        result << "&gt;";
-                        break;
-
-                    case '"':
-                        result << "&quot;";
-                        break;
-
-                    case '\'':
-                        result << "&#39;";
-                        break;
-
-                    case '\r':
-                        break;
-
-                    default:
-                        result << r;
-                }
-            }
-
-            return result.ToString();
-        }
-
-        return string;
-    }
-
-    static void json_escape(StringBuilder& result, const rune r)
-    {
-        switch (r)
-        {
-            case '"':
-            case '\\':
-                result << '\\' << r;
-                break;
-
-            case '\b':
-                result << '\\' << 'b';
-                break;
-
-            case '\f':
-                result << '\\' << 'f';
-                break;
-
-            case '\n':
-                result << '\\' << 'n';
-                break;
-
-            case '\r':
-                result << '\\' << 'r';
-                break;
-
-            case '\t':
-                result << '\\' << 't';
-                break;
-
-            default:
-                if (String::IsControl(r))
-                {
-                    char buffer[7];
-
-                    std::sprintf(buffer, "\\u%04x", r);
-                    result << buffer;
-                } else {
-                    result << r;
-                }
-        }
-    }
-
-    String Utils::JsonEscape(const String& string)
-    {
-        const std::size_t length = string.GetLength();
-
-        for (std::size_t i = 0; i < length; ++i)
-        {
-            const rune r = string[i];
-
-            if (String::IsControl(r) || r == '"' || r == '\\')
-            {
-                StringBuilder result(length + 4);
-
-                result.Append(string.GetRunes(), length - i);
-                json_escape(result, r);
-                for (std::size_t j = i + 1; j < length; ++j)
-                {
-                    json_escape(result, string[j]);
-                }
-
-                return result.ToString();
-            }
-        }
-
-        return string;
-    }
-
-    bool Utils::UrlDecode(const String& string, String& slot)
-    {
-        // First check if the string has any encoding.
-        if (string.IndexOf('+') != String::npos
-            || string.IndexOf('%') != String::npos)
-        {
-            ByteString bytes = string.Encode();
-            Vector<char> result;
-
-            result.Reserve(bytes.GetLength());
-            for (std::size_t i = 0; i < bytes.GetLength(); ++i)
-            {
-                const byte b = bytes[i];
-
-                if (b == '+')
-                {
-                    result.PushBack(' ');
-                }
-                else if (b == '%')
-                {
-                    char byte = 0;
-
-                    if (bytes.GetLength() - i < 2)
-                    {
-                        return false; // Malformed query string
-                    }
-                    for (std::size_t j = 0; j < 2; ++j)
-                    {
-                        const char code = bytes[i + j + 1];
-
-                        if (0x30 <= code && code <= 0x39)
-                        {
-                            byte = byte * 16 + code - 0x30;
-                        }
-                        else if (0x41 <= code && code <= 0x46)
-                        {
-                            byte = byte * 16 + code - 0x37;
-                        }
-                        else if (0x61 <= code && code <= 0x66)
-                        {
-                            byte = byte * 16 + code - 0x57;
-                        } else {
-                            return false;
-                        }
-                    }
-                    result.PushBack(byte);
-                    i += 2;
-                } else {
-                    result.PushBack(b);
-                }
-            }
-            result.PushBack(0);
-            slot = result.GetData();
-        } else {
-            slot = string;
-        }
-
-        return true;
-    }
-
     void Utils::ParseQueryString(const String& string, Dictionary<Vector<String> >& dictionary)
     {
         std::size_t current_index = 0;
@@ -493,7 +315,7 @@ namespace tempearly
                 value = string.SubString(current_index, index - current_index);
                 current_index = index + 1;
             }
-            if (UrlDecode(name, name) && UrlDecode(value, value))
+            if (Url::Decode(name, name) && Url::Decode(value, value))
             {
                 Dictionary<Vector<String> >::Entry* entry = dictionary.Find(name);
 

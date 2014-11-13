@@ -1,4 +1,3 @@
-#include "utils.h"
 #include "api/exception.h"
 #include "core/bytestring.h"
 #include "sapi/response.h"
@@ -64,7 +63,7 @@ namespace tempearly
         }
         else if (IsCommitted())
         {
-            Write("\n<p><strong>ERROR:</strong> " + Utils::XmlEscape(exception->GetMessage()) + "</p>\n");
+            Write("\n<p><strong>ERROR:</strong> " + exception->GetMessage().EscapeXml() + "</p>\n");
         } else {
             m_headers.Clear();
             SetHeader("Content-Type", "text/plain; charset=utf-8");

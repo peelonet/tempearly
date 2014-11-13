@@ -38,23 +38,6 @@ namespace tempearly
         static String ToString(double number);
 
         /**
-         * Escapes XML entities from given string.
-         */
-        static String XmlEscape(const String& string);
-
-        static String JsonEscape(const String& string);
-
-        /**
-         * Attempts to decode URL entities from given string.
-         *
-         * \param string String to decode
-         * \param slot   Where the resulting decoded string is assigned to
-         * \return       A boolean flag indicating whether decoding was
-         *               successfull or not
-         */
-        static bool UrlDecode(const String& string, String& slot);
-
-        /**
          * Parses given given string as query string and inserts named values
          * extracted from it to the given dictionary.
          */

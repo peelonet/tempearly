@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "utils.h"
 #include "core/stringbuilder.h"
 
 namespace tempearly
@@ -173,7 +172,7 @@ namespace tempearly
                 } else {
                     buffer << ',';
                 }
-                buffer << '"' << Utils::JsonEscape(entry->GetName()) << '"' << ':' << value;
+                buffer << '"' << entry->GetName().EscapeJavaScript() << '"' << ':' << value;
             }
             self.UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
