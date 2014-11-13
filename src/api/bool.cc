@@ -140,19 +140,23 @@ namespace tempearly
 
     void init_bool(Interpreter* i)
     {
-        i->cBool = i->AddClass("Bool", i->cObject);
+        Handle<Class> cBool = i->AddClass("Bool", i->cObject);
 
-        i->cBool->SetAllocator(Class::kNoAlloc);
+        i->cBool = cBool;
 
-        i->cBool->AddStaticMethod(i, "parse", 1, bool_s_parse);
-        i->cBool->AddStaticMethod(i, "rand", 0, bool_s_rand);
+        cBool->SetAllocator(Class::kNoAlloc);
 
-        i->cBool->AddMethod(i, "__hash__", 0, bool_hash);
+        cBool->AddStaticMethod(i, "parse", 1, bool_s_parse);
+        cBool->AddStaticMethod(i, "rand", 0, bool_s_rand);
 
-        i->cBool->AddMethod(i, "__str__", 0, bool_str);
+        cBool->AddMethod(i, "__hash__", 0, bool_hash);
 
-        i->cBool->AddMethod(i, "__and__", 1, bool_and);
-        i->cBool->AddMethod(i, "__or__", 1, bool_or);
-        i->cBool->AddMethod(i, "__xor__", 1, bool_xor);
+        cBool->AddMethod(i, "__str__", 0, bool_str);
+
+        cBool->AddMethod(i, "__and__", 1, bool_and);
+        cBool->AddMethod(i, "__or__", 1, bool_or);
+        cBool->AddMethod(i, "__xor__", 1, bool_xor);
+
+        cBool->AddMethodAlias(i, "as_json", "__str__");
     }
 }

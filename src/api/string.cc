@@ -1,6 +1,7 @@
 #include <cctype>
 
 #include "interpreter.h"
+#include "utils.h"
 #include "api/iterator.h"
 #include "api/list.h"
 #include "core/random.h"
@@ -546,6 +547,20 @@ namespace tempearly
     }
 
     /**
+     * String#as_json() => String
+     *
+     * Converts string into JSON string literal and returns result.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_as_json)
+    {
+        StringBuilder buffer;
+
+        buffer << '"' << Utils::JsonEscape(args[0].AsString()) << '"';
+
+        return Value::NewString(buffer.ToString());
+    }
+
+    /**
      * String#__add__(other) => String
      *
      * Concatenates two strings.
@@ -666,39 +681,42 @@ namespace tempearly
 
     void init_string(Interpreter* i)
     {
-        i->cString = i->AddClass("String", i->cIterable);
+        Handle<Class> cString = i->AddClass("String", i->cIterable);
 
-        i->cString->SetAllocator(Class::kNoAlloc);
+        i->cString = cString;
 
-        i->cString->AddStaticMethod(i, "__call__", -1, str_s_call);
-        i->cString->AddStaticMethod(i, "rand", 1, str_s_rand);
+        cString->SetAllocator(Class::kNoAlloc);
 
-        i->cString->AddMethod(i, "length", 0, str_length);
-        i->cString->AddMethod(i, "lines", 0, str_lines);
-        i->cString->AddMethod(i, "runes", 0, str_runes);
-        i->cString->AddMethod(i, "words", 0, str_words);
+        cString->AddStaticMethod(i, "__call__", -1, str_s_call);
+        cString->AddStaticMethod(i, "rand", 1, str_s_rand);
+
+        cString->AddMethod(i, "length", 0, str_length);
+        cString->AddMethod(i, "lines", 0, str_lines);
+        cString->AddMethod(i, "runes", 0, str_runes);
+        cString->AddMethod(i, "words", 0, str_words);
 
         // Manipulation methods.
-        i->cString->AddMethod(i, "capitalize", 0, str_capitalize);
-        i->cString->AddMethod(i, "chomp", 0, str_chomp);
-        i->cString->AddMethod(i, "chop", 0, str_chop);
-        i->cString->AddMethod(i, "lower", 0, str_lower);
-        i->cString->AddMethod(i, "reverse", 0, str_reverse);
-        i->cString->AddMethod(i, "swapcase", 0, str_swapcase);
-        i->cString->AddMethod(i, "titleize", 0, str_titleize);
-        i->cString->AddMethod(i, "trim", 0, str_trim);
-        i->cString->AddMethod(i, "upper", 0, str_upper);
+        cString->AddMethod(i, "capitalize", 0, str_capitalize);
+        cString->AddMethod(i, "chomp", 0, str_chomp);
+        cString->AddMethod(i, "chop", 0, str_chop);
+        cString->AddMethod(i, "lower", 0, str_lower);
+        cString->AddMethod(i, "reverse", 0, str_reverse);
+        cString->AddMethod(i, "swapcase", 0, str_swapcase);
+        cString->AddMethod(i, "titleize", 0, str_titleize);
+        cString->AddMethod(i, "trim", 0, str_trim);
+        cString->AddMethod(i, "upper", 0, str_upper);
 
-        i->cString->AddMethod(i, "__hash__", 0, str_hash);
-        i->cString->AddMethod(i, "__iter__", 0, str_iter);
+        cString->AddMethod(i, "__hash__", 0, str_hash);
+        cString->AddMethod(i, "__iter__", 0, str_iter);
 
         // Conversion methods.
-        i->cString->AddMethod(i, "__bool__", 0, str_bool);
+        cString->AddMethod(i, "__bool__", 0, str_bool);
+        cString->AddMethod(i, "as_json", 0, str_as_json);
 
         // Operators.
-        i->cString->AddMethod(i, "__add__", 1, str_add);
-        i->cString->AddMethod(i, "__mul__", 1, str_mul);
-        i->cString->AddMethod(i, "__eq__", 1, str_eq);
-        i->cString->AddMethod(i, "__lt__", 1, str_lt);
+        cString->AddMethod(i, "__add__", 1, str_add);
+        cString->AddMethod(i, "__mul__", 1, str_mul);
+        cString->AddMethod(i, "__eq__", 1, str_eq);
+        cString->AddMethod(i, "__lt__", 1, str_lt);
     }
 }

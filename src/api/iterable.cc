@@ -1066,6 +1066,59 @@ namespace tempearly
         return iterator;
     }
 
+    /**
+     * Iterable#as_json() => String
+     *
+     * Converts iterable object into JSON array literal and returns result.
+     */
+    TEMPEARLY_NATIVE_METHOD(iterable_as_json)
+    {
+        StringBuilder buffer;
+
+        buffer << '[';
+        if (!args[0].HasFlag(CountedObject::FLAG_INSPECTING))
+        {
+            Value iterator;
+            Value element;
+            bool first = true;
+
+            args[0].SetFlag(CountedObject::FLAG_INSPECTING);
+            if (!(iterator = args[0].Call(interpreter, "__iter__")))
+            {
+                args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+
+                return Value();
+            }
+            while (iterator.GetNext(interpreter, element))
+            {
+                Value result = element.Call(interpreter, "as_json");
+                String json;
+
+                if (!result || !result.AsString(interpreter, json))
+                {
+                    args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+
+                    return Value();
+                }
+                if (first)
+                {
+                    first = false;
+                } else {
+                    buffer << ',';
+                }
+                buffer << json;
+            }
+            args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+            if (interpreter->HasException())
+            {
+                return Value();
+            }
+        }
+        buffer << ']';
+
+        return Value::NewString(buffer.ToString());
+    }
+
     void init_iterable(Interpreter* i)
     {
         i->cIterable = i->AddClass("Iterable", i->cObject);
@@ -1091,5 +1144,8 @@ namespace tempearly
 
         i->cIterable->AddMethod(i, "split", 1, iterable_split);
         i->cIterable->AddMethod(i, "take", 1, iterable_take);
+
+        // Conversion methods
+        i->cIterable->AddMethod(i, "as_json", 0, iterable_as_json);
     }
 }

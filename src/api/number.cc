@@ -646,6 +646,7 @@ namespace tempearly
         i->cInt->AddMethod(i, "__dec__", 0, int_dec);
         i->cInt->AddMethod(i, "__neg__", 0, int_neg);
         i->cInt->AddMethod(i, "__invert__", 0, int_invert);
+        i->cInt->AddMethodAlias(i, "as_json", "__str__");
 
         i->cFloat = i->AddClass("Float", i->cNum);
 
@@ -664,5 +665,6 @@ namespace tempearly
         i->cFloat->AddMethod(i, "__inc__", 0, flo_inc);
         i->cFloat->AddMethod(i, "__dec__", 0, flo_dec);
         i->cFloat->AddMethod(i, "__neg__", 0, flo_neg);
+        i->cFloat->AddMethodAlias(i, "as_json", "__str__");
     }
 }

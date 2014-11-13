@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "utils.h"
 #include "api/iterator.h"
 #include "api/list.h"
 #include "api/map.h"
@@ -485,6 +486,51 @@ namespace tempearly
     }
 
     /**
+     * Map#as_json() => String
+     *
+     * Converts map into JSON object literal and returns result.
+     */
+    TEMPEARLY_NATIVE_METHOD(map_as_json)
+    {
+        StringBuilder buffer;
+        Handle<MapObject> map = args[0].As<MapObject>();
+
+        buffer << '{';
+        if (!map->HasFlag(CountedObject::FLAG_INSPECTING))
+        {
+            bool first = true;
+
+            map->SetFlag(CountedObject::FLAG_INSPECTING);
+            for (Handle<MapObject::Entry> entry = map->GetFront(); entry; entry = entry->GetNext())
+            {
+                Value result;
+                String key;
+                String value;
+
+                if (!entry->GetKey().ToString(interpreter, key)
+                    || !(result = entry->GetValue().Call(interpreter, "as_json"))
+                    || !result.AsString(interpreter, value))
+                {
+                    map->UnsetFlag(CountedObject::FLAG_INSPECTING);
+
+                    return Value();
+                }
+                if (first)
+                {
+                    first = false;
+                } else {
+                    buffer << ',';
+                }
+                buffer << '"' << Utils::JsonEscape(key) << '"' << ':' << value;
+            }
+            map->UnsetFlag(CountedObject::FLAG_INSPECTING);
+        }
+        buffer << '}';
+
+        return Value::NewString(buffer.ToString());
+    }
+
+    /**
      * Map#__add__(map) => Map
      *
      * Concatenates two maps into one and returns result.
@@ -517,30 +563,33 @@ namespace tempearly
 
     void init_map(Interpreter* i)
     {
-        i->cMap = i->AddClass("Map", i->cIterable);
+        Handle<Class> cMap = i->AddClass("Map", i->cIterable);
 
-        i->cMap->SetAllocator(map_alloc);
+        i->cMap = cMap;
 
-        i->cMap->AddMethod(i, "size", 0, map_size);
-        i->cMap->AddMethod(i, "keys", 0, map_keys);
-        i->cMap->AddMethod(i, "values", 0, map_values);
+        cMap->SetAllocator(map_alloc);
 
-        i->cMap->AddMethod(i, "clear", 0, map_clear);
-        i->cMap->AddMethod(i, "has", 1, map_has);
-        i->cMap->AddMethod(i, "get", -2, map_get);
-        i->cMap->AddMethod(i, "join", -1, map_join);
-        i->cMap->AddMethod(i, "update", 1, map_update);
+        cMap->AddMethod(i, "size", 0, map_size);
+        cMap->AddMethod(i, "keys", 0, map_keys);
+        cMap->AddMethod(i, "values", 0, map_values);
 
-        i->cMap->AddMethod(i, "__iter__", 0, map_iter);
+        cMap->AddMethod(i, "clear", 0, map_clear);
+        cMap->AddMethod(i, "has", 1, map_has);
+        cMap->AddMethod(i, "get", -2, map_get);
+        cMap->AddMethod(i, "join", -1, map_join);
+        cMap->AddMethod(i, "update", 1, map_update);
 
-        i->cMap->AddMethod(i, "__getitem__", 1, map_getitem);
-        i->cMap->AddMethod(i, "__setitem__", 2, map_setitem);
+        cMap->AddMethod(i, "__iter__", 0, map_iter);
 
-        i->cMap->AddMethod(i, "__missing__", 1, map_missing);
+        cMap->AddMethod(i, "__getitem__", 1, map_getitem);
+        cMap->AddMethod(i, "__setitem__", 2, map_setitem);
+
+        cMap->AddMethod(i, "__missing__", 1, map_missing);
 
         // Conversion methods
-        i->cMap->AddMethod(i, "__bool__", 0, map_bool);
-        i->cMap->AddMethodAlias(i, "__str__", "join");
+        cMap->AddMethod(i, "__bool__", 0, map_bool);
+        cMap->AddMethod(i, "as_json", 0, map_as_json);
+        cMap->AddMethodAlias(i, "__str__", "join");
 
         i->cMap->AddMethod(i, "__add__", 1, map_add);
     }

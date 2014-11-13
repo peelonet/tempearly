@@ -7,7 +7,7 @@ if request.is_ajax():
     else:
         image = "http://www.eurocoins.co.uk/images/2002finland2euroobv240.jpg";
     end if
-    response.write('{"image": "' + image + '"}');
+    response.write({"image": image}.as_json());
     return;
 end if;
 %}
