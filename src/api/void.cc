@@ -23,15 +23,28 @@ namespace tempearly
         return Value::NewString(String());
     }
 
+    /**
+     * Void#as_json() => String
+     *
+     * Returns "null".
+     */
+    TEMPEARLY_NATIVE_METHOD(void_as_json)
+    {
+        return Value::NewString("null");
+    }
+
     void init_void(Interpreter* i)
     {
-        i->cVoid = i->AddClass("Void", i->cIterable);
+        Handle<Class> cVoid = i->AddClass("Void", i->cIterable);
 
-        i->cVoid->SetAllocator(Class::kNoAlloc);
+        i->cVoid = cVoid;
 
-        i->cVoid->AddMethod(i, "__iter__", 0, void_iter);
+        cVoid->SetAllocator(Class::kNoAlloc);
+
+        cVoid->AddMethod(i, "__iter__", 0, void_iter);
 
         // Conversion methods
-        i->cVoid->AddMethod(i, "__str__", 0, void_str);
+        cVoid->AddMethod(i, "__str__", 0, void_str);
+        cVoid->AddMethod(i, "as_json", 0, void_as_json);
     }
 }

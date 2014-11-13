@@ -42,6 +42,8 @@ namespace tempearly
          */
         static String XmlEscape(const String& string);
 
+        static String JsonEscape(const String& string);
+
         /**
          * Attempts to decode URL entities from given string.
          *

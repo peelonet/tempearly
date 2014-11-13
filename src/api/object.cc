@@ -1,4 +1,6 @@
 #include "interpreter.h"
+#include "utils.h"
+#include "core/stringbuilder.h"
 
 namespace tempearly
 {
@@ -11,6 +13,16 @@ namespace tempearly
         if (m_attributes)
         {
             delete m_attributes;
+        }
+    }
+
+    Dictionary<Value> Object::GetAllAttributes() const
+    {
+        if (m_attributes)
+        {
+            return *m_attributes;
+        } else {
+            return Dictionary<Value>();
         }
     }
 
@@ -123,6 +135,51 @@ namespace tempearly
         } else {
             return Value::NewString("<object>");
         }
+    }
+
+    /**
+     * Object#as_json() => String
+     *
+     * Converts object into JSON object literal and returns result. Resulting
+     * object literal will contain all attributes which the object has as keys
+     * and values.
+     */
+    TEMPEARLY_NATIVE_METHOD(obj_as_json)
+    {
+        StringBuilder buffer;
+        const Value& self = args[0];
+
+        buffer << '{';
+        if (!self.HasFlag(CountedObject::FLAG_INSPECTING))
+        {
+            const Dictionary<Value> attributes = self.GetAllAttributes();
+            bool first = true;
+
+            self.SetFlag(CountedObject::FLAG_INSPECTING);
+            for (const Dictionary<Value>::Entry* entry = attributes.GetFront(); entry; entry = entry->GetNext())
+            {
+                Value result;
+                String value;
+
+                if (!(result = entry->GetValue().Call(interpreter, "as_json")) || !result.AsString(interpreter, value))
+                {
+                    self.UnsetFlag(CountedObject::FLAG_INSPECTING);
+
+                    return Value();
+                }
+                if (first)
+                {
+                    first = false;
+                } else {
+                    buffer << ',';
+                }
+                buffer << '"' << Utils::JsonEscape(entry->GetName()) << '"' << ':' << value;
+            }
+            self.UnsetFlag(CountedObject::FLAG_INSPECTING);
+        }
+        buffer << '}';
+
+        return Value::NewString(buffer.ToString());
     }
 
     /**
@@ -253,8 +310,10 @@ namespace tempearly
         cObject->AddMethod(i, "__init__", 0, obj_init);
         cObject->AddMethod(i, "__hash__", 0, obj_hash);
 
+        // Conversion methods
         cObject->AddMethod(i, "__bool__", 0, obj_bool);
         cObject->AddMethod(i, "__str__", 0, obj_str);
+        cObject->AddMethod(i, "as_json", 0, obj_as_json);
 
         // Comparison operators.
         cObject->AddMethod(i, "__eq__", 1, obj_eq);

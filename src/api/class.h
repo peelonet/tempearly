@@ -50,6 +50,8 @@ namespace tempearly
             m_allocator = allocator;
         }
 
+        Dictionary<Value> GetAllAttributes() const;
+
         bool HasAttribute(const String& id) const;
 
         bool GetAttribute(const String& id, Value& value) const;
