@@ -112,6 +112,7 @@ SET(
     src/http/version.cc
     src/io/stream.cc
     src/net/socket.cc
+    src/net/url.cc
     src/sapi/request.cc
     src/sapi/response.cc
 )
