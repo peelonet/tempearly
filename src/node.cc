@@ -1,7 +1,6 @@
 #include "interpreter.h"
 #include "node.h"
 #include "parameter.h"
-#include "utils.h"
 #include "api/function.h"
 #include "api/list.h"
 #include "api/map.h"
@@ -91,9 +90,10 @@ namespace tempearly
             {
                 if (m_escape)
                 {
-                    string = Utils::XmlEscape(string);
+                    interpreter->response->Write(string.EscapeXml());
+                } else {
+                    interpreter->response->Write(string);
                 }
-                interpreter->response->Write(string);
 
                 return Result();
             }

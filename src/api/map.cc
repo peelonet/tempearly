@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "utils.h"
 #include "api/iterator.h"
 #include "api/list.h"
 #include "api/map.h"
@@ -521,7 +520,7 @@ namespace tempearly
                 } else {
                     buffer << ',';
                 }
-                buffer << '"' << Utils::JsonEscape(key) << '"' << ':' << value;
+                buffer << '"' << key.EscapeJavaScript() << '"' << ':' << value;
             }
             map->UnsetFlag(CountedObject::FLAG_INSPECTING);
         }

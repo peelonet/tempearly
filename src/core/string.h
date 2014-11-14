@@ -298,6 +298,11 @@ namespace tempearly
         String Map(rune (*callback)(rune)) const;
 
         /**
+         * Returns true if the string is valid Tempearly identifier.
+         */
+        bool IsIdentifier() const;
+
+        /**
          * Tests for lower case letter.
          */
         static bool IsLower(rune c);
@@ -321,6 +326,18 @@ namespace tempearly
          * Converts given character into upper case.
          */
         static rune ToUpper(rune c);
+
+        /**
+         * Escapes XML entities from the string and returns result.
+         */
+        String EscapeXml() const;
+
+        /**
+         * Escapes control sequences and other illegal JavaScript characters
+         * from the string and returns result. Resulting string can be safely
+         * used in JavaScript or JSON string literal.
+         */
+        String EscapeJavaScript() const;
 
     private:
         /** Offset where the string contents begin. */

@@ -1,7 +1,6 @@
 #include <cctype>
 
 #include "interpreter.h"
-#include "utils.h"
 #include "api/iterator.h"
 #include "api/list.h"
 #include "core/random.h"
@@ -555,7 +554,7 @@ namespace tempearly
     {
         StringBuilder buffer;
 
-        buffer << '"' << Utils::JsonEscape(args[0].AsString()) << '"';
+        buffer << '"' << args[0].AsString().EscapeJavaScript() << '"';
 
         return Value::NewString(buffer.ToString());
     }

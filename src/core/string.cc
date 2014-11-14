@@ -1,7 +1,7 @@
 #include <cctype>
 
 #include "core/bytestring.h"
-#include "core/string.h"
+#include "core/stringbuilder.h"
 #include "core/vector.h"
 
 namespace tempearly
@@ -701,6 +701,23 @@ namespace tempearly
         return result;
     }
 
+    bool String::IsIdentifier() const
+    {
+        if (!m_length || (m_runes[m_offset] != '_' && !std::isalpha(m_runes[m_offset])))
+        {
+            return false;
+        }
+        for (std::size_t i = 1; i < m_length; ++i)
+        {
+            if (m_runes[m_offset + i] != '_' && !std::isalnum(m_runes[m_offset + i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     bool String::IsLower(rune c)
     {
         static const rune lower_table[480][2] =
@@ -1222,6 +1239,136 @@ namespace tempearly
         }
 
         return c;
+    }
+
+    static void escape_xml_char(StringBuilder& result, rune r)
+    {
+        switch (r)
+        {
+            case '&':
+                result << "&amp;";
+                break;
+
+            case '<':
+                result << "&lt;";
+                break;
+
+            case '>':
+                result << "&gt;";
+                break;
+
+            case '"':
+                result << "&quot;";
+                break;
+
+            case '\'':
+                result << "&#39;";
+                break;
+
+            case '\r':
+                break;
+
+            default:
+                if (String::IsControl(r))
+                {
+                    char buffer[64];
+
+                    std::sprintf(buffer, "&#%d;", r);
+                    result << buffer;
+                } else {
+                    result << r;
+                }
+        }
+    }
+
+    String String::EscapeXml() const
+    {
+        for (std::size_t i = 0; i < m_length; ++i)
+        {
+            const rune r = m_runes[m_offset + i];
+
+            if (r == '&' || r == '<' || r == '>' || r == '"' || r == '\'' || String::IsControl(r))
+            {
+                StringBuilder result(m_length + 16);
+
+                result.Append(m_runes + m_offset, i);
+                escape_xml_char(result, r);
+                for (std::size_t j = i + 1; j < m_length; ++j)
+                {
+                    escape_xml_char(result, m_runes[m_offset + j]);
+                }
+
+                return result.ToString();
+            }
+        }
+
+        return *this;
+    }
+
+    static void escape_js_char(StringBuilder& result, const rune r)
+    {
+        switch (r)
+        {
+            case '"':
+            case '\\':
+                result << '\\' << r;
+                break;
+
+            case '\b':
+                result << '\\' << 'b';
+                break;
+
+            case '\f':
+                result << '\\' << 'f';
+                break;
+
+            case '\n':
+                result << '\\' << 'n';
+                break;
+
+            case '\r':
+                result << '\\' << 'r';
+                break;
+
+            case '\t':
+                result << '\\' << 't';
+                break;
+
+            default:
+                if (String::IsControl(r))
+                {
+                    char buffer[7];
+
+                    std::sprintf(buffer, "\\u%04x", r);
+                    result << buffer;
+                } else {
+                    result << r;
+                }
+        }
+    }
+
+    String String::EscapeJavaScript() const
+    {
+        for (std::size_t i = 0; i < m_length; ++i)
+        {
+            const rune r = m_runes[m_offset + i];
+
+            if (r == '"' || r == '\\' || IsControl(r))
+            {
+                StringBuilder result(m_length + 16);
+
+                result.Append(m_runes + m_offset, i);
+                escape_js_char(result, r);
+                for (std::size_t j = i + 1; j < m_length; ++j)
+                {
+                    escape_js_char(result, m_runes[m_offset + j]);
+                }
+
+                return result.ToString();
+            }
+        }
+
+        return *this;
     }
 
     String operator+(const char* a, const String& b)
