@@ -1,6 +1,7 @@
 #include <cstring>
 
 #include "core/bytestring.h"
+#include "io/stream.h"
 
 namespace tempearly
 {
@@ -139,5 +140,71 @@ namespace tempearly
 
             return result;
         }
+    }
+
+    namespace
+    {
+        class ByteStringStream : public Stream
+        {
+        public:
+            explicit ByteStringStream(const ByteString& bytes)
+                : m_bytes(bytes)
+                , m_offset(0) {}
+
+            bool IsOpen() const
+            {
+                return m_offset < m_bytes.GetLength();
+            }
+
+            bool IsReadable() const
+            {
+                return true;
+            }
+
+            bool IsWritable() const
+            {
+                return false;
+            }
+
+            void Close()
+            {
+                m_offset = m_bytes.GetLength();
+            }
+
+            bool DirectRead(byte* buffer, std::size_t size, std::size_t& read)
+            {
+                const std::size_t available = m_bytes.GetLength() - m_offset;
+
+                if (available > size)
+                {
+                    Memory::Copy<byte>(buffer, m_bytes.GetBytes() + m_offset, size);
+                    m_offset += size;
+                    read = size;
+                } else {
+                    Memory::Copy<byte>(buffer, m_bytes.GetBytes() + m_offset, available);
+                    m_offset = m_bytes.GetLength();
+                    read = available;
+                }
+
+                return true;
+            }
+
+            bool DirectWrite(const byte* data, std::size_t size)
+            {
+                SetErrorMessage("Stream is not open for writing");
+
+                return false;
+            }
+
+        private:
+            const ByteString m_bytes;
+            std::size_t m_offset;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ByteStringStream);
+        };
+    }
+
+    Handle<Stream> ByteString::AsStream() const
+    {
+        return new ByteStringStream(*this);
     }
 }

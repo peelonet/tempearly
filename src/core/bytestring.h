@@ -198,6 +198,11 @@ namespace tempearly
             return Concat(that);
         }
 
+        /**
+         * Returns an stream which reads data from contents of the byte string.
+         */
+        Handle<Stream> AsStream() const;
+
     private:
         /** Length of the binary string. */
         std::size_t m_length;
