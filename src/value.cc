@@ -249,43 +249,40 @@ namespace tempearly
         return m_kind == KIND_OBJECT && m_data.o->HasAttribute(id);
     }
 
-    bool Value::GetAttribute(const Handle<Interpreter>& interpreter,
-                             const String& id,
-                             Value& value) const
+    bool Value::GetAttribute(const Handle<Interpreter>& interpreter, const String& id, Value& value) const
     {
+        Handle<Class> cls;
+
         if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(id, value))
         {
             return true;
-        } else {
-            Handle<Class> cls = GetClass(interpreter);
-
-            if (cls->GetAttribute(id, value))
-            {
-                if (value.IsFunction())
-                {
-                    value = value.As<FunctionObject>()->Curry(interpreter, Vector<Value>(1, *this));
-                }
-
-                return true;
-            }
-            if (m_kind == KIND_OBJECT && m_data.o->GetAttribute("__getattr__", value) && value.IsFunction())
-            {
-                return value = value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, NewString(id)));
-            }
-            else if (cls->GetAttribute("__getattr__", value) && value.IsFunction())
-            {
-                Vector<Value> args;
-
-                args.Reserve(2);
-                args.PushBack(*this);
-                args.PushBack(NewString(id));
-
-                return value = value.As<FunctionObject>()->Invoke(interpreter, args);
-            }
-            interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
-
-            return false;
         }
+        if ((cls = GetClass(interpreter))->GetAttribute(id, value))
+        {
+            if (value.IsFunction())
+            {
+                value = value.As<FunctionObject>()->Curry(interpreter, Vector<Value>(1, *this));
+            }
+
+            return true;
+        }
+        if (cls->GetAttribute("__getattr__", value))
+        {
+            Vector<Value> args;
+
+            args.Reserve(2);
+            args.PushBack(*this);
+            args.PushBack(NewString(id));
+            if (value.IsFunction())
+            {
+                return value = value.As<FunctionObject>()->Invoke(interpreter, args);
+            } else {
+                return value = value.Call(interpreter, "__call__", args);
+            }
+        }
+        interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
+
+        return false;
     }
 
     bool Value::SetAttribute(const String& id, const Value& value) const
@@ -300,10 +297,33 @@ namespace tempearly
         return false;
     }
 
+    Value Value::Call(const Handle<Interpreter>& interpreter, const String& id, const Vector<Value>& args) const
+    {
+        Value value;
+
+        if (GetAttribute(interpreter, id, value))
+        {
+            if (value.IsMethod())
+            {
+                return value.As<FunctionObject>()->Invoke(interpreter, args);
+            }
+            else if (value.IsFunction())
+            {
+                return value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, *this) + args);
+            } else {
+                return value.Call(interpreter, "__call__", Vector<Value>(1, *this) + args);
+            }
+        }
+
+        return Value();
+    }
+
+#if 0
     Value Value::Call(const Handle<Interpreter>& interpreter,
                       const String& id,
                       const Vector<Value>& args) const
     {
+        Handle<Class> cls;
         Value value;
 
         if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(id, value))
@@ -314,32 +334,30 @@ namespace tempearly
             } else {
                 return value.Call(interpreter, "__call__", args);
             }
-        } else {
-            Handle<Class> cls = GetClass(interpreter);
-
-            if (cls->GetAttribute(id, value))
+        }
+        if ((cls = GetClass(interpreter))->GetAttribute(id, value))
+        {
+            if (value.IsStaticMethod())
             {
-                if (value.IsStaticMethod())
-                {
-                    return value.As<FunctionObject>()->Invoke(interpreter, args);
-                } else {
-                    Vector<Value> new_args(args);
+                return value.As<FunctionObject>()->Invoke(interpreter, args);
+            } else {
+                Vector<Value> new_args(args);
 
-                    new_args.PushFront(*this);
-                    if (value.IsFunction())
-                    {
-                        return value.As<FunctionObject>()->Invoke(interpreter, new_args);
-                    } else {
-                        return value.Call(interpreter, "__call__", new_args);
-                    }
+                new_args.PushFront(*this);
+                if (value.IsFunction())
+                {
+                    return value.As<FunctionObject>()->Invoke(interpreter, new_args);
+                } else {
+                    return value.Call(interpreter, "__call__", new_args);
                 }
             }
-            interpreter->Throw(interpreter->eAttributeError,
-                               "Missing attribute: " + id);
-
-            return Value();
         }
+        // TODO: support for __getattr__
+        interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
+
+        return Value();
     }
+#endif
 
     Value Value::Call(const Handle<Interpreter>& interpreter,
                       const String& id,

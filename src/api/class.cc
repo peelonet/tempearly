@@ -9,13 +9,17 @@ namespace tempearly
 
     const Class::Allocator Class::kNoAlloc = no_alloc;
 
-    Class::Class(const Handle<Class>& base)
-        : m_base(base.Get())
-        , m_allocator(m_base ? m_base->m_allocator : 0)
+    Class::Class()
+        : m_bases(0)
+        , m_allocator(0)
         , m_attributes(0) {}
 
     Class::~Class()
     {
+        if (m_bases)
+        {
+            delete m_bases;
+        }
         if (m_attributes)
         {
             delete m_attributes;
@@ -29,14 +33,17 @@ namespace tempearly
 
     String Class::GetName() const
     {
-        Value value;
-
-        if (GetAttribute("__name__", value) && value.IsString())
+        if (m_attributes)
         {
-            return value.AsString();
-        } else {
-            return "<anonymous class>";
+            const AttributeMap::Entry* entry = m_attributes->Find("__name__");
+
+            if (entry && entry->GetValue().IsString())
+            {
+                return entry->GetValue().AsString();
+            }
         }
+
+        return "<anonymous class>";
     }
 
     bool Class::IsSubclassOf(const Handle<Class>& that) const
@@ -44,9 +51,63 @@ namespace tempearly
         if (this == that)
         {
             return true;
-        } else {
-            return m_base && m_base->IsSubclassOf(that);
         }
+        if (m_bases)
+        {
+            for (std::size_t i = 0; i < m_bases->GetSize(); ++i)
+            {
+                if (m_bases->At(i) == that)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool Class::AddBase(const Handle<Class>& that)
+    {
+        if (this == that || (m_allocator && that->m_allocator))
+        {
+            return false;
+        }
+        if (m_bases)
+        {
+            std::size_t index = 0;
+
+            for (std::size_t i = 0; i < m_bases->GetSize(); ++i)
+            {
+                Class* base = m_bases->At(i);
+
+                if (base == that)
+                {
+                    return true;
+                }
+                else if (base->IsSubclassOf(that))
+                {
+                    ++index;
+                }
+            }
+            m_bases->Insert(index, that);
+        } else {
+            m_bases = new Vector<Class*>();
+            m_bases->Reserve(1);
+            m_bases->PushBack(that);
+        }
+        if (!m_allocator && that->m_allocator)
+        {
+            m_allocator = that->m_allocator;
+        }
+        if (that->m_bases)
+        {
+            for (std::size_t i = 0; i < that->m_bases->GetSize(); ++i)
+            {
+                AddBase(that->m_bases->At(i));
+            }
+        }
+
+        return true;
     }
 
     Dictionary<Value> Class::GetAllAttributes() const
@@ -64,9 +125,21 @@ namespace tempearly
         if (m_attributes && m_attributes->Find(id))
         {
             return true;
-        } else {
-            return m_base && m_base->HasAttribute(id);
         }
+        if (m_bases)
+        {
+            for (std::size_t i = 0; i < m_bases->GetSize(); ++i)
+            {
+                Class* base = m_bases->At(i);
+
+                if (base->m_attributes && base->m_attributes->Find(id))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     bool Class::GetAttribute(const String& id, Value& value) const
@@ -82,12 +155,27 @@ namespace tempearly
                 return true;
             }
         }
-        if (m_base)
+        if (m_bases)
         {
-            return m_base->GetAttribute(id, value);
-        } else {
-            return false;
+            for (std::size_t i = 0; i < m_bases->GetSize(); ++i)
+            {
+                Class* base = m_bases->At(i);
+
+                if (base->m_attributes)
+                {
+                    const AttributeMap::Entry* entry = base->m_attributes->Find(id);
+
+                    if (entry)
+                    {
+                        value = entry->GetValue();
+
+                        return true;
+                    }
+                }
+            }
         }
+
+        return false;
     }
 
     void Class::SetAttribute(const String& id, const Value& value)
@@ -146,7 +234,7 @@ namespace tempearly
                         StringBuilder sb;
 
                         sb << "Method expected at least "
-                           << (-(m_arity) - 1)
+                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -159,7 +247,7 @@ namespace tempearly
                     StringBuilder sb;
 
                     sb << "Method expected "
-                       << m_arity
+                       << Utils::ToString(static_cast<u64>(m_arity))
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -228,7 +316,7 @@ namespace tempearly
                         StringBuilder sb;
 
                         sb << "Method expected at least "
-                           << (-(m_arity) - 1)
+                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -241,7 +329,7 @@ namespace tempearly
                     StringBuilder sb;
 
                     sb << "Method expected "
-                       << m_arity
+                       << Utils::ToString(static_cast<u64>(m_arity))
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -251,11 +339,6 @@ namespace tempearly
                 result = m_callback(interpreter, args);
 
                 return result;
-            }
-
-            bool IsStaticMethod() const
-            {
-                return true;
             }
 
             void Mark()
@@ -334,9 +417,17 @@ namespace tempearly
     void Class::Mark()
     {
         CountedObject::Mark();
-        if (m_base && !m_base->IsMarked())
+        if (m_bases)
         {
-            m_base->Mark();
+            for (std::size_t i = 0; i < m_bases->GetSize(); ++i)
+            {
+                Class* base = m_bases->At(i);
+
+                if (!base->IsMarked())
+                {
+                    base->Mark();
+                }
+            }
         }
         if (m_attributes)
         {
@@ -356,7 +447,11 @@ namespace tempearly
     static Handle<CoreObject> class_alloc_callback(const Handle<Interpreter>& interpreter,
                                                    const Handle<Class>& cls)
     {
-        return new Class(interpreter->cObject);
+        Handle<Class> result = new Class();
+
+        result->AddBase(interpreter->cObject);
+
+        return result;
     }
 
     /**

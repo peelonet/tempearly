@@ -158,11 +158,14 @@ namespace tempearly
         }
     }
 
-    Handle<Class> Interpreter::AddClass(const String& name,
-                                        const Handle<Class>& base)
+    Handle<Class> Interpreter::AddClass(const String& name, const Handle<Class>& base)
     {
-        Handle<Class> cls = new Class(base);
+        Handle<Class> cls = new Class();
 
+        if (base)
+        {
+            cls->AddBase(base);
+        }
         if (!name.IsEmpty())
         {
             cls->SetAttribute("__name__", Value::NewString(name));

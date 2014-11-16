@@ -292,6 +292,43 @@ namespace tempearly
         }
 
         /**
+         * Inserts <i>value</i> at index position <i>i</i> in the vector. If
+         * <i>i</i> is <code>0</code>, then value is prepended to the vector.
+         * If <i>i</i> is size(), then value is appended to the vector.
+         */
+        void Insert(std::size_t i, const T& value)
+        {
+            if (i == 0)
+            {
+                PushFront(value);
+            }
+            else if (i >= m_size)
+            {
+                PushBack(value);
+            } else {
+                if (m_capacity < m_size + 1)
+                {
+                    T* old = m_data;
+
+                    m_data = Memory::Allocate<T>(m_capacity += 8);
+                    for (std::size_t j = 0; j < i; ++j)
+                    {
+                        new (static_cast<void*>(m_data + j)) T(old[j]);
+                    }
+                    for (std::size_t j = i; j < m_size; ++j)
+                    {
+                        new (static_cast<void*>(m_data + j + 1)) T(old[j]);
+                    }
+                    Memory::Unallocate<T>(old);
+                } else {
+                    Memory::Move<T>(m_data + i + 1, m_data + i, m_size - i);
+                }
+                ++m_size;
+                new (static_cast<void*>(m_data + i)) T(value);
+            }
+        }
+
+        /**
          * Inserts given value to the front of the vector.
          */
         void PushFront(const T& value)

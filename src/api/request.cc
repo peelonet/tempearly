@@ -59,9 +59,10 @@ namespace tempearly
 
     void init_request(Interpreter* i)
     {
-        Handle<Class> cRequest = new Class(i->cObject);
+        Handle<Class> cRequest = new Class();
         Handle<Object> instance = new Object(cRequest);
 
+        cRequest->AddBase(i->cObject);
         i->globals->SetVariable("request", Value(instance));
 
         cRequest->SetAllocator(Class::kNoAlloc);

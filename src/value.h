@@ -173,6 +173,11 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsMap();
         }
 
+        inline bool IsMethod() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsMethod();
+        }
+
         inline bool IsRange() const
         {
             return m_kind == KIND_OBJECT && m_data.o->IsRange();
@@ -181,11 +186,6 @@ namespace tempearly
         inline bool IsSet() const
         {
             return m_kind == KIND_OBJECT && m_data.o->IsSet();
-        }
-
-        inline bool IsStaticMethod() const
-        {
-            return m_kind == KIND_OBJECT && m_data.o->IsStaticMethod();
         }
 
         inline bool IsString() const

@@ -18,21 +18,22 @@ namespace tempearly
          */
         static const Allocator kNoAlloc;
 
-        explicit Class(const Handle<Class>& base);
+        /**
+         * Constructs new class. Manual construction of classes is discouraged,
+         * since it can fuck up the type system. Newly constructed class will
+         * have no super classes.
+         */
+        explicit Class();
 
-        virtual ~Class();
+        ~Class();
 
         Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const;
 
         /**
-         * Returns name of the class.
+         * Returns name of the class or "<anonymous class>" if the class has no
+         * name.
          */
         String GetName() const;
-
-        inline Handle<Class> GetBase() const
-        {
-            return m_base;
-        }
 
         /**
          * Returns true if type is subclass of given type, either direct or
@@ -40,11 +41,25 @@ namespace tempearly
          */
         bool IsSubclassOf(const Handle<Class>& that) const;
 
+        /**
+         * Marks class as subclass of given class.
+         *
+         * \return A boolean flag indicating whether this class can inherit
+         *         from class given as argument
+         */
+        bool AddBase(const Handle<Class>& base);
+
+        /**
+         * Returns the allocator used by the class.
+         */
         inline Allocator GetAllocator() const
         {
             return m_allocator;
         }
 
+        /**
+         * Sets the allocator used by the class.
+         */
         inline void SetAllocator(Allocator allocator)
         {
             m_allocator = allocator;
@@ -89,8 +104,8 @@ namespace tempearly
         }
 
     private:
-        /** Superclass. */
-        Class* m_base;
+        /** List of super classes. */
+        Vector<Class*>* m_bases;
         /** Allocator callback. */
         Allocator m_allocator;
         /** Contains attributes for the class. */

@@ -148,9 +148,10 @@ namespace tempearly
 
     void init_response(Interpreter* i)
     {
-        Handle<Class> cResponse = new Class(i->cObject);
+        Handle<Class> cResponse = new Class();
         Handle<Object> instance = new Object(cResponse);
 
+        cResponse->AddBase(i->cObject);
         i->globals->SetVariable("response", Value(instance));
 
         cResponse->SetAllocator(Class::kNoAlloc);
