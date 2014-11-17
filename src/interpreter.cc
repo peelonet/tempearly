@@ -16,6 +16,7 @@ namespace tempearly
     void init_core(Interpreter*);
     void init_exception(Interpreter*);
     void init_file(Interpreter*);
+    void init_filters(Interpreter*);
     void init_function(Interpreter*);
     void init_iterable(Interpreter*);
     void init_iterator(Interpreter*);
@@ -74,6 +75,7 @@ namespace tempearly
         init_file(this);
 
         init_core(this);
+        init_filters(this);
 
         init_request(this);
         init_response(this);

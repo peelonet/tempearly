@@ -86,6 +86,7 @@ SET(
     src/api/core.cc
     src/api/exception.cc
     src/api/file.cc
+    src/api/filters.cc
     src/api/function.cc
     src/api/iterable.cc
     src/api/iterator.cc
