@@ -290,40 +290,48 @@ namespace tempearly
         }
     }
 
-    void Utils::ParseQueryString(const String& string, Dictionary<Vector<String> >& dictionary)
+    void Utils::ParseQueryString(const ByteString& input, Dictionary<Vector<String> >& dictionary)
     {
-        std::size_t current_index = 0;
-        String name;
-        String value;
+        ParseQueryString(input.GetBytes(), input.GetLength(), dictionary);
+    }
 
-        while (current_index < string.GetLength())
+    void Utils::ParseQueryString(const byte* input, std::size_t length, Dictionary<Vector<String> >& dictionary)
+    {
+        ByteString name_in;
+        ByteString value_in;
+        String name_out;
+        String value_out;
+
+        while (length > 0)
         {
-            std::size_t index = string.IndexOf('=', current_index);
+            const byte* begin = input;
+            const byte* end = static_cast<const byte*>(std::memchr(begin, '=', length));
 
-            if (index == String::npos)
+            if (!end)
             {
                 return;
             }
-            name = string.SubString(current_index, index - current_index);
-            current_index = index + 1;
-            index = string.IndexOf('&', current_index);
-            if (index == String::npos)
+            name_in = ByteString(begin, end - begin);
+            length -= end - begin + 1;
+            begin = end + 1;
+            if ((end = static_cast<const byte*>(std::memchr(begin, '&', length))))
             {
-                value = string.SubString(current_index);
-                current_index = string.GetLength();
+                value_in = ByteString(begin, end - begin);
+                length -= end - begin + 1;
+                input = end + 1;
             } else {
-                value = string.SubString(current_index, index - current_index);
-                current_index = index + 1;
+                value_in = ByteString(begin, length);
+                length = 0;
             }
-            if (Url::Decode(name, name) && Url::Decode(value, value))
+            if (Url::Decode(name_in, name_out) && Url::Decode(value_in, value_out))
             {
-                Dictionary<Vector<String> >::Entry* entry = dictionary.Find(name);
+                Dictionary<Vector<String> >::Entry* entry = dictionary.Find(name_out);
 
                 if (entry)
                 {
-                    entry->GetValue().PushBack(value);
+                    entry->GetValue().PushBack(value_out);
                 } else {
-                    dictionary.Insert(name, Vector<String>(1, value));
+                    dictionary.Insert(name_out, Vector<String>(1, value_out));
                 }
             }
         }

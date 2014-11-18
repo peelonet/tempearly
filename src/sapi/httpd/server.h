@@ -20,7 +20,7 @@ namespace tempearly
         {
             HttpMethod::Kind method;
             String path;
-            String query_string;
+            ByteString query_string;
             HttpVersion::Kind version;
             Dictionary<String> headers;
         };

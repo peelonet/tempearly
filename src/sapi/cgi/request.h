@@ -1,6 +1,7 @@
 #ifndef TEMPEARLY_SAPI_CGI_REQUEST_H_GUARD
 #define TEMPEARLY_SAPI_CGI_REQUEST_H_GUARD
 
+#include "core/bytestring.h"
 #include "sapi/request.h"
 
 namespace tempearly
@@ -13,6 +14,8 @@ namespace tempearly
         HttpMethod::Kind GetMethod() const;
 
         String GetPath() const;
+
+        bool IsSecure() const;
 
         bool IsAjax() const;
 
@@ -39,7 +42,7 @@ namespace tempearly
         String m_path_info;
         String m_path_translated;
         String m_script_name;
-        String m_query_string;
+        ByteString m_query_string;
         String m_remote_host;
         String m_remote_addr;
         String m_auth_type;

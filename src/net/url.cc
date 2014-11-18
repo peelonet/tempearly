@@ -47,60 +47,61 @@ namespace tempearly
         }
     }
 
-    bool Url::Decode(const String& input, String& output)
+    bool Url::Decode(const ByteString& input, String& output)
     {
-        // First check if the string has any encoding.
-        if (input.IndexOf('+') != String::npos || input.IndexOf('%') != String::npos)
+        return Decode(input.GetBytes(), input.GetLength(), output);
+    }
+
+    bool Url::Decode(const byte* input, std::size_t length, String& output)
+    {
+        // First check if the string actually contains any encoded input.
+        if (std::memchr(input, '+', length) || std::memchr(input, '%', length))
         {
-            ByteString bytes = input.Encode();
             Vector<char> result;
 
-            result.Reserve(bytes.GetLength());
-            for (std::size_t i = 0; i < bytes.GetLength(); ++i)
+            result.Reserve(length);
+            for (std::size_t i = 0; i < length; ++i)
             {
-                const byte b = bytes[i];
+                byte b = input[i];
 
                 if (b == '+')
                 {
                     result.PushBack(' ');
+                    continue;
                 }
-                else if (b == '%')
+                if (b == '%')
                 {
-                    char byte = 0;
-
-                    if (bytes.GetLength() - i < 2)
+                    if (length - i < 2)
                     {
                         return false; // Malformed query string
                     }
                     for (std::size_t j = 0; j < 2; ++j)
                     {
-                        const char code = bytes[i + j + 1];
+                        const byte code = input[i + j + 1];
 
                         if (0x30 <= code && code <= 0x39)
                         {
-                            byte = byte * 16 + code - 0x30;
+                            b = b * 16 + code - 0x30;
                         }
                         else if (0x41 <= code && code <= 0x46)
                         {
-                            byte = byte * 16 + code - 0x37;
+                            b = b * 16 + code - 0x37;
                         }
                         else if (0x61 <= code && code <= 0x66)
                         {
-                            byte = byte * 16 + code - 0x57;
+                            b = b * 16 + code - 0x57;
                         } else {
                             return false;
                         }
                     }
-                    result.PushBack(byte);
                     i += 2;
-                } else {
-                    result.PushBack(b);
                 }
+                result.PushBack(static_cast<char>(b));
             }
             result.PushBack(0);
-            output = result.GetData();
+            output.Assign(result.GetData());
         } else {
-            output = input;
+            output.Assign(String::DecodeAscii(input, length));
         }
 
         return true;

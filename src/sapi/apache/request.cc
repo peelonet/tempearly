@@ -1,6 +1,7 @@
 #include <cstring>
 
 #include "utils.h"
+#include "core/bytestring.h"
 #include "sapi/apache/request.h"
 
 namespace tempearly
@@ -24,6 +25,16 @@ namespace tempearly
     String ApacheRequest::GetPath() const
     {
         return m_request->uri;
+    }
+
+    bool ApacheRequest::IsSecure() const
+    {
+        if (m_request->server && m_request->server->server_scheme)
+        {
+            return !std::strcmp(m_request->server->server_scheme, "https");
+        } else {
+            return false;
+        }
     }
 
     bool ApacheRequest::IsAjax() const
@@ -73,7 +84,7 @@ namespace tempearly
         m_parameters_read = true;
         if (m_request->args && std::strlen(m_request->args) > 0)
         {
-            Utils::ParseQueryString(m_request->args, m_parameters);
+            Utils::ParseQueryString(ByteString(m_request->args), m_parameters);
         }
         if (m_method == HttpMethod::POST)
         {

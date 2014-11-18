@@ -38,11 +38,16 @@ namespace tempearly
         static String ToString(double number);
 
         /**
-         * Parses given given string as query string and inserts named values
+         * Parses given byte string as query string and inserts named values
          * extracted from it to the given dictionary.
          */
-        static void ParseQueryString(const String& string,
-                                     Dictionary<Vector<String> >& dictionary);
+        static void ParseQueryString(const ByteString& input, Dictionary<Vector<String> >& dictionary);
+
+        /**
+         * Parses given byte array as query string and inserts named values
+         * extracted from it to the given dictionary.
+         */
+        static void ParseQueryString(const byte* input, std::size_t length, Dictionary<Vector<String> >& dictionary);
 
     private:
         TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(Utils);

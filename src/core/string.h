@@ -55,6 +55,23 @@ namespace tempearly
         ~String();
 
         /**
+         * Constructs string from bytes which are expected to be in US-ASCII
+         * character encoding.
+         *
+         * \param input  The bytes to decode, must be null terminated
+         */
+        static String DecodeAscii(const byte* input);
+
+        /**
+         * Constructs string from bytes which are expected to be in US-ASCII
+         * character encoding.
+         *
+         * \param input  The bytes to decode
+         * \param length Number of bytes contained in the array
+         */
+        static String DecodeAscii(const byte* input, std::size_t length);
+
+        /**
          * Copies contents of another string into this one.
          */
         String& Assign(const String& that);
