@@ -1,10 +1,11 @@
 Tempearly
 =========
 
-Minimal scripting language / templating engine which is meant to be replacement
-for PHP.
+Minimal scripting language / templating engine which aims to provide a sane
+alternative for PHP.
 
-Meant for small scripts/hacks/CGI-applications, not for large web sites.
+It is meant for small scripts/hacks/demonstrations, it is not a framework
+for building large web applications.
 
 ## Compilation
 
