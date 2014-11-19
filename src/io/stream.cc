@@ -223,4 +223,27 @@ namespace tempearly
 
         return Write(reinterpret_cast<byte*>(buffer), length);
     }
+
+    bool Stream::Pipe(const Handle<Stream>& that)
+    {
+        if (m_remain && !that->Write(m_buffer, m_remain))
+        {
+            return false;
+        }
+        for (;;)
+        {
+            if (!DirectRead(m_buffer, m_buffer_size, m_remain))
+            {
+                return false;
+            }
+            else if (!m_remain)
+            {
+                return true;
+            }
+            else if (!that->Write(m_buffer, m_remain))
+            {
+                return false;
+            }
+        }
+    }
 }
