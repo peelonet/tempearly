@@ -161,16 +161,7 @@ namespace tempearly
                 && client->Printf("Content-Type: %s\r\n", mime_type.Encode().c_str())
                 && client->Printf("Content-Length: %ld\r\n\r\n", path.GetSize()))
             {
-                byte buffer[4096];
-                std::size_t read;
-
-                while (stream->Read(buffer, sizeof(buffer), read))
-                {
-                    if (!client->Write(buffer, read))
-                    {
-                        break;
-                    }
-                }
+                stream->Pipe(client);
             }
             client->Close();
             stream->Close();

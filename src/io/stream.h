@@ -178,6 +178,16 @@ namespace tempearly
          */
         bool Printf(const char* format, ...);
 
+        /**
+         * Pipes all contents from this stream into another one.
+         *
+         * \param that Another stream where to pipe contents of this stream
+         *             into
+         * \return     A boolean flag indicating whether the operation was
+         *             successfull or not
+         */
+        bool Pipe(const Handle<Stream>& that);
+
     private:
         /** Size of the buffer. */
         const std::size_t m_buffer_size;
