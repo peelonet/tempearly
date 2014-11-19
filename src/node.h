@@ -216,6 +216,20 @@ namespace tempearly
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ReturnNode);
     };
 
+    class ThrowNode : public Node
+    {
+    public:
+        explicit ThrowNode(const Handle<Node>& exception = Handle<Node>());
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_exception;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ThrowNode);
+    };
+
     class ValueNode : public Node
     {
     public:

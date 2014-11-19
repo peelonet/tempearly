@@ -356,6 +356,54 @@ namespace tempearly
         }
     }
 
+    ThrowNode::ThrowNode(const Handle<Node>& exception)
+        : m_exception(exception.Get()) {}
+
+    Result ThrowNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Handle<ExceptionObject> exception;
+
+        if (m_exception)
+        {
+            Value value = m_exception->Evaluate(interpreter);
+
+            if (!value)
+            {
+                return Result(Result::KIND_ERROR);
+            }
+            else if (!value.IsInstance(interpreter, interpreter->cException))
+            {
+                interpreter->Throw(
+                    interpreter->eTypeError,
+                    "Cannot throw instance of '" + value.GetClass(interpreter)->GetName() + "'"
+                );
+
+                return Result(Result::KIND_ERROR);
+            }
+            exception = value.As<ExceptionObject>();
+        } else {
+            if (!(exception = interpreter->GetCaughtException()))
+            {
+                interpreter->Throw(interpreter->eStateError, "No previously caught exception");
+
+                return Result(Result::KIND_ERROR);
+            }
+            interpreter->ClearCaughtException();
+        }
+        interpreter->SetException(exception);
+
+        return Result(Result::KIND_ERROR);
+    }
+
+    void ThrowNode::Mark()
+    {
+        Node::Mark();
+        if (m_exception && !m_exception->IsMarked())
+        {
+            m_exception->Mark();
+        }
+    }
+
     ValueNode::ValueNode(const Value& value)
         : m_value(value) {}
 

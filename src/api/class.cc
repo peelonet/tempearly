@@ -146,7 +146,7 @@ namespace tempearly
                         StringBuilder sb;
 
                         sb << "Method expected at least "
-                           << (-(m_arity) - 1)
+                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -159,7 +159,7 @@ namespace tempearly
                     StringBuilder sb;
 
                     sb << "Method expected "
-                       << m_arity
+                       << Utils::ToString(static_cast<u64>(m_arity))
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -228,7 +228,7 @@ namespace tempearly
                         StringBuilder sb;
 
                         sb << "Method expected at least "
-                           << (-(m_arity) - 1)
+                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
@@ -241,7 +241,7 @@ namespace tempearly
                     StringBuilder sb;
 
                     sb << "Method expected "
-                       << m_arity
+                       << Utils::ToString(static_cast<u64>(m_arity))
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());

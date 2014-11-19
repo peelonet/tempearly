@@ -17,6 +17,41 @@ namespace tempearly
         }
     }
 
+    /**
+     * Exception#__init__(message = null)
+     *
+     * Constructs exception with given error message.
+     *
+     * Throws: TypeError - If anything else than String or null is given as
+     * argument.
+     */
+    TEMPEARLY_NATIVE_METHOD(ex_init)
+    {
+        if (args.GetSize() == 2)
+        {
+            const Value& message = args[1];
+
+            if (message.Is(Value::KIND_STRING))
+            {
+                args[0].SetAttribute("message", args[1]);
+            }
+            else if (!message.Is(Value::KIND_NULL))
+            {
+                interpreter->Throw(interpreter->eTypeError, "String required");
+
+                return Value();
+            }
+        }
+        else if (args.GetSize() > 2)
+        {
+            interpreter->Throw(interpreter->eValueError, "Too many arguments");
+
+            return Value();
+        }
+
+        return Value::NullValue();
+    }
+
     static Handle<CoreObject> ex_alloc(const Handle<Interpreter>& interpreter,
                                        const Handle<Class>& cls)
     {
@@ -28,6 +63,7 @@ namespace tempearly
         i->cException = i->AddClass("Exception", i->cObject);
 
         i->cException->SetAllocator(ex_alloc);
+        i->cException->AddMethod(i, "__init__", -1, ex_init);
 
         i->eAttributeError = i->AddClass("AttributeError", i->cException);
         i->eIOError = i->AddClass("IOError", i->cException);

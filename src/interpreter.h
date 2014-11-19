@@ -47,11 +47,44 @@ namespace tempearly
         }
 
         /**
-         * Clears current exception if such exists.
+         * Sets currently uncaught exception.
+         */
+        inline void SetException(const Handle<ExceptionObject>& exception)
+        {
+            m_exception = exception.Get();
+        }
+
+        /**
+         * Clears current uncaught exception if such exists.
          */
         inline void ClearException()
         {
             m_exception = 0;
+        }
+
+        /**
+         * Returns currently caught exception or NULL handle if there isn't
+         * any.
+         */
+        inline Handle<ExceptionObject> GetCaughtException() const
+        {
+            return m_caught_exception;
+        }
+
+        /**
+         * Sets currently caught exception.
+         */
+        inline void SetCaughtException(const Handle<ExceptionObject>& caught_exception)
+        {
+            m_caught_exception = caught_exception.Get();
+        }
+
+        /**
+         * Clears current caught exception if such exists.
+         */
+        inline void ClearCaughtException()
+        {
+            m_caught_exception = 0;
         }
 
         /**
@@ -136,6 +169,8 @@ namespace tempearly
     private:
         /** Current uncaught exception. */
         ExceptionObject* m_exception;
+        /** Current caught exception. */
+        ExceptionObject* m_caught_exception;
         /** Current local variable scope. */
         Scope* m_scope;
         /** Shared instance of empty iterator. */
