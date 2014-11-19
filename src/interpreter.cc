@@ -36,6 +36,7 @@ namespace tempearly
         , response(0)
         , globals(0)
         , m_exception(0)
+        , m_caught_exception(0)
         , m_scope(0)
         , m_empty_iterator(0)
         , m_imported_files(0) {}
@@ -320,6 +321,10 @@ namespace tempearly
         if (m_exception && !m_exception->IsMarked())
         {
             m_exception->Mark();
+        }
+        if (m_caught_exception && !m_caught_exception->IsMarked())
+        {
+            m_caught_exception->Mark();
         }
         if (m_scope && !m_scope->IsMarked())
         {

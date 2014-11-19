@@ -1207,7 +1207,21 @@ SCAN_EXPONENT:
                 break;
             }
 
-            //TODO:case Token::KW_THROW:
+            case Token::KW_THROW:
+            {
+                Handle<Node> exception;
+
+                parser->SkipToken();
+                if (!parser->PeekToken(Token::SEMICOLON))
+                {
+                    if (!(exception = parse_expr(parser)))
+                    {
+                        return Handle<Node>();
+                    }
+                }
+                node = new ThrowNode(exception);
+                break;
+            }
 
             default:
                 node = parse_expr(parser);
@@ -1391,9 +1405,18 @@ SCAN_EXPONENT:
         }
         if (parser->ReadToken(Token::ARROW))
         {
-            Handle<Node> node = parse_expr(parser);
+            Handle<Node> node;
 
-            if (!node)
+            if (parser->ReadToken(Token::KW_THROW))
+            {
+                if (!(node = parse_expr(parser)))
+                {
+                    return Handle<Node>();
+                }
+
+                return new ThrowNode(node);
+            }
+            else if (!(node = parse_expr(parser)))
             {
                 return Handle<Node>();
             }
