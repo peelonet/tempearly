@@ -52,11 +52,26 @@ namespace tempearly
         ByteString& Assign(const ByteString& that);
 
         /**
+         * Copies contents from C type string.
+         *
+         * \param input String to copy bytes from
+         */
+        ByteString& Assign(const char* input);
+
+        /**
          * Assignment operator.
          */
         inline ByteString& operator=(const ByteString& that)
         {
             return Assign(that);
+        }
+
+        /**
+         * Assignment operator.
+         */
+        inline ByteString& operator=(const char* input)
+        {
+            return Assign(input);
         }
 
         /**

@@ -14,7 +14,7 @@ namespace tempearly
         explicit HttpServerRequest(const Handle<Socket>& socket,
                                    HttpMethod::Kind method,
                                    const String& path,
-                                   const String& query_string,
+                                   const ByteString& query_string,
                                    const Dictionary<String>& headers,
                                    const byte* data,
                                    std::size_t data_size);
@@ -22,6 +22,8 @@ namespace tempearly
         HttpMethod::Kind GetMethod() const;
 
         String GetPath() const;
+
+        bool IsSecure() const;
 
         bool IsAjax() const;
 

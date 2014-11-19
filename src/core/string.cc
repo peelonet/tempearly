@@ -194,6 +194,30 @@ namespace tempearly
         }
     }
 
+    String String::DecodeAscii(const byte* input)
+    {
+        return DecodeAscii(input, std::strlen(reinterpret_cast<const char*>(input)));
+    }
+
+    String String::DecodeAscii(const byte* input, std::size_t length)
+    {
+        String result;
+
+        if (length > 0)
+        {
+            result.m_length = length;
+            result.m_runes = Memory::Allocate<rune>(length);
+            result.m_counter = Memory::Allocate<unsigned int>(1);
+            result.m_counter[0] = 1;
+            for (std::size_t i = 0; i < length; ++i)
+            {
+                result.m_runes[i] = static_cast<rune>(input[i]);
+            }
+        }
+
+        return result;
+    }
+
     String& String::Assign(const String& that)
     {
         if (m_runes != that.m_runes)

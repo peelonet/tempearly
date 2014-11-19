@@ -17,6 +17,8 @@ namespace tempearly
 
         String GetPath() const;
 
+        bool IsSecure() const;
+
         bool IsAjax() const;
 
         bool HasParameter(const String& id) const;

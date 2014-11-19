@@ -9,11 +9,10 @@
 
 namespace tempearly
 {
+    static bool cgi_getenv_bin(const char*, ByteString&);
     static bool cgi_getenv_str(const char*, String&);
-
     template< typename T >
     static void cgi_getenv_int(const char*, T&);
-
     static void cgi_getenv_bool(const char*, bool&);
 
     CgiRequest::CgiRequest()
@@ -50,6 +49,18 @@ namespace tempearly
     String CgiRequest::GetPath() const
     {
         return m_path;
+    }
+
+    bool CgiRequest::IsSecure() const
+    {
+        char* value = std::getenv("HTTPS");
+
+        if (value && *value)
+        {
+            return !std::strcmp(value, "on");
+        } else {
+            return false;
+        }
     }
 
     bool CgiRequest::IsAjax() const
@@ -106,7 +117,7 @@ namespace tempearly
         cgi_getenv_str("PATH_INFO", m_path_info);
         cgi_getenv_str("PATH_TRANSLATED", m_path_translated);
         cgi_getenv_str("SCRIPT_NAME", m_script_name);
-        cgi_getenv_str("QUERY_STRING", m_query_string);
+        cgi_getenv_bin("QUERY_STRING", m_query_string);
         cgi_getenv_str("REMOTE_HOST", m_remote_host);
         cgi_getenv_str("REMOTE_ADDR", m_remote_addr);
         cgi_getenv_str("AUTH_TYPE", m_auth_type);
@@ -152,6 +163,20 @@ namespace tempearly
             }
             delete[] buffer;
         }
+    }
+
+    static bool cgi_getenv_bin(const char* name, ByteString& slot)
+    {
+        char* value = std::getenv(name);
+
+        if (value && *value)
+        {
+            slot = value;
+
+            return true;
+        }
+
+        return false;
     }
 
     static bool cgi_getenv_str(const char* name, String& slot)

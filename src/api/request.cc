@@ -23,6 +23,17 @@ namespace tempearly
     }
 
     /**
+     * Request#is_secure() => Bool
+     *
+     * Returns true if the request was made through a secure channel such as
+     * HTTPS.
+     */
+    TEMPEARLY_NATIVE_METHOD(req_is_secure)
+    {
+        return Value::NewBool(interpreter->request->IsSecure());
+    }
+
+    /**
      * Request#is_ajax() => Bool
      *
      * Returns true if the request was made with XMLHttpRequest or not. Notice
@@ -68,6 +79,7 @@ namespace tempearly
 
         cRequest->AddMethod(i, "method", 0, req_method);
         cRequest->AddMethod(i, "path", 0, req_path);
+        cRequest->AddMethod(i, "is_secure", 0, req_is_secure);
         cRequest->AddMethod(i, "is_ajax", 0, req_is_ajax);
 
         cRequest->AddMethod(i, "__getitem__", 1, req_getitem);

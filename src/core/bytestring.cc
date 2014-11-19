@@ -72,6 +72,32 @@ namespace tempearly
         return *this;
     }
 
+    ByteString& ByteString::Assign(const char* input)
+    {
+        const std::size_t length = std::strlen(input);
+
+        if (--m_counter[0] == 0)
+        {
+            if (m_length != length)
+            {
+                Memory::Unallocate<byte>(m_bytes);
+                m_bytes = Memory::Allocate<byte>(length + 1);
+            }
+        } else {
+            m_bytes = Memory::Allocate<byte>(length + 1);
+            m_counter = Memory::Allocate<unsigned int>(1);
+        }
+        m_length = length;
+        m_counter[0] = 1;
+        for (std::size_t i = 0; i < length; ++i)
+        {
+            m_bytes[i] = static_cast<byte>(input[i]);
+        }
+        m_bytes[length] = 0;
+
+        return *this;
+    }
+
     bool ByteString::Equals(const ByteString& that) const
     {
         if (m_bytes == that.m_bytes)

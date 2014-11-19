@@ -3,6 +3,7 @@
 #include "script.h"
 #include "core/bytestring.h"
 #include "net/socket.h"
+#include "net/url.h"
 #include "sapi/httpd/request.h"
 #include "sapi/httpd/response.h"
 #include "sapi/httpd/server.h"
@@ -259,56 +260,63 @@ namespace tempearly
         }
     }
 
-    static bool parse_request_line(HttpServer::HttpRequest& request, const Handle<Socket>& client, const String& line)
+    static bool parse_request_uri(HttpServer::HttpRequest& request,
+                                  const Handle<Socket>& client,
+                                  const byte* start,
+                                  std::size_t remain)
     {
-        std::size_t index1;
-        std::size_t index2;
+        const byte* begin = start;
+        const byte* end = static_cast<const byte*>(std::memchr(begin, ' ', remain));
 
-        if ((index1 = line.IndexOf(' ')) == String::npos)
+        if (end)
         {
-            send_error(
-                client,
-                "400 Bad Request",
-                "We were unable to process your request."
-            );
+            request.query_string = ByteString(begin + 1, end - begin);
+            remain -= end - begin + 1;
+        }
+        if (!Url::Decode(begin, remain, request.path))
+        {
+            send_error(client, "400 Bad Request", "We were unable to process your request.");
 
             return false;
         }
 
-        if (!HttpMethod::Parse(line.SubString(0, index1++), request.method))
+        return true;
+    }
+
+    static bool parse_request_line(HttpServer::HttpRequest& request,
+                                   const Handle<Socket>& client,
+                                   const byte* start,
+                                   std::size_t remain)
+    {
+        const byte* begin = start;
+        const byte* end = static_cast<const byte*>(std::memchr(begin, ' ', remain));
+
+        if (!end || !HttpMethod::Parse(String::DecodeAscii(begin, end - begin), request.method))
         {
-            send_error(
-                client,
-                "400 Bad Request",
-                "We were unable to process your request."
-            );
+            send_error(client, "400 Bad Request", "We were unable to process your request.");
 
             return false;
         }
-
-        if ((index2 = line.IndexOf(' ', index1)) == String::npos)
+        remain -= end - begin + 1;
+        begin = end + 1;
+        if ((end = static_cast<const byte*>(std::memchr(begin, ' ', remain))))
         {
-            request.path = line.SubString(index1);
-            request.version = HttpVersion::VERSION_09;
-        } else {
-            request.path = line.SubString(index1, index2 - index1);
-            if (!HttpVersion::Parse(line.SubString(index2 + 1), request.version))
+            const String version = String::DecodeAscii(end + 1, remain - (end - begin + 1));
+
+            if (!parse_request_uri(request, client, begin, end - begin))
             {
-                send_error(
-                    client,
-                    "505 HTTP Version Not Supported",
-                    "Unrecognized HTTP version."
-                );
+                return false;
+            }
+            else if (!HttpVersion::Parse(version, request.version))
+            {
+                send_error(client, "505 HTTP Version Not Supported", "Unsupported HTTP version");
 
                 return false;
             }
-        }
+        } else {
+            request.version = HttpVersion::VERSION_09;
 
-        // Split query string from request path.
-        if ((index1 = request.path.IndexOf('?')) != String::npos)
-        {
-            request.query_string = request.path.SubString(index1 + 1);
-            request.path = request.path.SubString(0, index1);
+            return parse_request_uri(request, client, begin, remain);
         }
 
         return true;
@@ -316,21 +324,27 @@ namespace tempearly
 
     static bool parse_request_header(HttpServer::HttpRequest& request,
                                      const Handle<Socket>& client,
-                                     const String& line)
+                                     const byte* start,
+                                     std::size_t remain)
     {
-        std::size_t index = line.IndexOf(':');
+        const byte* begin = start;
+        const byte* end = static_cast<const byte*>(std::memchr(begin, ':', remain));
+        std::size_t key_length;
 
-        if (index == String::npos || index < 1)
+        if (!end)
         {
-            send_error(
-                client,
-                "400 Bad Request",
-                "We were unable to process your request."
-            );
+            send_error(client, "400 Bad Request", "We were unable to process your request.");
 
             return false;
         }
-        request.headers.Insert(line.SubString(0, index), line.SubString(index + 2));
+        key_length = ++end - begin;
+        remain -= key_length;
+        if (remain > 1 && *end == ' ')
+        {
+            ++end;
+            --remain;
+        }
+        request.headers.Insert(String::DecodeAscii(begin, key_length - 1), String::DecodeAscii(end, remain));
 
         return true;
     }
@@ -345,53 +359,44 @@ namespace tempearly
 
         if (!end)
         {
-            send_error(
-                client,
-                "400 Bad Request",
-                "We were unable to process your request."
-            );
+            send_error(client, "400 Bad Request", "We were unable to process your request.");
 
             return 0;
         }
 
         // Find out where the first line of the request ends.
-        remain -= end - start + 1;
+        remain -= end - begin + 1;
         start = end + 1;
         if (end > begin && end[-1] == '\r')
         {
             --end;
         }
-        *end = '\0';
 
-        // Process first line of request.
-        if (!parse_request_line(request, client, reinterpret_cast<char*>(begin)))
+        // Process first line of the request.
+        if (!parse_request_line(request, client, begin, end - begin))
         {
             return 0;
         }
 
-        // Process request headers.
+        // Process request headers
         for (;;)
         {
             begin = start;
-            // FIXME: This type of line reading bugs if client sends only \n
             if (!(end = static_cast<byte*>(std::memchr(begin, '\n', remain))))
             {
                 return 0;
             }
-
-            remain -= end - start + 1;
+            remain -= end - begin + 1;
             start = end + 1;
             if (end > begin && end[-1] == '\r')
             {
                 --end;
             }
-            *end = '\0';
-
-            if (!*begin)
+            if (end <= begin)
             {
                 return start;
             }
-            else if (!parse_request_header(request, client, reinterpret_cast<char*>(begin)))
+            else if (!parse_request_header(request, client, begin, end - begin))
             {
                 return 0;
             }

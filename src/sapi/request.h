@@ -28,6 +28,12 @@ namespace tempearly
         virtual String GetPath() const = 0;
 
         /**
+         * Attempts to find out whether the request was made through a secure
+         * channel such as HTTPS.
+         */
+        virtual bool IsSecure() const = 0;
+
+        /**
          * Attempts to find out whether the request was made with
          * XMLHttpRequest or not.
          */

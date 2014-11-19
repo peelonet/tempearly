@@ -31,14 +31,25 @@ namespace tempearly
         Url(const Url& that);
 
         /**
-         * Attempts to decode URL entities from given string.
+         * Attempts to decode URL entities from given byte string.
          *
-         * \param input  String to decode
+         * \param input  Byte string to decode
          * \param output Where the resulting decoded string is assigned to
-         * \return       A boolean flag indicating whether decoding was
+         * \return       A boolean flag indicating whether the decoding was
          *               successfull or not
          */
-        static bool Decode(const String& input, String& output);
+        static bool Decode(const ByteString& input, String& output);
+
+        /**
+         * Attempts to decode URL entities from given byte input.
+         *
+         * \param input  Byte array where to extract data from
+         * \param length Size of the byte array
+         * \param output Where the resulting decoded string is assigned to
+         * \return       A boolean flag indicating whether the decoding was
+         *               successfull or not
+         */
+        static bool Decode(const byte* input, std::size_t length, String& output);
 
         /**
          * Encodes URL entities from the given string.

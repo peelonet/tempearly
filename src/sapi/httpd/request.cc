@@ -8,7 +8,7 @@ namespace tempearly
     HttpServerRequest::HttpServerRequest(const Handle<Socket>& socket,
                                          HttpMethod::Kind method,
                                          const String& path,
-                                         const String& query_string,
+                                         const ByteString& query_string,
                                          const Dictionary<String>& headers,
                                          const byte* data,
                                          std::size_t data_size)
@@ -25,7 +25,7 @@ namespace tempearly
             && GetContentType() == "application/x-www-form-urlencoded"
             && GetContentLength() > 0)
         {
-            Utils::ParseQueryString(ByteString(data, data_size).c_str(), m_parameters);
+            Utils::ParseQueryString(data, data_size, m_parameters);
         }
     }
 
@@ -37,6 +37,11 @@ namespace tempearly
     String HttpServerRequest::GetPath() const
     {
         return m_path;
+    }
+
+    bool HttpServerRequest::IsSecure() const
+    {
+        return false;
     }
 
     bool HttpServerRequest::IsAjax() const
