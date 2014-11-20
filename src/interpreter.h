@@ -2,7 +2,6 @@
 #define TEMPEARLY_INTERPRETER_H_GUARD
 
 #include "scope.h"
-#include "api/exception.h"
 #include "sapi/request.h"
 #include "sapi/response.h"
 
@@ -41,7 +40,7 @@ namespace tempearly
          * Returns currently uncaught exception or NULL handle if there isn't
          * any.
          */
-        inline Handle<ExceptionObject> GetException() const
+        inline const Value& GetException() const
         {
             return m_exception;
         }
@@ -49,9 +48,9 @@ namespace tempearly
         /**
          * Sets currently uncaught exception.
          */
-        inline void SetException(const Handle<ExceptionObject>& exception)
+        inline void SetException(const Value& exception)
         {
-            m_exception = exception.Get();
+            m_exception = exception;
         }
 
         /**
@@ -59,14 +58,14 @@ namespace tempearly
          */
         inline void ClearException()
         {
-            m_exception = 0;
+            m_exception.Clear();
         }
 
         /**
          * Returns currently caught exception or NULL handle if there isn't
          * any.
          */
-        inline Handle<ExceptionObject> GetCaughtException() const
+        inline const Value& GetCaughtException() const
         {
             return m_caught_exception;
         }
@@ -74,9 +73,9 @@ namespace tempearly
         /**
          * Sets currently caught exception.
          */
-        inline void SetCaughtException(const Handle<ExceptionObject>& caught_exception)
+        inline void SetCaughtException(const Value& caught_exception)
         {
-            m_caught_exception = caught_exception.Get();
+            m_caught_exception = caught_exception;
         }
 
         /**
@@ -84,7 +83,7 @@ namespace tempearly
          */
         inline void ClearCaughtException()
         {
-            m_caught_exception = 0;
+            m_caught_exception.Clear();
         }
 
         /**
@@ -168,9 +167,9 @@ namespace tempearly
 
     private:
         /** Current uncaught exception. */
-        ExceptionObject* m_exception;
+        Value m_exception;
         /** Current caught exception. */
-        ExceptionObject* m_caught_exception;
+        Value m_caught_exception;
         /** Current local variable scope. */
         Scope* m_scope;
         /** Shared instance of empty iterator. */

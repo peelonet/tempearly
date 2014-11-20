@@ -2,6 +2,7 @@
 
 #include "interpreter.h"
 #include "utils.h"
+#include "api/class.h"
 #include "core/random.h"
 
 namespace tempearly

@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "api/class.h"
 #include "core/random.h"
 
 namespace tempearly

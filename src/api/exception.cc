@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "api/exception.h"
 
 namespace tempearly
 {
