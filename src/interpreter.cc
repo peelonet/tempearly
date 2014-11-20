@@ -1,6 +1,7 @@
 #include "interpreter.h"
 #include "parser.h"
 #include "utils.h"
+#include "api/exception.h"
 #include "api/function.h"
 #include "api/iterator.h"
 #include "api/map.h"
@@ -35,8 +36,6 @@ namespace tempearly
         : request(0)
         , response(0)
         , globals(0)
-        , m_exception(0)
-        , m_caught_exception(0)
         , m_scope(0)
         , m_empty_iterator(0)
         , m_imported_files(0) {}
@@ -253,7 +252,7 @@ namespace tempearly
             Handle<ExceptionObject> exception = new ExceptionObject(cls);
 
             exception->SetAttribute("message", Value::NewString(message));
-            m_exception = exception.Get();
+            m_exception = Value(exception);
         } else {
             std::fprintf(stderr,
                          "%s (fatal internal error)\n",
@@ -318,14 +317,8 @@ namespace tempearly
         {
             globals->Mark();
         }
-        if (m_exception && !m_exception->IsMarked())
-        {
-            m_exception->Mark();
-        }
-        if (m_caught_exception && !m_caught_exception->IsMarked())
-        {
-            m_caught_exception->Mark();
-        }
+        m_exception.Mark();
+        m_caught_exception.Mark();
         if (m_scope && !m_scope->IsMarked())
         {
             m_scope->Mark();

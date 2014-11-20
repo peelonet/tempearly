@@ -74,11 +74,13 @@ namespace tempearly
 
             // Keywords
             KW_BREAK,
+            KW_CATCH,
             KW_CONTINUE,
             KW_DO,
             KW_ELSE,
             KW_END,
             KW_FALSE,
+            KW_FINALLY,
             KW_FOR,
             KW_FUNCTION,
             KW_IF,
@@ -86,6 +88,7 @@ namespace tempearly
             KW_RETURN,
             KW_THROW,
             KW_TRUE,
+            KW_TRY,
             KW_WHILE,
             
             IDENTIFIER,

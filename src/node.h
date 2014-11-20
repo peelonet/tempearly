@@ -180,6 +180,44 @@ namespace tempearly
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ForNode);
     };
 
+    class CatchNode : public Node
+    {
+    public:
+        explicit CatchNode(const Handle<TypeHint>& type, const Handle<Node>& variable, const Handle<Node>& statement);
+
+        bool IsCatch(const Handle<Interpreter>& interpreter, const Value& exception, bool& slot) const;
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        TypeHint* m_type;
+        Node* m_variable;
+        Node* m_statement;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CatchNode);
+    };
+
+    class TryNode : public Node
+    {
+    public:
+        explicit TryNode(const Handle<Node>& statement,
+                         const Vector<Handle<CatchNode> >& catches = Vector<Handle<CatchNode> >(),
+                         const Handle<Node>& else_statement = Handle<Node>(),
+                         const Handle<Node>& finally_statement = Handle<Node>());
+
+        Result Execute(const Handle<Interpreter>& interpreter) const;
+
+        void Mark();
+
+    private:
+        Node* m_statement;
+        const Vector<CatchNode*> m_catches;
+        Node* m_else_statement;
+        Node* m_finally_statement;
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(TryNode);
+    };
+
     class BreakNode : public Node
     {
     public:

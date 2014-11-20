@@ -1,4 +1,6 @@
 #include "interpreter.h"
+#include "api/class.h"
+#include "api/object.h"
 #include "core/stringbuilder.h"
 
 namespace tempearly

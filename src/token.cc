@@ -63,20 +63,23 @@ namespace tempearly
             case NOT: return "`!'";
             case BIT_NOT: return "`~'";
 
-            case KW_BREAK: return "`break'";
-            case KW_CONTINUE: return "`continue'";
-            case KW_DO: return "`do'";
-            case KW_ELSE: return "`else'";
-            case KW_END: return "`end'";
-            case KW_FALSE: return "`false'";
-            case KW_FOR: return "`for'";
-            case KW_FUNCTION: return "`function'";
-            case KW_IF: return "`if'";
-            case KW_NULL: return "`null'";
-            case KW_RETURN: return "`return'";
-            case KW_THROW: return "`throw'";
-            case KW_TRUE: return "`true'";
-            case KW_WHILE: return "`while'";
+            case KW_BREAK: return "'break'";
+            case KW_CATCH: return "'catch'";
+            case KW_CONTINUE: return "'continue'";
+            case KW_DO: return "'do'";
+            case KW_ELSE: return "'else'";
+            case KW_END: return "'end'";
+            case KW_FALSE: return "'false'";
+            case KW_FINALLY: return "'finally'";
+            case KW_FOR: return "'for'";
+            case KW_FUNCTION: return "'function'";
+            case KW_IF: return "'if'";
+            case KW_NULL: return "'null'";
+            case KW_RETURN: return "'return'";
+            case KW_THROW: return "'throw'";
+            case KW_TRUE: return "'true'";
+            case KW_TRY: return "'try'";
+            case KW_WHILE: return "'while'";
             
             case IDENTIFIER: return "identifier";
             case STRING: return "string literal";

@@ -313,6 +313,125 @@ namespace tempearly
         }
     }
 
+    CatchNode::CatchNode(const Handle<TypeHint>& type, const Handle<Node>& variable, const Handle<Node>& statement)
+        : m_type(type.Get())
+        , m_variable(variable.Get())
+        , m_statement(statement.Get()) {}
+
+    bool CatchNode::IsCatch(const Handle<Interpreter>& interpreter, const Value& exception, bool& slot) const
+    {
+        if (m_type)
+        {
+            return m_type->Accepts(interpreter, exception, slot);
+        } else {
+            return slot = true;
+        }
+    }
+
+    Result CatchNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        if (m_variable && !m_variable->Assign(interpreter, interpreter->GetCaughtException()))
+        {
+            return Result(Result::KIND_ERROR);
+        } else {
+            return m_statement->Execute(interpreter);
+        }
+    }
+
+    void CatchNode::Mark()
+    {
+        Node::Mark();
+        if (m_type && !m_type->IsMarked())
+        {
+            m_type->Mark();
+        }
+        if (m_variable && !m_variable->IsMarked())
+        {
+            m_variable->Mark();
+        }
+        if (!m_statement->IsMarked())
+        {
+            m_statement->Mark();
+        }
+    }
+
+    TryNode::TryNode(const Handle<Node>& statement,
+                     const Vector<Handle<CatchNode> >& catches,
+                     const Handle<Node>& else_statement,
+                     const Handle<Node>& finally_statement)
+        : m_statement(statement.Get())
+        , m_catches(catches)
+        , m_else_statement(else_statement.Get())
+        , m_finally_statement(finally_statement.Get()) {}
+
+    Result TryNode::Execute(const Handle<Interpreter>& interpreter) const
+    {
+        Result result = m_statement->Execute(interpreter);
+
+        if (result.Is(Result::KIND_ERROR))
+        {
+            const Value& exception = interpreter->GetException();
+            bool caught;
+
+            for (std::size_t i = 0; i < m_catches.GetSize(); ++i)
+            {
+                Handle<CatchNode> c = m_catches[i];
+
+                if (!c->IsCatch(interpreter, exception, caught))
+                {
+                    break;
+                }
+                else if (caught)
+                {
+                    interpreter->SetCaughtException(exception);
+                    interpreter->ClearException();
+                    result = c->Execute(interpreter);
+                    interpreter->ClearCaughtException();
+                    break;
+                }
+            }
+        }
+        else if (m_else_statement)
+        {
+            result = m_else_statement->Execute(interpreter);
+        }
+        if (m_finally_statement)
+        {
+            Result finally_result = m_finally_statement->Execute(interpreter);
+
+            if (finally_result.Is(Result::KIND_ERROR))
+            {
+                return finally_result;
+            }
+        }
+
+        return result;
+    }
+
+    void TryNode::Mark()
+    {
+        Node::Mark();
+        if (!m_statement->IsMarked())
+        {
+            m_statement->Mark();
+        }
+        for (std::size_t i = 0; i < m_catches.GetSize(); ++i)
+        {
+            if (!m_catches[i]->IsMarked())
+            {
+                m_catches[i]->Mark();
+            }
+        }
+        if (m_else_statement && m_else_statement->IsMarked())
+        {
+            m_else_statement->Mark();
+        }
+        if (m_finally_statement && m_finally_statement->IsMarked())
+        {
+            m_finally_statement->Mark();
+        }
+    }
+
     BreakNode::BreakNode() {}
 
     Result BreakNode::Execute(const Handle<Interpreter>& interpreter) const
@@ -361,26 +480,23 @@ namespace tempearly
 
     Result ThrowNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Handle<ExceptionObject> exception;
+        Value exception;
 
         if (m_exception)
         {
-            Value value = m_exception->Evaluate(interpreter);
-
-            if (!value)
+            if (!(exception = m_exception->Evaluate(interpreter)))
             {
                 return Result(Result::KIND_ERROR);
             }
-            else if (!value.IsInstance(interpreter, interpreter->cException))
+            else if (!exception.IsInstance(interpreter, interpreter->cException))
             {
                 interpreter->Throw(
                     interpreter->eTypeError,
-                    "Cannot throw instance of '" + value.GetClass(interpreter)->GetName() + "'"
+                    "Cannot throw instance of '" + exception.GetClass(interpreter)->GetName() + "'"
                 );
 
                 return Result(Result::KIND_ERROR);
             }
-            exception = value.As<ExceptionObject>();
         } else {
             if (!(exception = interpreter->GetCaughtException()))
             {

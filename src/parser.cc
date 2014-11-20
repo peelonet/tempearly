@@ -12,17 +12,20 @@ namespace tempearly
     static Handle<Node> parse_stmt(const Handle<Parser>&);
     static Handle<Node> parse_expr(const Handle<Parser>&);
     static Handle<Node> parse_postfix(const Handle<Parser>&);
+    static Handle<TypeHint> parse_typehint(const Handle<Parser>&);
 
     Parser::Parser(const Handle<Stream>& stream)
         : m_stream(stream.Get())
         , m_seen_cr(false)
     {
         m_keywords.Insert("break", Token::KW_BREAK);
+        m_keywords.Insert("catch", Token::KW_CATCH);
         m_keywords.Insert("continue", Token::KW_CONTINUE);
         m_keywords.Insert("do", Token::KW_DO);
         m_keywords.Insert("else", Token::KW_ELSE);
         m_keywords.Insert("end", Token::KW_END);
         m_keywords.Insert("false", Token::KW_FALSE);
+        m_keywords.Insert("finally", Token::KW_FINALLY);
         m_keywords.Insert("for", Token::KW_FOR);
         m_keywords.Insert("function", Token::KW_FUNCTION);
         m_keywords.Insert("if", Token::KW_IF);
@@ -30,6 +33,7 @@ namespace tempearly
         m_keywords.Insert("return", Token::KW_RETURN);
         m_keywords.Insert("throw", Token::KW_THROW);
         m_keywords.Insert("true", Token::KW_TRUE);
+        m_keywords.Insert("try", Token::KW_TRY);
         m_keywords.Insert("while", Token::KW_WHILE);
     }
 
@@ -1030,7 +1034,10 @@ SCAN_EXPONENT:
                 }
                 else if (should_continue)
                 {
-                    if (parser->PeekToken(Token::KW_END) || parser->PeekToken(Token::KW_ELSE))
+                    if (parser->PeekToken(Token::KW_END)
+                        || parser->PeekToken(Token::KW_ELSE)
+                        || parser->PeekToken(Token::KW_CATCH)
+                        || parser->PeekToken(Token::KW_FINALLY))
                     {
                         break;
                     }
@@ -1047,7 +1054,10 @@ SCAN_EXPONENT:
                 }
             }
         } else {
-            while (!parser->PeekToken(Token::KW_END) && !parser->PeekToken(Token::KW_ELSE))
+            while (!parser->PeekToken(Token::KW_END)
+                    && !parser->PeekToken(Token::KW_ELSE)
+                    && !parser->PeekToken(Token::KW_CATCH)
+                    && !parser->PeekToken(Token::KW_FINALLY))
             {
                 Handle<Node> statement = parse_stmt(parser);
 
@@ -1156,6 +1166,96 @@ SCAN_EXPONENT:
         return new ForNode(variable, collection, statement);
     }
 
+    static Handle<CatchNode> parse_catch(const Handle<Parser>& parser)
+    {
+        Handle<TypeHint> type;
+        Handle<Node> variable;
+        Handle<Node> statement;
+
+        if (!expect_token(parser, Token::KW_CATCH))
+        {
+            return Handle<CatchNode>();
+        }
+        if (!parser->PeekToken(Token::COLON))
+        {
+            if (!(type = parse_typehint(parser)))
+            {
+                return Handle<CatchNode>();
+            }
+            if (!parser->PeekToken(Token::COLON))
+            {
+                if (!(variable = parse_expr(parser)))
+                {
+                    return Handle<CatchNode>();
+                }
+                else if (!variable->IsVariable())
+                {
+                    parser->SetErrorMessage("'catch' requires variable");
+
+                    return Handle<CatchNode>();
+                }
+            }
+        }
+        if (expect_token(parser, Token::COLON) && (statement = parse_block(parser)))
+        {
+            return new CatchNode(type, variable, statement);
+        } else {
+            return Handle<CatchNode>();
+        }
+    }
+
+    static Handle<Node> parse_try(const Handle<Parser>& parser)
+    {
+        Handle<Node> statement;
+        Vector<Handle<CatchNode> > catches;
+        Handle<Node> else_statement;
+        Handle<Node> finally_statement;
+
+        if (!expect_token(parser, Token::KW_TRY)
+            || !expect_token(parser, Token::COLON)
+            || !(statement = parse_block(parser)))
+        {
+            return Handle<Node>();
+        }
+        while (parser->PeekToken(Token::KW_CATCH))
+        {
+            Handle<CatchNode> c = parse_catch(parser);
+
+            if (!c)
+            {
+                return Handle<Node>();
+            }
+            catches.PushBack(c);
+        }
+        if (parser->ReadToken(Token::KW_ELSE))
+        {
+            if (!expect_token(parser, Token::COLON) || !(else_statement = parse_block(parser)))
+            {
+                return Handle<Node>();
+            }
+        }
+        if (parser->ReadToken(Token::KW_FINALLY))
+        {
+            if (!expect_token(parser, Token::COLON) || !(finally_statement = parse_block(parser)))
+            {
+                return Handle<Node>();
+            }
+        }
+        if (!expect_token(parser, Token::KW_END) || !expect_token(parser, Token::KW_TRY))
+        {
+            return Handle<Node>();
+        }
+        parser->ReadToken(Token::SEMICOLON); // Eat optional semicolon
+        if (catches.IsEmpty() && !else_statement && !finally_statement)
+        {
+            parser->SetErrorMessage("'try' statement requires at least one 'catch', 'else' or 'finally'");
+
+            return Handle<Node>();
+        }
+
+        return new TryNode(statement, catches, else_statement, finally_statement);
+    }
+
     static Handle<Node> parse_stmt(const Handle<Parser>& parser)
     {
         const Parser::TokenDescriptor& token = parser->PeekToken();
@@ -1182,6 +1282,9 @@ SCAN_EXPONENT:
 
             case Token::KW_FOR:
                 return parse_for(parser);
+
+            case Token::KW_TRY:
+                return parse_try(parser);
 
             case Token::KW_BREAK:
                 node = new BreakNode();
