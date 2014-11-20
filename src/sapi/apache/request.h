@@ -3,7 +3,6 @@
 
 #include <httpd.h>
 
-#include "core/dictionary.h"
 #include "sapi/request.h"
 
 namespace tempearly
@@ -13,6 +12,8 @@ namespace tempearly
     public:
         explicit ApacheRequest(request_rec* request);
 
+        ~ApacheRequest();
+
         HttpMethod::Kind GetMethod() const;
 
         String GetPath() const;
@@ -21,18 +22,18 @@ namespace tempearly
 
         bool IsAjax() const;
 
-        bool HasParameter(const String& id) const;
+        String GetContentType() const;
 
-        bool GetParameter(const String& id, String& value) const;
+        std::size_t GetContentLength() const;
 
-    private:
-        void ReadParameters();
+        ByteString GetBody();
+
+        ByteString GetQueryString();
 
     private:
         request_rec* m_request;
         const HttpMethod::Kind m_method;
-        Dictionary<Vector<String> > m_parameters;
-        bool m_parameters_read;
+        ByteString* m_body;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ApacheRequest);
     };
 }

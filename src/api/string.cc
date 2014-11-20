@@ -17,19 +17,26 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(str_s_call)
     {
-        StringBuilder result;
-        String slot;
+        const std::size_t size = args.GetSize();
 
-        for (std::size_t i = 0; i < args.GetSize(); ++i)
+        if (size == 1 && args[0].IsString())
         {
-            if (!args[i].ToString(interpreter, slot))
-            {
-                return Value();
-            }
-            result << slot;
-        }
+            return args[0];
+        } else {
+            StringBuilder result;
+            String slot;
 
-        return Value::NewString(result.ToString());
+            for (std::size_t i = 0; i < size; ++i)
+            {
+                if (!args[i].ToString(interpreter, slot))
+                {
+                    return Value();
+                }
+                result << slot;
+            }
+
+            return Value::NewString(result.ToString());
+        }
     }
 
     /**

@@ -7,6 +7,10 @@
 #include "utils.h"
 #include "sapi/cgi/request.h"
 
+#if !defined(BUFSIZ)
+# define BUFSIZ 1024
+#endif
+
 namespace tempearly
 {
     static bool cgi_getenv_bin(const char*, ByteString&);
@@ -16,22 +20,21 @@ namespace tempearly
     static void cgi_getenv_bool(const char*, bool&);
 
     CgiRequest::CgiRequest()
-        : m_parameters_read(false)
-        , m_server_port(-1)
+        : m_server_port(-1)
         , m_content_length(0)
         , m_using_https(false)
+        , m_body(0)
     {
         ReadEnvironmentVariables();
-        ReadParameters();
+        ReadBody();
+    }
 
-        // On Win32, use binary read to avoid CRLF conversion.
-#if defined(_WIN32)
-# if defined(__BORLANDC__)
-        setmode(_fileno(stdin), O_BINARY);
-# else
-        setmode(_fileno(stdin), _O_BINARY);
-# endif
-#endif
+    CgiRequest::~CgiRequest()
+    {
+        if (m_body)
+        {
+            delete m_body;
+        }
     }
 
     HttpMethod::Kind CgiRequest::GetMethod() const
@@ -75,30 +78,24 @@ namespace tempearly
         }
     }
 
-    bool CgiRequest::HasParameter(const String& id) const
+    String CgiRequest::GetContentType() const
     {
-        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
-
-        return e && !e->GetValue().IsEmpty();
+        return m_content_type;
     }
 
-    bool CgiRequest::GetParameter(const String& id, String& value) const
+    std::size_t CgiRequest::GetContentLength() const
     {
-        const Dictionary<Vector<String> >::Entry* entry = m_parameters.Find(id);
+        return m_content_length;
+    }
 
-        if (entry)
-        {
-            const Vector<String>& values = entry->GetValue();
+    ByteString CgiRequest::GetBody()
+    {
+        return m_body ? *m_body : ByteString();
+    }
 
-            if (!values.IsEmpty())
-            {
-                value = values.GetFront();
-
-                return true;
-            }
-        }
-
-        return false;
+    ByteString CgiRequest::GetQueryString()
+    {
+        return m_query_string;
     }
 
     void CgiRequest::ReadEnvironmentVariables()
@@ -135,33 +132,38 @@ namespace tempearly
         cgi_getenv_bool("HTTPS", m_using_https);
     }
 
-    void CgiRequest::ReadParameters()
+    void CgiRequest::ReadBody()
     {
-        if (m_parameters_read)
+        if (m_content_length > 0)
         {
-            return;
-        }
-        m_parameters_read = true;
-        if (!m_query_string.IsEmpty())
-        {
-            Utils::ParseQueryString(m_query_string, m_parameters);
-        }
-        // TODO: Process multipart requests
-        if (m_method == "POST"
-            && m_content_type == "application/x-www-form-urlencoded"
-            && m_content_length > 0)
-        {
-            char* buffer = new char[m_content_length];
-            std::size_t read = std::fread(static_cast<void*>(buffer),
-                                          sizeof(char),
-                                          m_content_length,
-                                          stdin);
+            Vector<byte> body;
+            byte buffer[BUFSIZ];
+            std::size_t remain = m_content_length;
 
-            if (read > 0)
+            body.Reserve(remain);
+            // On Win32, use binary read to avoid CRLF conversion.
+#if defined(_WIN32)
+# if defined(__BORLANDC__)
+            setmode(_fileno(stdin), O_BINARY);
+# else
+            setmode(_fileno(stdin), _O_BINARY);
+# endif
+#endif
+            while (remain > 0)
             {
-                Utils::ParseQueryString(buffer, m_parameters);
+                std::size_t read = std::fread(static_cast<void*>(buffer), sizeof(byte), BUFSIZ, stdin);
+
+                if (!read)
+                {
+                    break;
+                }
+                body.PushBack(buffer, read);
+                remain -= read;
             }
-            delete[] buffer;
+            if (!body.IsEmpty())
+            {
+                m_body = new ByteString(body.GetData(), body.GetSize());
+            }
         }
     }
 
