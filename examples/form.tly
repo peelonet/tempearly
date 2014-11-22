@@ -9,11 +9,11 @@
 <body>
     <div class="container">
         <h1>Form test</h1>
-        {% if request.method() == "POST": %}
-            <p>Welcome {{request["name"]}}</p>
-            <p>Your e-mail address is: {{request["email"]}}</p>
+        {% if request.is_post(): %}
+            <p>Welcome {{ request["name"] }}</p>
+            <p>Your e-mail address is: {{ request["email"] }}</p>
         {% else: %}
-            <form class="form-horizontal" method="post" action="{{request.path()}}" role="form">
+            <form class="form-horizontal" method="post" action="{{ request.path() }}" role="form">
                 <div class="form-group">
                     <label for="name">Name:</label>
                     <input type="text" class="form-control" name="name" id="name" autofocus required>

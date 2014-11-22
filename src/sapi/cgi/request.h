@@ -11,6 +11,8 @@ namespace tempearly
     public:
         explicit CgiRequest();
 
+        ~CgiRequest();
+
         HttpMethod::Kind GetMethod() const;
 
         String GetPath() const;
@@ -19,17 +21,19 @@ namespace tempearly
 
         bool IsAjax() const;
 
-        bool HasParameter(const String& id) const;
+        String GetContentType() const;
 
-        bool GetParameter(const String& id, String& value) const;
+        std::size_t GetContentLength() const;
+
+        ByteString GetBody();
+
+        ByteString GetQueryString();
 
     private:
         void ReadEnvironmentVariables();
-        void ReadParameters();
+        void ReadBody();
 
     private:
-        Dictionary<Vector<String> > m_parameters;
-        bool m_parameters_read;
         /** Request method ("GET", "POST", etc.). */
         String m_method;
         /** Requested URI. */
@@ -58,6 +62,7 @@ namespace tempearly
         String m_referrer;
         String m_cookie;
         bool m_using_https;
+        ByteString* m_body;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CgiRequest);
     };
 }

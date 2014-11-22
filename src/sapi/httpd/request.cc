@@ -10,22 +10,26 @@ namespace tempearly
                                          const String& path,
                                          const ByteString& query_string,
                                          const Dictionary<String>& headers,
-                                         const byte* data,
-                                         std::size_t data_size)
+                                         const byte* body,
+                                         std::size_t body_size)
         : m_socket(socket.Get())
         , m_method(method)
         , m_path(path)
+        , m_query_string(query_string)
         , m_headers(headers)
+        , m_body(0)
     {
-        if (!query_string.IsEmpty())
+        if (body_size)
         {
-            Utils::ParseQueryString(query_string, m_parameters);
+            m_body = new ByteString(body, body_size);
         }
-        if (m_method == HttpMethod::POST
-            && GetContentType() == "application/x-www-form-urlencoded"
-            && GetContentLength() > 0)
+    }
+
+    HttpServerRequest::~HttpServerRequest()
+    {
+        if (m_body)
         {
-            Utils::ParseQueryString(data, data_size, m_parameters);
+            delete m_body;
         }
     }
 
@@ -56,51 +60,6 @@ namespace tempearly
         }
     }
 
-    bool HttpServerRequest::HasParameter(const String& id) const
-    {
-        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
-
-        return e && !e->GetValue().IsEmpty();
-    }
-
-    bool HttpServerRequest::GetParameter(const String& id, String& slot) const
-    {
-        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
-
-        if (e)
-        {
-            const Vector<String>& values = e->GetValue();
-
-            if (!values.IsEmpty())
-            {
-                slot = values.GetFront();
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    bool HttpServerRequest::HasHeader(const String& id) const
-    {
-        return m_headers.Find(id);
-    }
-
-    bool HttpServerRequest::GetHeader(const String& id, String& slot) const
-    {
-        const Dictionary<String>::Entry* e = m_headers.Find(id);
-
-        if (e)
-        {
-            slot = e->GetValue();
-
-            return true;
-        }
-
-        return false;
-    }
-
     String HttpServerRequest::GetContentType() const
     {
         String value;
@@ -125,6 +84,35 @@ namespace tempearly
         }
 
         return 0;
+    }
+
+    ByteString HttpServerRequest::GetBody()
+    {
+        return m_body ? *m_body : ByteString();
+    }
+
+    ByteString HttpServerRequest::GetQueryString()
+    {
+        return m_query_string;
+    }
+
+    bool HttpServerRequest::HasHeader(const String& id) const
+    {
+        return m_headers.Find(id);
+    }
+
+    bool HttpServerRequest::GetHeader(const String& id, String& slot) const
+    {
+        const Dictionary<String>::Entry* e = m_headers.Find(id);
+
+        if (e)
+        {
+            slot = e->GetValue();
+
+            return true;
+        }
+
+        return false;
     }
 
     void HttpServerRequest::Mark()

@@ -1,7 +1,6 @@
 #ifndef TEMPEARLY_SAPI_HTTPD_REQUEST_H_GUARD
 #define TEMPEARLY_SAPI_HTTPD_REQUEST_H_GUARD
 
-#include "core/dictionary.h"
 #include "sapi/request.h"
 
 namespace tempearly
@@ -16,8 +15,10 @@ namespace tempearly
                                    const String& path,
                                    const ByteString& query_string,
                                    const Dictionary<String>& headers,
-                                   const byte* data,
-                                   std::size_t data_size);
+                                   const byte* body,
+                                   std::size_t body_size);
+
+        ~HttpServerRequest();
 
         HttpMethod::Kind GetMethod() const;
 
@@ -27,17 +28,17 @@ namespace tempearly
 
         bool IsAjax() const;
 
-        bool HasParameter(const String& id) const;
+        String GetContentType() const;
 
-        bool GetParameter(const String& id, String& slot) const;
+        std::size_t GetContentLength() const;
+
+        ByteString GetBody();
+
+        ByteString GetQueryString();
 
         bool HasHeader(const String& id) const;
 
         bool GetHeader(const String& id, String& slot) const;
-
-        String GetContentType() const;
-
-        std::size_t GetContentLength() const;
 
         void Mark();
 
@@ -45,8 +46,9 @@ namespace tempearly
         Socket* m_socket;
         const HttpMethod::Kind m_method;
         const String m_path;
-        Dictionary<String> m_headers;
-        Dictionary<Vector<String> > m_parameters;
+        const ByteString m_query_string;
+        const Dictionary<String> m_headers;
+        ByteString* m_body;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(HttpServerRequest);
     };
 }

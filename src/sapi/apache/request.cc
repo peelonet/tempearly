@@ -1,20 +1,29 @@
 #include <cstring>
+#include <apache2/http_protocol.h>
 
 #include "utils.h"
 #include "core/bytestring.h"
 #include "sapi/apache/request.h"
 
+#if !defined(BUFSIZ)
+# define BUFSIZ 1024
+#endif
+
 namespace tempearly
 {
     static HttpMethod::Kind parse_method(request_rec*);
-    static void parse_post(request_rec*, Dictionary<Vector<String> >&);
 
     ApacheRequest::ApacheRequest(request_rec* request)
         : m_request(request)
         , m_method(parse_method(request))
-        , m_parameters_read(false)
+        , m_body(0) {}
+
+    ApacheRequest::~ApacheRequest()
     {
-        ReadParameters();
+        if (m_body)
+        {
+            delete m_body;
+        }
     }
 
     HttpMethod::Kind ApacheRequest::GetMethod() const
@@ -49,46 +58,66 @@ namespace tempearly
         }
     }
 
-    bool ApacheRequest::HasParameter(const String& id) const
+    String ApacheRequest::GetContentType() const
     {
-        const Dictionary<Vector<String> >::Entry* e = m_parameters.Find(id);
+        const char* value = apr_table_get(m_request->subprocess_env, "CONTENT_TYPE");
 
-        return e && !e->GetValue().IsEmpty();
+        return value ? value : String();
     }
 
-    bool ApacheRequest::GetParameter(const String& id, String& value) const
+    std::size_t ApacheRequest::GetContentLength() const
     {
-        const Dictionary<Vector<String> >::Entry* entry = m_parameters.Find(id);
+        const char* value = apr_table_get(m_request->subprocess_env, "CONTENT_LENGTH");
 
-        if (entry)
+        if (value)
         {
-            const Vector<String>& values = entry->GetValue();
+            i64 number;
 
-            if (!values.IsEmpty())
+            if (Utils::ParseInt(value, number, 10))
             {
-                value = values.GetFront();
-
-                return true;
+                return static_cast<std::size_t>(number);
             }
         }
 
-        return false;
+        return 0;
     }
 
-    void ApacheRequest::ReadParameters()
+    ByteString ApacheRequest::GetBody()
     {
-        if (m_parameters_read)
+        if (!m_body && ap_should_client_block(m_request))
         {
-            return;
+            std::size_t remain = GetContentLength();
+            Vector<byte> body;
+            char buffer[BUFSIZ];
+
+            body.Reserve(remain);
+            ap_setup_client_block(m_request, REQUEST_CHUNKED_DECHUNK);
+            while (remain > 0)
+            {
+                long read = ap_get_client_block(m_request, buffer, BUFSIZ);
+
+                if (read <= 0)
+                {
+                    break;
+                }
+                body.PushBack(reinterpret_cast<byte*>(buffer), read);
+            }
+            if (!body.IsEmpty())
+            {
+                m_body = new ByteString(body.GetData(), body.GetSize());
+            }
         }
-        m_parameters_read = true;
+
+        return m_body ? *m_body : ByteString();
+    }
+
+    ByteString ApacheRequest::GetQueryString()
+    {
         if (m_request->args && std::strlen(m_request->args) > 0)
         {
-            Utils::ParseQueryString(ByteString(m_request->args), m_parameters);
-        }
-        if (m_method == HttpMethod::POST)
-        {
-            parse_post(m_request, m_parameters);
+            return m_request->args;
+        } else {
+            return ByteString();
         }
     }
 
@@ -119,47 +148,5 @@ namespace tempearly
             default:
                 return HttpMethod::GET;
         }
-    }
-
-    static inline void add_param(const String& key, const String& value, Dictionary<Vector<String> >& parameters)
-    {
-        Dictionary<Vector<String> >::Entry* entry = parameters.Find(key);
-
-        if (entry)
-        {
-            entry->GetValue().PushBack(value);
-        } else {
-            parameters.Insert(key, Vector<String>(1, value));
-        }
-    }
-
-    static void parse_post(request_rec* request, Dictionary<Vector<String> >& parameters)
-    {
-        const char* ct = apr_table_get(request->headers_in, "Content-Type");
-
-        if (ct && !std::strncmp("application/x-www-form-urlencoded", ct, 33))
-        {
-            apr_array_header_t* pairs = 0;
-            int result = ap_parse_form_data(request, 0, &pairs, -1, HUGE_STRING_LEN);
-
-            if (result != OK || !pairs)
-            {
-                return;
-            }
-            while (pairs && !apr_is_empty_array(pairs))
-            {
-                ap_form_pair_t* pair = static_cast<ap_form_pair_t*>(apr_array_pop(pairs));
-                apr_off_t length;
-                apr_size_t size;
-                char* buffer;
-
-                apr_brigade_length(pair->value, 1, &length);
-                buffer = static_cast<char*>(apr_palloc(request->pool, length + 1));
-                apr_brigade_flatten(pair->value, buffer, &size);
-                buffer[size] = 0;
-                add_param(pair->name, buffer, parameters);
-            }
-        }
-        // TODO: parse multipart request
     }
 }
