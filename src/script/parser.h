@@ -1,64 +1,28 @@
-#ifndef TEMPEARLY_PARSER_H_GUARD
-#define TEMPEARLY_PARSER_H_GUARD
+#ifndef TEMPEARLY_SCRIPT_PARSER_H_GUARD
+#define TEMPEARLY_SCRIPT_PARSER_H_GUARD
 
-#include <queue>
-
-#include "script.h"
-#include "token.h"
+#include "core/parser.h"
 #include "core/stringbuilder.h"
+#include "script/script.h"
+#include "script/token.h"
 
 namespace tempearly
 {
-    class Parser : public CountedObject
+    class ScriptParser : public Parser
     {
     public:
-        struct SourcePosition
-        {
-            int line;
-            int column;
-        };
-
         struct TokenDescriptor
         {
             Token::Kind kind;
             /** Position of the token in source code. */
-            SourcePosition position;
+            Position position;
             /** Identifier, number or string literal. */
             String text;
         };
 
-        explicit Parser(const Handle<Stream>& stream);
-
-        virtual ~Parser();
-
-        inline const String& GetErrorMessage() const
-        {
-            return m_error_message;
-        }
-
-        inline void SetErrorMessage(const String& error_message)
-        {
-            m_error_message = error_message;
-        }
+        explicit ScriptParser(const Handle<Stream>& stream);
 
         Handle<Script> Compile();
-
-        /**
-         * Closes the underlying stream.
-         */
-        void Close();
-
-        int PeekChar();
-
-        bool PeekChar(int c);
-
-        int ReadChar();
-
-        bool ReadChar(int c);
-
-        void UnreadChar(int expected);
-
-        void SkipChar();
 
         const TokenDescriptor& PeekToken();
 
@@ -70,22 +34,13 @@ namespace tempearly
 
         void SkipToken();
 
-        void Mark();
-
     private:
         /** Keyword lookup map. */
         Dictionary<Token::Kind> m_keywords;
-        /** Stream where the input is read from. */
-        Stream* m_stream;
-        std::queue<int> m_pushback_chars;
-        std::queue<TokenDescriptor> m_pushback_tokens;
-        bool m_seen_cr;
-        /** Current position in source code. */
-        SourcePosition m_position;
+        Vector<TokenDescriptor> m_pushback_tokens;
         StringBuilder m_buffer;
-        String m_error_message;
-        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Parser);
+        TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ScriptParser);
     };
 }
 
-#endif /* !TEMPEARLY_PARSER_H_GUARD */
+#endif /* !TEMPEARLY_SCRIPT_PARSER_H_GUARD */

@@ -71,6 +71,7 @@ namespace tempearly
     class Result;
     class Scope;
     class Script;
+    class ScriptParser;
     class Socket;
     class Stream;
     class String;

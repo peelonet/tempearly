@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_RESULT_H_GUARD
-#define TEMPEARLY_RESULT_H_GUARD
+#ifndef TEMPEARLY_SCRIPT_RESULT_H_GUARD
+#define TEMPEARLY_SCRIPT_RESULT_H_GUARD
 
 #include "value.h"
 
@@ -119,4 +119,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_RESULT_H_GUARD */
+#endif /* !TEMPEARLY_SCRIPT_RESULT_H_GUARD */

@@ -1,8 +1,8 @@
-#ifndef TEMPEARLY_NODE_H_GUARD
-#define TEMPEARLY_NODE_H_GUARD
+#ifndef TEMPEARLY_SCRIPT_NODE_H_GUARD
+#define TEMPEARLY_SCRIPT_NODE_H_GUARD
 
-#include "result.h"
 #include "core/pair.h"
+#include "script/result.h"
 
 namespace tempearly
 {
@@ -538,4 +538,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_NODE_H_GUARD */
+#endif /* !TEMPEARLY_SCRIPT_NODE_H_GUARD */

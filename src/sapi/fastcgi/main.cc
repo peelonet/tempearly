@@ -1,11 +1,11 @@
-#include "fcgi_stdio.h"
+#include <fcgi_stdio.h>
 
 #include "interpreter.h"
-#include "parser.h"
 #include "core/filename.h"
 #include "io/stream.h"
 #include "sapi/cgi/request.h"
 #include "sapi/cgi/response.h"
+#include "script/parser.h"
 
 using namespace tempearly;
 
@@ -52,7 +52,7 @@ static Handle<Script> compile_script(const Filename& filename, String& error_mes
 
     if (stream)
     {
-        Handle<Parser> parser = new Parser(stream);
+        Handle<ScriptParser> parser = new ScriptParser(stream);
         Handle<Script> script = parser->Compile();
 
         parser->Close();

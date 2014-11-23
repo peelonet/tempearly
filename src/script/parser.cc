@@ -1,22 +1,20 @@
 #include <cctype>
 
 #include "parameter.h"
-#include "parser.h"
 #include "utils.h"
-#include "io/stream.h"
+#include "script/parser.h"
 
 namespace tempearly
 {
-    static bool parse_text_block(const Handle<Parser>&, Vector<Handle<Node> >&, bool&);
-    static bool parse_script_block(const Handle<Parser>&, Vector<Handle<Node> >&, bool&);
-    static Handle<Node> parse_stmt(const Handle<Parser>&);
-    static Handle<Node> parse_expr(const Handle<Parser>&);
-    static Handle<Node> parse_postfix(const Handle<Parser>&);
-    static Handle<TypeHint> parse_typehint(const Handle<Parser>&);
+    static bool parse_text_block(const Handle<ScriptParser>&, Vector<Handle<Node> >&, bool&);
+    static bool parse_script_block(const Handle<ScriptParser>&, Vector<Handle<Node> >&, bool&);
+    static Handle<Node> parse_stmt(const Handle<ScriptParser>&);
+    static Handle<Node> parse_expr(const Handle<ScriptParser>&);
+    static Handle<Node> parse_postfix(const Handle<ScriptParser>&);
+    static Handle<TypeHint> parse_typehint(const Handle<ScriptParser>&);
 
-    Parser::Parser(const Handle<Stream>& stream)
-        : m_stream(stream.Get())
-        , m_seen_cr(false)
+    ScriptParser::ScriptParser(const Handle<Stream>& stream)
+        : Parser(stream)
     {
         m_keywords.Insert("break", Token::KW_BREAK);
         m_keywords.Insert("catch", Token::KW_CATCH);
@@ -37,27 +35,19 @@ namespace tempearly
         m_keywords.Insert("while", Token::KW_WHILE);
     }
 
-    Parser::~Parser()
+    Handle<Script> ScriptParser::Compile()
     {
-        if (m_stream)
-        {
-            m_stream->Close();
-        }
-    }
-
-    Handle<Script> Parser::Compile()
-    {
-        Handle<Parser> handle = this;
+        Handle<ScriptParser> handle = this;
         Vector<Handle<Node> > nodes;
 
         // Skip leading shebang if such exists
-        if (ReadChar('#'))
+        if (ReadRune('#'))
         {
-            if (ReadChar('!'))
+            if (ReadRune('!'))
             {
                 int c;
 
-                while ((c = ReadChar()) != '\n' && c != '\r')
+                while ((c = ReadRune()) != '\n' && c != '\r')
                 {
                     if (c < 0)
                     {
@@ -65,7 +55,7 @@ namespace tempearly
                     }
                 }
             } else {
-                UnreadChar('#');
+                UnreadRune('#');
             }
         }
         for (;;)
@@ -94,156 +84,36 @@ namespace tempearly
         return new Script(nodes);
     }
 
-    void Parser::Close()
+    const ScriptParser::TokenDescriptor& ScriptParser::PeekToken()
     {
-        if (m_stream)
+        if (m_pushback_tokens.IsEmpty())
         {
-            m_stream->Close();
-            m_stream = 0;
+            m_pushback_tokens.PushBack(ReadToken());
         }
+
+        return m_pushback_tokens.GetFront();
     }
 
-    int Parser::PeekChar()
-    {
-        if (m_pushback_chars.empty())
-        {
-            int c = ReadChar();
-
-            if (c < 0)
-            {
-                return -1;
-            }
-            m_pushback_chars.push(c);
-
-            return c;
-        }
-
-        return m_pushback_chars.front();
-    }
-
-    bool Parser::PeekChar(int c)
-    {
-        return PeekChar() == c;
-    }
-
-    int Parser::ReadChar()
-    {
-        if (!m_pushback_chars.empty())
-        {
-            int c = m_pushback_chars.front();
-
-            m_pushback_chars.pop();
-
-            return c;
-        }
-        if (m_stream)
-        {
-            rune slot;
-
-            if (!m_stream->ReadRune(slot))
-            {
-                m_stream->Close();
-                m_stream = 0;
-
-                return -1;
-            }
-            switch (slot)
-            {
-                case '\r':
-                    ++m_position.line;
-                    m_position.column = 0;
-                    m_seen_cr = true;
-                    break;
-
-                case '\n':
-                    if (m_seen_cr)
-                    {
-                        m_seen_cr = false;
-                    } else {
-                        ++m_position.line;
-                        m_position.column = 0;
-                    }
-                    break;
-
-                default:
-                    ++m_position.column;
-                    if (m_seen_cr)
-                    {
-                        m_seen_cr = false;
-                    }
-            }
-
-            return slot;
-        }
-
-        return -1;
-    }
-
-    bool Parser::ReadChar(int expected)
-    {
-        int c = ReadChar();
-
-        if (c == expected)
-        {
-            return true;
-        }
-        else if (c > 0)
-        {
-            m_pushback_chars.push(c);
-        }
-
-        return false;
-    }
-
-    void Parser::UnreadChar(int c)
-    {
-        if (c > 0)
-        {
-            m_pushback_chars.push(c);
-        }
-    }
-
-    void Parser::SkipChar()
-    {
-        if (m_pushback_chars.empty())
-        {
-            ReadChar();
-        } else {
-            m_pushback_chars.pop();
-        }
-    }
-
-    const Parser::TokenDescriptor& Parser::PeekToken()
-    {
-        if (m_pushback_tokens.empty())
-        {
-            m_pushback_tokens.push(ReadToken());
-        }
-
-        return m_pushback_tokens.front();
-    }
-
-    bool Parser::PeekToken(Token::Kind expected)
+    bool ScriptParser::PeekToken(Token::Kind expected)
     {
         return PeekToken().kind == expected;
     }
 
-    Parser::TokenDescriptor Parser::ReadToken()
+    ScriptParser::TokenDescriptor ScriptParser::ReadToken()
     {
         TokenDescriptor token;
         int c;
 
-        if (!m_pushback_tokens.empty())
+        if (!m_pushback_tokens.IsEmpty())
         {
-            token = m_pushback_tokens.front();
-            m_pushback_tokens.pop();
+            token = m_pushback_tokens.GetFront();
+            m_pushback_tokens.Erase(0);
 
             return token;
         }
 READ_NEXT_CHAR:
-        c = ReadChar();
-        token.position.line = m_position.line;
-        token.position.column = m_position.column;
+        c = ReadRune();
+        token.position = GetPosition();
         switch (c)
         {
             // End of input.
@@ -263,13 +133,13 @@ READ_NEXT_CHAR:
 
             // Invalid Unicode code point.
             case 0xfffd:
-                m_error_message = "Malformed UTF-8 input";
+                SetErrorMessage("Malformed UTF-8 input");
                 token.kind = Token::ERROR;
                 break;
 
             // Single line comment.
             case '#':
-                while ((c = ReadChar()) != '\n' && c != '\r')
+                while ((c = ReadRune()) != '\n' && c != '\r')
                 {
                     if (c < 0)
                     {
@@ -321,11 +191,11 @@ READ_NEXT_CHAR:
                 break;
 
             case '+':
-                if (ReadChar('+'))
+                if (ReadRune('+'))
                 {
                     token.kind = Token::INCREMENT;
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_ADD;
                 } else {
@@ -334,11 +204,11 @@ READ_NEXT_CHAR:
                 break;
 
             case '-':
-                if (ReadChar('-'))
+                if (ReadRune('-'))
                 {
                     token.kind = Token::DECREMENT;
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_SUB;
                 } else {
@@ -347,7 +217,7 @@ READ_NEXT_CHAR:
                 break;
 
             case '*':
-                if (ReadChar('='))
+                if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_MUL;
                 } else {
@@ -356,16 +226,16 @@ READ_NEXT_CHAR:
                 break;
 
             case '%':
-                if (ReadChar('='))
+                if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_MOD;
                 }
-                else if (ReadChar('}'))
+                else if (ReadRune('}'))
                 {
                     token.kind = Token::CLOSE_TAG;
                     // Eat possible new line following the close tag.
-                    ReadChar('\r');
-                    ReadChar('\n');
+                    ReadRune('\r');
+                    ReadRune('\n');
                 } else {
                     token.kind = Token::MOD;
                 }
@@ -373,9 +243,9 @@ READ_NEXT_CHAR:
 
             case '/':
                 // Single line comment?
-                if (ReadChar('/'))
+                if (ReadRune('/'))
                 {
-                    while ((c = ReadChar()) != '\n' && c != '\r')
+                    while ((c = ReadRune()) != '\n' && c != '\r')
                     {
                         if (c < 0)
                         {
@@ -387,34 +257,34 @@ READ_NEXT_CHAR:
                     goto READ_NEXT_CHAR;
                 }
                 // Multi-line comment?
-                else if (ReadChar('*'))
+                else if (ReadRune('*'))
                 {
                     unsigned int depth = 1;
 
                     for (;;)
                     {
-                        if ((c = ReadChar()) < 0)
+                        if ((c = ReadRune()) < 0)
                         {
                             StringBuilder sb;
 
                             sb << "Unterminated multi-line comment at "
                                << Utils::ToString(static_cast<i64>(token.position.line))
                                << "; Missing `*/'";
-                            m_error_message = sb.ToString();
+                            SetErrorMessage(sb.ToString());
                             token.kind = Token::ERROR;
 
                             return token;
                         }
                         else if (c == '*')
                         {
-                            if ((c = ReadChar()) == '/' && --depth == 0)
+                            if ((c = ReadRune()) == '/' && --depth == 0)
                             {
                                 break;
                             }
                         }
                         else if (c == '/')
                         {
-                            if ((c = ReadChar()) == '*')
+                            if ((c = ReadRune()) == '*')
                             {
                                 ++depth;
                             }
@@ -422,7 +292,7 @@ READ_NEXT_CHAR:
                     }
                     goto READ_NEXT_CHAR;
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_DIV;
                 } else {
@@ -431,16 +301,16 @@ READ_NEXT_CHAR:
                 break;
 
             case '&':
-                if (ReadChar('&'))
+                if (ReadRune('&'))
                 {
-                    if (ReadChar('='))
+                    if (ReadRune('='))
                     {
                         token.kind = Token::ASSIGN_AND;
                     } else {
                         token.kind = Token::AND;
                     }
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_BIT_AND;
                 } else {
@@ -449,16 +319,16 @@ READ_NEXT_CHAR:
                 break;
 
             case '|':
-                if (ReadChar('|'))
+                if (ReadRune('|'))
                 {
-                    if (ReadChar('='))
+                    if (ReadRune('='))
                     {
                         token.kind = Token::ASSIGN_OR;
                     } else {
                         token.kind = Token::OR;
                     }
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_BIT_OR;
                 } else {
@@ -467,7 +337,7 @@ READ_NEXT_CHAR:
                 break;
 
             case '^':
-                if (ReadChar('='))
+                if (ReadRune('='))
                 {
                     token.kind = Token::ASSIGN_BIT_XOR;
                 } else {
@@ -476,16 +346,16 @@ READ_NEXT_CHAR:
                 break;
 
             case '<':
-                if (ReadChar('<'))
+                if (ReadRune('<'))
                 {
-                    if (ReadChar('='))
+                    if (ReadRune('='))
                     {
                         token.kind = Token::ASSIGN_LSH;
                     } else {
                         token.kind = Token::LSH;
                     }
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::LTE;
                 } else {
@@ -494,16 +364,16 @@ READ_NEXT_CHAR:
                 break;
 
             case '>':
-                if (ReadChar('>'))
+                if (ReadRune('>'))
                 {
-                    if (ReadChar('='))
+                    if (ReadRune('='))
                     {
                         token.kind = Token::ASSIGN_RSH;
                     } else {
                         token.kind = Token::RSH;
                     }
                 }
-                else if (ReadChar('='))
+                else if (ReadRune('='))
                 {
                     token.kind = Token::GTE;
                 } else {
@@ -512,11 +382,11 @@ READ_NEXT_CHAR:
                 break;
 
             case '!':
-                if (ReadChar('='))
+                if (ReadRune('='))
                 {
                     token.kind = Token::NE;
                 }
-                else if (ReadChar('~'))
+                else if (ReadRune('~'))
                 {
                     token.kind = Token::NO_MATCH;
                 } else {
@@ -525,15 +395,15 @@ READ_NEXT_CHAR:
                 break;
 
             case '=':
-                if (ReadChar('='))
+                if (ReadRune('='))
                 {
                     token.kind = Token::EQ;
                 }
-                else if (ReadChar('~'))
+                else if (ReadRune('~'))
                 {
                     token.kind = Token::MATCH;
                 }
-                else if (ReadChar('>'))
+                else if (ReadRune('>'))
                 {
                     token.kind = Token::ARROW;
                 } else {
@@ -542,9 +412,9 @@ READ_NEXT_CHAR:
                 break;
 
             case '.':
-                if (ReadChar('.'))
+                if (ReadRune('.'))
                 {
-                    if (ReadChar('.'))
+                    if (ReadRune('.'))
                     {
                         token.kind = Token::DOT_DOT_DOT;
                     } else {
@@ -556,7 +426,7 @@ READ_NEXT_CHAR:
                 break;
 
             case '?':
-                if (ReadChar('.'))
+                if (ReadRune('.'))
                 {
                     token.kind = Token::DOT_CONDITIONAL;
                 } else {
@@ -572,7 +442,7 @@ READ_NEXT_CHAR:
                 m_buffer.Clear();
                 for (;;)
                 {
-                    if ((c = ReadChar()) < 0)
+                    if ((c = ReadRune()) < 0)
                     {
                         StringBuilder sb;
 
@@ -581,7 +451,7 @@ READ_NEXT_CHAR:
                            << "; missing `"
                            << separator
                            << "'";
-                        m_error_message = sb.ToString();
+                        SetErrorMessage(sb.ToString());
                         token.kind = Token::ERROR;
 
                         return token;
@@ -604,14 +474,14 @@ READ_NEXT_CHAR:
 
             case '0':
                 m_buffer.Assign(1, '0');
-                switch (c = ReadChar())
+                switch (c = ReadRune())
                 {
                     // Binary integer literal.
                     case 'b': case 'B':
                         m_buffer << 'b';
-                        while (PeekChar('_') || std::isdigit(PeekChar()))
+                        while (PeekRune('_') || std::isdigit(PeekRune()))
                         {
-                            if ((c = ReadChar()) == '_')
+                            if ((c = ReadRune()) == '_')
                             {
                                 continue;
                             }
@@ -620,7 +490,7 @@ READ_NEXT_CHAR:
                                 StringBuilder sb;
 
                                 sb << "Invalid binary digit: " << c;
-                                m_error_message = sb.ToString();
+                                SetErrorMessage(sb.ToString());
                                 token.kind = Token::ERROR;
 
                                 return token;
@@ -635,9 +505,9 @@ READ_NEXT_CHAR:
                     // Hex integer literal.
                     case 'x': case 'X':
                         m_buffer << 'x';
-                        while (PeekChar('_') || std::isxdigit(PeekChar()))
+                        while (PeekRune('_') || std::isxdigit(PeekRune()))
                         {
-                            if ((c = ReadChar()) != '_')
+                            if ((c = ReadRune()) != '_')
                             {
                                 m_buffer << c;
                             }
@@ -653,9 +523,9 @@ READ_NEXT_CHAR:
                     case '4': case '5':
                     case '6': case '7':
                         m_buffer << c;
-                        while (PeekChar('_') || std::isdigit(PeekChar()))
+                        while (PeekRune('_') || std::isdigit(PeekRune()))
                         {
-                            if ((c = ReadChar()) == '_')
+                            if ((c = ReadRune()) == '_')
                             {
                                 continue;
                             }
@@ -664,7 +534,7 @@ READ_NEXT_CHAR:
                                 StringBuilder sb;
 
                                 sb << "Invalid octal digit: " << c;
-                                m_error_message = sb.ToString();
+                                SetErrorMessage(sb.ToString());
                                 token.kind = Token::ERROR;
 
                                 return token;
@@ -681,7 +551,7 @@ READ_NEXT_CHAR:
                         StringBuilder sb;
 
                         sb << "Invalid octal digit: " << c;
-                        m_error_message = sb.ToString();
+                        SetErrorMessage(sb.ToString());
                         token.kind = Token::ERROR;
 
                         return token;
@@ -699,7 +569,7 @@ READ_NEXT_CHAR:
                         break;
 
                     default:
-                        UnreadChar(c);
+                        UnreadRune(c);
                         token.kind = Token::INT;
                         token.text = m_buffer.ToString();
                 }
@@ -709,71 +579,71 @@ READ_NEXT_CHAR:
             case '4': case '5': case '6':
             case '7': case '8': case '9':
                 m_buffer.Assign(1, c);
-                while (PeekChar('_') || std::isdigit(PeekChar()))
+                while (PeekRune('_') || std::isdigit(PeekRune()))
                 {
-                    if ((c = ReadChar()) != '_')
+                    if ((c = ReadRune()) != '_')
                     {
                         m_buffer << c;
                     }
                 }
-                if (PeekChar('.'))
+                if (PeekRune('.'))
                 {
-                    SkipChar();
+                    SkipRune();
 SCAN_FLOAT:
-                    if (std::isdigit(PeekChar()))
+                    if (std::isdigit(PeekRune()))
                     {
-                        m_buffer << '.' << ReadChar();
-                        while (PeekChar('_') || std::isdigit(PeekChar()))
+                        m_buffer << '.' << ReadRune();
+                        while (PeekRune('_') || std::isdigit(PeekRune()))
                         {
-                            if ((c = ReadChar()) != '_')
+                            if ((c = ReadRune()) != '_')
                             {
                                 m_buffer << c;
                             }
                         }
-                        if (ReadChar('e') || ReadChar('E'))
+                        if (ReadRune('e') || ReadRune('E'))
                         {
 SCAN_EXPONENT:
                             m_buffer << 'e';
-                            if (PeekChar('+') || PeekChar('-'))
+                            if (PeekRune('+') || PeekRune('-'))
                             {
-                                m_buffer << ReadChar();
-                                c = ReadChar(); // isdigit() might be a macro
+                                m_buffer << ReadRune();
+                                c = ReadRune(); // isdigit() might be a macro
                                 if (!std::isdigit(c))
                                 {
-                                    m_error_message = "Invalid exponent";
+                                    SetErrorMessage("Invalid exponent");
                                     token.kind = Token::ERROR;
 
                                     return token;
                                 }
                                 m_buffer << c;
                             }
-                            else if (std::isdigit(PeekChar()))
+                            else if (std::isdigit(PeekRune()))
                             {
-                                m_buffer << ReadChar();
+                                m_buffer << ReadRune();
                             } else {
-                                m_error_message = "Invalid exponent";
+                                SetErrorMessage("Invalid exponent");
                                 token.kind = Token::ERROR;
 
                                 return token;
                             }
-                            while (std::isdigit(PeekChar()))
+                            while (std::isdigit(PeekRune()))
                             {
-                                m_buffer << ReadChar();
+                                m_buffer << ReadRune();
                             }
                         }
                         token.kind = Token::FLOAT;
                         token.text = m_buffer.ToString();
                     } else {
-                        UnreadChar('.');
+                        UnreadRune('.');
                         token.kind = Token::INT;
                         token.text = m_buffer.ToString();
                     }
                 }
-                else if (ReadChar('e') || ReadChar('E'))
+                else if (ReadRune('e') || ReadRune('E'))
                 {
                     goto SCAN_EXPONENT;
                 } else {
-                    if (ReadChar('f') || ReadChar('F'))
+                    if (ReadRune('f') || ReadRune('F'))
                     {
                         token.kind = Token::FLOAT;
                     } else {
@@ -790,11 +660,11 @@ SCAN_EXPONENT:
                     String string;
 
                     m_buffer.Assign(1, c);
-                    while ((c = ReadChar()) == '_' || std::isalnum(c))
+                    while ((c = ReadRune()) == '_' || std::isalnum(c))
                     {
                         m_buffer << c;
                     }
-                    UnreadChar(c);
+                    UnreadRune(c);
                     string = m_buffer.ToString();
                     if ((entry = m_keywords.Find(string)))
                     {
@@ -804,7 +674,7 @@ SCAN_EXPONENT:
                         token.text = string;
                     }
                 } else {
-                    m_error_message = "Unexpected input";
+                    SetErrorMessage("Unexpected input");
                     token.kind = Token::ERROR;
                 }
         }
@@ -812,11 +682,11 @@ SCAN_EXPONENT:
         return token;
     }
 
-    bool Parser::ReadToken(Token::Kind expected)
+    bool ScriptParser::ReadToken(Token::Kind expected)
     {
         if (PeekToken().kind == expected)
         {
-            m_pushback_tokens.pop();
+            m_pushback_tokens.Erase(0);
 
             return true;
         }
@@ -824,26 +694,17 @@ SCAN_EXPONENT:
         return false;
     }
 
-    void Parser::SkipToken()
+    void ScriptParser::SkipToken()
     {
-        if (!m_pushback_tokens.empty())
+        if (!m_pushback_tokens.IsEmpty())
         {
-            m_pushback_tokens.pop();
+            m_pushback_tokens.Erase(0);
         }
     }
 
-    void Parser::Mark()
+    static bool expect_token(const Handle<ScriptParser>& parser, Token::Kind expected)
     {
-        CountedObject::Mark();
-        if (m_stream && !m_stream->IsMarked())
-        {
-            m_stream->Mark();
-        }
-    }
-
-    static bool expect_token(const Handle<Parser>& parser, Token::Kind expected)
-    {
-        Parser::TokenDescriptor token = parser->ReadToken();
+        ScriptParser::TokenDescriptor token = parser->ReadToken();
 
         if (token.kind == expected)
         {
@@ -860,16 +721,16 @@ SCAN_EXPONENT:
         return false;
     }
 
-    static bool parse_text_block(const Handle<Parser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
+    static bool parse_text_block(const Handle<ScriptParser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
     {
         StringBuilder text;
-        int c = parser->ReadChar();
+        int c = parser->ReadRune();
 
         while (c > 0)
         {
             if (c == '{')
             {
-                if ((c = parser->ReadChar()) == '%')
+                if ((c = parser->ReadRune()) == '%')
                 {
                     if (!text.IsEmpty())
                     {
@@ -897,7 +758,7 @@ SCAN_EXPONENT:
                     if (parser->PeekToken(escape ? Token::RBRACE : Token::NOT))
                     {
                         parser->SkipToken();
-                        if (parser->ReadChar() != '}')
+                        if (parser->ReadRune() != '}')
                         {
                             if (escape)
                             {
@@ -909,7 +770,7 @@ SCAN_EXPONENT:
                             return false;
                         }
                     }
-                    else if (parser->ReadChar() == (escape ? '}' : '!'))
+                    else if (parser->ReadRune() == (escape ? '}' : '!'))
                     {
                         if (escape)
                         {
@@ -921,11 +782,11 @@ SCAN_EXPONENT:
                         return false;
                     }
                     nodes.PushBack(new ExpressionNode(expr, escape));
-                    c = parser->ReadChar();
+                    c = parser->ReadRune();
                 }
                 else if (c == '#')
                 {
-                    c = parser->ReadChar();
+                    c = parser->ReadRune();
                     for (;;)
                     {
                         if (c < 0)
@@ -936,13 +797,13 @@ SCAN_EXPONENT:
                         }
                         else if (c == '#')
                         {
-                            if ((c = parser->ReadChar()) == '}')
+                            if ((c = parser->ReadRune()) == '}')
                             {
-                                c = parser->ReadChar();
+                                c = parser->ReadRune();
                                 break;
                             }
                         } else {
-                            c = parser->ReadChar();
+                            c = parser->ReadRune();
                         }
                     }
                 } else {
@@ -951,27 +812,27 @@ SCAN_EXPONENT:
             }
             else if (c == '\\')
             {
-                if ((c = parser->ReadChar()) == '\r')
+                if ((c = parser->ReadRune()) == '\r')
                 {
-                    if ((c = parser->ReadChar()) != '\n')
+                    if ((c = parser->ReadRune()) != '\n')
                     {
                         text << c;
                     }
                 }
                 else if (c == '\n')
                 {
-                    c = parser->ReadChar();
+                    c = parser->ReadRune();
                 }
                 else if (c == '{')
                 {
                     text << '{';
-                    c = parser->ReadChar();
+                    c = parser->ReadRune();
                 } else {
                     text << '\\';
                 }
             } else {
                 text << c;
-                c = parser->ReadChar();
+                c = parser->ReadRune();
             }
         }
         if (!text.IsEmpty())
@@ -983,11 +844,11 @@ SCAN_EXPONENT:
         return true;
     }
 
-    static bool parse_script_block(const Handle<Parser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
+    static bool parse_script_block(const Handle<ScriptParser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
     {
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             if (token.kind == Token::END_OF_INPUT)
             {
@@ -1018,7 +879,7 @@ SCAN_EXPONENT:
         return true;
     }
 
-    static Handle<Node> parse_block(const Handle<Parser>& parser)
+    static Handle<Node> parse_block(const Handle<ScriptParser>& parser)
     {
         Vector<Handle<Node> > nodes;
 
@@ -1081,7 +942,7 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_if(const Handle<Parser>& parser)
+    static Handle<Node> parse_if(const Handle<ScriptParser>& parser)
     {
         Handle<Node> condition;
         Handle<Node> then_statement;
@@ -1117,7 +978,7 @@ SCAN_EXPONENT:
         return new IfNode(condition, then_statement, else_statement);
     }
 
-    static Handle<Node> parse_while(const Handle<Parser>& parser)
+    static Handle<Node> parse_while(const Handle<ScriptParser>& parser)
     {
         Handle<Node> condition;
         Handle<Node> statement;
@@ -1136,7 +997,7 @@ SCAN_EXPONENT:
         return new WhileNode(condition, statement);
     }
 
-    static Handle<Node> parse_for(const Handle<Parser>& parser)
+    static Handle<Node> parse_for(const Handle<ScriptParser>& parser)
     {
         Handle<Node> variable;
         Handle<Node> collection;
@@ -1166,7 +1027,7 @@ SCAN_EXPONENT:
         return new ForNode(variable, collection, statement);
     }
 
-    static Handle<CatchNode> parse_catch(const Handle<Parser>& parser)
+    static Handle<CatchNode> parse_catch(const Handle<ScriptParser>& parser)
     {
         Handle<TypeHint> type;
         Handle<Node> variable;
@@ -1204,7 +1065,7 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_try(const Handle<Parser>& parser)
+    static Handle<Node> parse_try(const Handle<ScriptParser>& parser)
     {
         Handle<Node> statement;
         Vector<Handle<CatchNode> > catches;
@@ -1256,9 +1117,9 @@ SCAN_EXPONENT:
         return new TryNode(statement, catches, else_statement, finally_statement);
     }
 
-    static Handle<Node> parse_stmt(const Handle<Parser>& parser)
+    static Handle<Node> parse_stmt(const Handle<ScriptParser>& parser)
     {
-        const Parser::TokenDescriptor& token = parser->PeekToken();
+        const ScriptParser::TokenDescriptor& token = parser->PeekToken();
         Handle<Node> node;
 
         switch (token.kind)
@@ -1337,7 +1198,7 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_list(const Handle<Parser>& parser)
+    static Handle<Node> parse_list(const Handle<ScriptParser>& parser)
     {
         Vector<Handle<Node> > elements;
 
@@ -1369,7 +1230,7 @@ SCAN_EXPONENT:
         return new ListNode(elements);
     }
 
-    static Handle<Node> parse_map(const Handle<Parser>& parser)
+    static Handle<Node> parse_map(const Handle<ScriptParser>& parser)
     {
         Vector<Pair<Handle<Node> > > entries;
         Handle<Node> key;
@@ -1403,7 +1264,7 @@ SCAN_EXPONENT:
         return new MapNode(entries);
     }
 
-    static Handle<TypeHint> parse_typehint(const Handle<Parser>& parser)
+    static Handle<TypeHint> parse_typehint(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_postfix(parser);
         Handle<TypeHint> hint;
@@ -1441,7 +1302,7 @@ SCAN_EXPONENT:
         return hint;
     }
 
-    static bool parse_parameters(const Handle<Parser>& parser, Vector<Handle<Parameter> >& parameters)
+    static bool parse_parameters(const Handle<ScriptParser>& parser, Vector<Handle<Parameter> >& parameters)
     {
         if (!expect_token(parser, Token::LPAREN))
         {
@@ -1454,7 +1315,7 @@ SCAN_EXPONENT:
         for (;;)
         {
             const bool rest = parser->ReadToken(Token::DOT_DOT_DOT);
-            const Parser::TokenDescriptor token = parser->ReadToken();
+            const ScriptParser::TokenDescriptor token = parser->ReadToken();
             String name;
             Handle<TypeHint> type;
             Handle<Node> default_value;
@@ -1497,7 +1358,7 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_function(const Handle<Parser>& parser)
+    static Handle<Node> parse_function(const Handle<ScriptParser>& parser)
     {
         Vector<Handle<Parameter> > parameters;
         Vector<Handle<Node> > nodes;
@@ -1578,9 +1439,9 @@ SCAN_EXPONENT:
         return new FunctionNode(parameters, nodes);
     }
 
-    static Handle<Node> parse_primary(const Handle<Parser>& parser)
+    static Handle<Node> parse_primary(const Handle<ScriptParser>& parser)
     {
-        Parser::TokenDescriptor token = parser->ReadToken();
+        ScriptParser::TokenDescriptor token = parser->ReadToken();
         Handle<Node> node;
 
         switch (token.kind)
@@ -1669,7 +1530,7 @@ SCAN_EXPONENT:
         return node;
     }
 
-    static bool parse_args(const Handle<Parser>& parser, Vector<Handle<Node> >& args)
+    static bool parse_args(const Handle<ScriptParser>& parser, Vector<Handle<Node> >& args)
     {
         if (!expect_token(parser, Token::LPAREN))
         {
@@ -1702,9 +1563,9 @@ SCAN_EXPONENT:
         }
     }
 
-    static Handle<Node> parse_selection(const Handle<Parser>& parser, const Handle<Node>& node, bool safe)
+    static Handle<Node> parse_selection(const Handle<ScriptParser>& parser, const Handle<Node>& node, bool safe)
     {
-        const Parser::TokenDescriptor token = parser->ReadToken();
+        const ScriptParser::TokenDescriptor token = parser->ReadToken();
 
         if (token.kind != Token::IDENTIFIER)
         {
@@ -1739,7 +1600,7 @@ SCAN_EXPONENT:
      * postfix-expression "++"
      * postfix-expression "--"
      */
-    static Handle<Node> parse_postfix(const Handle<Parser>& parser)
+    static Handle<Node> parse_postfix(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_primary(parser);
 
@@ -1749,7 +1610,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             if (token.kind == Token::LPAREN)
             {
@@ -1810,9 +1671,9 @@ SCAN_EXPONENT:
      * "++" unary-expression
      * "--" unary-expression
      */
-    static Handle<Node> parse_unary(const Handle<Parser>& parser)
+    static Handle<Node> parse_unary(const Handle<ScriptParser>& parser)
     {
-        const Parser::TokenDescriptor& token = parser->PeekToken();
+        const ScriptParser::TokenDescriptor& token = parser->PeekToken();
         Handle<Node> node;
 
         switch (token.kind)
@@ -1884,7 +1745,7 @@ SCAN_EXPONENT:
      * multiplicative-expression "/" unary-expression
      * multiplicative-expression "%" unary-expression
      */
-    static Handle<Node> parse_multiplicative(const Handle<Parser>& parser)
+    static Handle<Node> parse_multiplicative(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_unary(parser);
 
@@ -1894,7 +1755,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             if (token.kind == Token::MUL || token.kind == Token::DIV || token.kind == Token::MOD)
             {
@@ -1923,7 +1784,7 @@ SCAN_EXPONENT:
      * additive-expression "+" multiplicative-expression
      * additive-expression "-" multiplicative-expression
      */
-    static Handle<Node> parse_additive(const Handle<Parser>& parser)
+    static Handle<Node> parse_additive(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_multiplicative(parser);
 
@@ -1933,7 +1794,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             if (token.kind == Token::ADD || token.kind == Token::SUB)
             {
@@ -1961,7 +1822,7 @@ SCAN_EXPONENT:
      * shift-expression "<<" additive-expression
      * shift-expression ">>" additive-expression
      */
-    static Handle<Node> parse_shift(const Handle<Parser>& parser)
+    static Handle<Node> parse_shift(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_additive(parser);
 
@@ -1971,7 +1832,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             if (token.kind == Token::LSH || token.kind == Token::RSH)
             {
@@ -1998,7 +1859,7 @@ SCAN_EXPONENT:
      * shift-expression
      * bit-and-expression "&" shift-expression
      */
-    static Handle<Node> parse_bit_and(const Handle<Parser>& parser)
+    static Handle<Node> parse_bit_and(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_shift(parser);
 
@@ -2028,7 +1889,7 @@ SCAN_EXPONENT:
      * bit-and-expression
      * bit-xor-expression "^" bit-and-expression
      */
-    static Handle<Node> parse_bit_xor(const Handle<Parser>& parser)
+    static Handle<Node> parse_bit_xor(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_bit_and(parser);
 
@@ -2058,7 +1919,7 @@ SCAN_EXPONENT:
      * bit-xor-expression
      * bit-or-expression "|" bit-xor-expression
      */
-    static Handle<Node> parse_bit_or(const Handle<Parser>& parser)
+    static Handle<Node> parse_bit_or(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_bit_xor(parser);
 
@@ -2091,7 +1952,7 @@ SCAN_EXPONENT:
      * relational-expression "<=" bit-or-expression
      * relational-expression ">=" bit-or-expression
      */
-    static Handle<Node> parse_relational(const Handle<Parser>& parser)
+    static Handle<Node> parse_relational(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_bit_or(parser);
 
@@ -2101,7 +1962,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             switch (token.kind)
             {
@@ -2143,7 +2004,7 @@ SCAN_EXPONENT:
      * equality-expression "!~" relational-expression
      * equality-expression "<=>" relational-expression
      */
-    static Handle<Node> parse_equality(const Handle<Parser>& parser)
+    static Handle<Node> parse_equality(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_relational(parser);
 
@@ -2153,7 +2014,7 @@ SCAN_EXPONENT:
         }
         for (;;)
         {
-            const Parser::TokenDescriptor& token = parser->PeekToken();
+            const ScriptParser::TokenDescriptor& token = parser->PeekToken();
 
             switch (token.kind)
             {
@@ -2207,7 +2068,7 @@ SCAN_EXPONENT:
      * equality-expression
      * logical-and-expression "&&" equality-expression
      */
-    static Handle<Node> parse_logical_and(const Handle<Parser>& parser)
+    static Handle<Node> parse_logical_and(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_equality(parser);
 
@@ -2234,7 +2095,7 @@ SCAN_EXPONENT:
      * logical-and-expression
      * logical-or-expression "||" logical-and-expression
      */
-    static Handle<Node> parse_logical_or(const Handle<Parser>& parser)
+    static Handle<Node> parse_logical_or(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_logical_and(parser);
 
@@ -2262,7 +2123,7 @@ SCAN_EXPONENT:
      * range-expression ".." logical-or-expression
      * range-expression "..." logical-or-expression
      */
-    static Handle<Node> parse_range(const Handle<Parser>& parser)
+    static Handle<Node> parse_range(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_logical_or(parser);
 
@@ -2290,7 +2151,7 @@ SCAN_EXPONENT:
      * range-expression
      * range-expression "?" expression ":" expression
      */
-    static Handle<Node> parse_ternary(const Handle<Parser>& parser)
+    static Handle<Node> parse_ternary(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_range(parser);
 
@@ -2332,7 +2193,7 @@ SCAN_EXPONENT:
      * assignment-expression "%=" expression
      * assignment-expression "**=" expression
      */
-    static Handle<Node> parse_expr(const Handle<Parser>& parser)
+    static Handle<Node> parse_expr(const Handle<ScriptParser>& parser)
     {
         Handle<Node> node = parse_ternary(parser);
 

@@ -2,7 +2,7 @@
 #define TEMPEARLY_API_ITERATOR_H_GUARD
 
 #include "object.h"
-#include "result.h"
+#include "script/result.h"
 
 namespace tempearly
 {
