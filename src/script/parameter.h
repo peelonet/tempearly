@@ -1,8 +1,8 @@
-#ifndef TEMPEARLY_PARAMETER_H_GUARD
-#define TEMPEARLY_PARAMETER_H_GUARD
+#ifndef TEMPEARLY_SCRIPT_PARAMETER_H_GUARD
+#define TEMPEARLY_SCRIPT_PARAMETER_H_GUARD
 
-#include "node.h"
-#include "typehint.h"
+#include "script/node.h"
+#include "script/typehint.h"
 
 namespace tempearly
 {
@@ -61,4 +61,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_PARAMETER_H_GUARD */
+#endif /* !TEMPEARLY_SCRIPT_PARAMETER_H_GUARD */

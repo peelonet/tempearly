@@ -3,6 +3,8 @@
 #include "core/bytestring.h"
 #include "api/list.h"
 #include "api/set.h"
+#include "io/stream.h"
+#include "json/parser.h"
 
 namespace tempearly
 {
@@ -24,6 +26,24 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(req_path)
     {
         return Value::NewString(interpreter->request->GetPath());
+    }
+
+    /**
+     * Request#content_type() => String
+     *
+     * Returns value of the Content-Type header sent with the request, or null
+     * if no such header was included with the request.
+     */
+    TEMPEARLY_NATIVE_METHOD(req_content_type)
+    {
+        const String content_type = interpreter->request->GetContentType();
+
+        if (content_type.IsEmpty())
+        {
+            return Value::NullValue();
+        } else {
+            return Value::NewString(content_type);
+        }
     }
 
     /**
@@ -85,6 +105,40 @@ namespace tempearly
         } else {
             return Value::NewBinary(body);
         }
+    }
+
+    /**
+     * Request#json() => Object
+     *
+     * Returns JSON data sent with the request as an object.
+     *
+     * Throws: ValueError - If no JSON data was sent with the request or it's
+     * malformed.
+     */
+    TEMPEARLY_NATIVE_METHOD(req_json)
+    {
+        const ByteString body = interpreter->request->GetBody();
+        Handle<JsonParser> parser;
+        Value value;
+
+        if (body.IsEmpty())
+        {
+            interpreter->Throw(interpreter->eValueError, "No JSON object could be decoded");
+
+            return Value();
+        }
+        parser = new JsonParser(body.AsStream());
+        if (!parser->ParseValue(interpreter, value))
+        {
+            if (!interpreter->HasException())
+            {
+                interpreter->Throw(interpreter->eValueError, "No JSON object could be decoded");
+            }
+
+            return Value();
+        }
+
+        return value;
     }
 
     /**
@@ -250,11 +304,13 @@ namespace tempearly
 
         cRequest->AddMethod(i, "method", 0, req_method);
         cRequest->AddMethod(i, "path", 0, req_path);
+        cRequest->AddMethod(i, "content_type", 0, req_content_type);
         cRequest->AddMethod(i, "is_get", 0, req_is_get);
         cRequest->AddMethod(i, "is_post", 0, req_is_post);
         cRequest->AddMethod(i, "is_secure", 0, req_is_secure);
         cRequest->AddMethod(i, "is_ajax", 0, req_is_ajax);
         cRequest->AddMethod(i, "body", 0, req_body);
+        cRequest->AddMethod(i, "json", 0, req_json);
 
         cRequest->AddMethod(i, "__getitem__", 1, req_getitem);
         cRequest->AddMethod(i, "int", -2, req_int);

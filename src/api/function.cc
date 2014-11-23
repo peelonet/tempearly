@@ -1,7 +1,7 @@
 #include "interpreter.h"
-#include "node.h"
-#include "parameter.h"
 #include "api/function.h"
+#include "script/node.h"
+#include "script/parameter.h"
 
 namespace tempearly
 {

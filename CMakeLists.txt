@@ -70,14 +70,7 @@ SET(
     src/coreobject.cc
     src/interpreter.cc
     src/memory.cc
-    src/node.cc
-    src/parameter.cc
-    src/parser.cc
-    src/result.cc
     src/scope.cc
-    src/script.cc
-    src/token.cc
-    src/typehint.cc
     src/utils.cc
     src/value.cc
     src/api/binary.cc
@@ -104,6 +97,7 @@ SET(
     src/core/date.cc
     src/core/datetime.cc
     src/core/filename.cc
+    src/core/parser.cc
     src/core/random.cc
     src/core/string.cc
     src/core/stringbuilder.cc
@@ -112,10 +106,18 @@ SET(
     src/http/method.cc
     src/http/version.cc
     src/io/stream.cc
+    src/json/parser.cc
     src/net/socket.cc
     src/net/url.cc
     src/sapi/request.cc
     src/sapi/response.cc
+    src/script/node.cc
+    src/script/parameter.cc
+    src/script/parser.cc
+    src/script/result.cc
+    src/script/script.cc
+    src/script/token.cc
+    src/script/typehint.cc
 )
 
 IF (ENABLE_CGI_SAPI)

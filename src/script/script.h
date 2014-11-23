@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_SCRIPT_H_GUARD
-#define TEMPEARLY_SCRIPT_H_GUARD
+#ifndef TEMPEARLY_SCRIPT_SCRIPT_H_GUARD
+#define TEMPEARLY_SCRIPT_SCRIPT_H_GUARD
 
 #include "node.h"
 
@@ -23,4 +23,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_SCRIPT_H_GUARD */
+#endif /* !TEMPEARLY_SCRIPT_SCRIPT_H_GUARD */

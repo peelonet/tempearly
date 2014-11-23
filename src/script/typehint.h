@@ -1,5 +1,5 @@
-#ifndef TEMPEARLY_TYPEHINT_H_GUARD
-#define TEMPEARLY_TYPEHINT_H_GUARD
+#ifndef TEMPEARLY_SCRIPT_TYPEHINT_H_GUARD
+#define TEMPEARLY_SCRIPT_TYPEHINT_H_GUARD
 
 #include "memory.h"
 
@@ -53,4 +53,4 @@ namespace tempearly
     };
 }
 
-#endif /* !TEMPEARLY_TYPEHINT_H_GUARD */
+#endif /* !TEMPEARLY_SCRIPT_TYPEHINT_H_GUARD */

@@ -1,12 +1,11 @@
 #include "interpreter.h"
-#include "parser.h"
-#include "script.h"
 #include "core/bytestring.h"
 #include "net/socket.h"
 #include "net/url.h"
 #include "sapi/httpd/request.h"
 #include "sapi/httpd/response.h"
 #include "sapi/httpd/server.h"
+#include "script/parser.h"
 
 #if !defined(HTTPD_MAX_REQUEST_SIZE)
 # define HTTPD_MAX_REQUEST_SIZE 4096
@@ -257,12 +256,12 @@ namespace tempearly
                                   std::size_t remain)
     {
         const byte* begin = start;
-        const byte* end = static_cast<const byte*>(std::memchr(begin, ' ', remain));
+        const byte* end = static_cast<const byte*>(std::memchr(begin, '?', remain));
 
         if (end)
         {
-            request.query_string = ByteString(begin + 1, end - begin);
-            remain -= end - begin + 1;
+            request.query_string = ByteString(end + 1, remain - (end - begin));
+            remain = end - begin;
         }
         if (!Url::Decode(begin, remain, request.path))
         {
@@ -411,7 +410,7 @@ namespace tempearly
 
         if (stream)
         {
-            Handle<Parser> parser = new Parser(stream);
+            Handle<ScriptParser> parser = new ScriptParser(stream);
             Handle<Script> script = parser->Compile();
 
             parser->Close();

@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "parser.h"
 #include "utils.h"
 #include "api/exception.h"
 #include "api/function.h"
@@ -8,6 +7,7 @@
 #include "core/bytestring.h"
 #include "core/filename.h"
 #include "io/stream.h"
+#include "script/parser.h"
 
 namespace tempearly
 {
@@ -87,7 +87,7 @@ namespace tempearly
 
         if (stream)
         {
-            Handle<Parser> parser = new Parser(stream);
+            Handle<ScriptParser> parser = new ScriptParser(stream);
             Handle<Script> script = parser->Compile();
 
             parser->Close();
@@ -126,7 +126,7 @@ namespace tempearly
         }
         if ((stream = filename.Open(Filename::MODE_READ)))
         {
-            Handle<Parser> parser = new Parser(stream);
+            Handle<ScriptParser> parser = new ScriptParser(stream);
             Handle<Script> script = parser->Compile();
             Value result;
 

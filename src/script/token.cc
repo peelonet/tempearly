@@ -1,4 +1,4 @@
-#include "token.h"
+#include "script/token.h"
 
 namespace tempearly
 {

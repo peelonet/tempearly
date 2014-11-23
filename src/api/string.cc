@@ -3,8 +3,11 @@
 #include "interpreter.h"
 #include "api/iterator.h"
 #include "api/list.h"
+#include "core/bytestring.h"
 #include "core/random.h"
 #include "core/stringbuilder.h"
+#include "io/stream.h"
+#include "json/parser.h"
 
 namespace tempearly
 {
@@ -685,6 +688,32 @@ namespace tempearly
         return Value();
     }
 
+    /**
+     * String#parse_json() => Object
+     *
+     * Attempts to parse contents of the string as JSON and returns value
+     * contained by that JSON.
+     *
+     * Throws: ValueError - If string cannot be parsed as JSON.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_parse_json)
+    {
+        Handle<Stream> stream = args[0].AsString().Encode().AsStream();
+        Handle<JsonParser> parser = new JsonParser(stream);
+        Value value;
+
+        if (parser->ParseValue(interpreter, value))
+        {
+            return value;
+        }
+        else if (!interpreter->HasException())
+        {
+            interpreter->Throw(interpreter->eValueError, parser->GetErrorMessage());
+        }
+
+        return Value();
+    }
+
     void init_string(Interpreter* i)
     {
         Handle<Class> cString = i->AddClass("String", i->cIterable);
@@ -724,5 +753,7 @@ namespace tempearly
         cString->AddMethod(i, "__mul__", 1, str_mul);
         cString->AddMethod(i, "__eq__", 1, str_eq);
         cString->AddMethod(i, "__lt__", 1, str_lt);
+
+        cString->AddMethod(i, "parse_json", 0, str_parse_json);
     }
 }
