@@ -2,7 +2,6 @@
 
 ## Interpreter
 
-- Abstract parser class
 - Streams which can only read text content
 - Builtin support for SQLite
 - Interfaces/mixins for classes
