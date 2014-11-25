@@ -55,6 +55,7 @@ namespace tempearly
     class ExceptionObject;
     class Filename;
     class FileObject;
+    class Frame;
     class FunctionObject;
     class Interpreter;
     class IteratorObject;
@@ -69,7 +70,6 @@ namespace tempearly
     class Request;
     class Response;
     class Result;
-    class Scope;
     class Script;
     class ScriptParser;
     class Socket;

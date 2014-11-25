@@ -1,6 +1,5 @@
 #include "interpreter.h"
 #include "utils.h"
-#include "api/function.h"
 #include "core/stringbuilder.h"
 
 namespace tempearly
@@ -117,11 +116,13 @@ namespace tempearly
             {
                 Value result;
 
+                interpreter->PushFrame(Handle<Frame>(), this);
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
                     interpreter->Throw(interpreter->eTypeError,
                                        "Missing method receiver");
+                    interpreter->PopFrame();
 
                     return Value();
                 }
@@ -135,6 +136,7 @@ namespace tempearly
                        << "' object but received a '"
                        << args[0].GetClass(interpreter)->GetName();
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->PopFrame();
 
                     return Value();
                 }
@@ -150,6 +152,7 @@ namespace tempearly
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                        interpreter->PopFrame();
 
                         return Value();
                     }
@@ -163,10 +166,12 @@ namespace tempearly
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->PopFrame();
 
                     return Value();
                 }
                 result = m_callback(interpreter, args);
+                interpreter->PopFrame();
 
                 return result;
             }
@@ -220,6 +225,7 @@ namespace tempearly
             {
                 Value result;
 
+                interpreter->PushFrame(Handle<Frame>(), this);
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
@@ -232,6 +238,7 @@ namespace tempearly
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                        interpreter->PopFrame();
 
                         return Value();
                     }
@@ -245,10 +252,12 @@ namespace tempearly
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->PopFrame();
 
                     return Value();
                 }
                 result = m_callback(interpreter, args);
+                interpreter->PopFrame();
 
                 return result;
             }
@@ -303,8 +312,10 @@ namespace tempearly
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
+                    interpreter->PushFrame(Handle<Frame>(), this);
                     interpreter->Throw(interpreter->eTypeError,
                                        "Missing method receiver");
+                    interpreter->PopFrame();
 
                     return Value();
                 }

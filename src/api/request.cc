@@ -298,7 +298,7 @@ namespace tempearly
         Handle<Class> cRequest = new Class(i->cObject);
         Handle<Object> instance = new Object(cRequest);
 
-        i->globals->SetVariable("request", Value(instance));
+        i->SetGlobalVariable("request", Value(instance));
 
         cRequest->SetAllocator(Class::kNoAlloc);
 
