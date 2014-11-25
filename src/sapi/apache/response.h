@@ -16,7 +16,7 @@ namespace tempearly
 
         void Commit();
 
-        void Write(std::size_t size, const char* data);
+        void Write(const ByteString& data);
 
     private:
         request_rec* m_request;

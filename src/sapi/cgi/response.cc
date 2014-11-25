@@ -33,15 +33,18 @@ namespace tempearly
         std::fflush(stdout);
     }
 
-    void CgiResponse::Write(std::size_t size, const char* data)
+    void CgiResponse::Write(const ByteString& data)
     {
+        const std::size_t length = data.GetLength();
+
+        if (!length)
+        {
+            return;
+        }
         if (!m_committed)
         {
             Commit();
         }
-        std::fwrite(static_cast<const void*>(data),
-                    sizeof(char),
-                    size,
-                    stdout);
+        std::fwrite(static_cast<const void*>(data.GetBytes()), sizeof(byte), length, stdout);
     }
 }

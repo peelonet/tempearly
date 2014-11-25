@@ -44,12 +44,18 @@ namespace tempearly
         }
     }
 
-    void ApacheResponse::Write(std::size_t size, const char* data)
+    void ApacheResponse::Write(const ByteString& data)
     {
+        const std::size_t length = data.GetLength();
+
+        if (!length)
+        {
+            return;
+        }
         if (!m_committed)
         {
             Commit();
         }
-        ap_rwrite(data, size, m_request);
+        ap_rwrite(data.GetBytes(), length, m_request);
     }
 }

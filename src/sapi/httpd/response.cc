@@ -31,13 +31,17 @@ namespace tempearly
         m_socket->Write(reinterpret_cast<const byte*>("\r\n"), 2);
     }
 
-    void HttpServerResponse::Write(std::size_t size, const char* data)
+    void HttpServerResponse::Write(const ByteString& data)
     {
+        if (data.IsEmpty())
+        {
+            return;
+        }
         if (!m_committed)
         {
             Commit();
         }
-        m_socket->Write(reinterpret_cast<const byte*>(data), size);
+        m_socket->Write(data);
     }
 
     void HttpServerResponse::Mark()

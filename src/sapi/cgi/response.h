@@ -14,7 +14,7 @@ namespace tempearly
 
         void Commit();
 
-        void Write(std::size_t size, const char* data);
+        void Write(const ByteString& data);
 
     private:
         /** Whether the response has been committed or not. */

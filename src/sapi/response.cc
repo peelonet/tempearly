@@ -49,11 +49,14 @@ namespace tempearly
         }
     }
 
-    void Response::Write(const String& string)
+    void Response::RemoveHeader(const String& name)
     {
-        const ByteString bytes = string.Encode();
+        m_headers.Erase(name);
+    }
 
-        Write(bytes.GetLength(), bytes.c_str());
+    void Response::Write(const String& text)
+    {
+        Write(text.Encode());
     }
 
     void Response::SendException(const Value& exception)

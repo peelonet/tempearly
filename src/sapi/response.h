@@ -64,8 +64,8 @@ namespace tempearly
         bool GetHeader(const String& name, String& slot) const;
 
         /**
-         * Sets value of an response value. Existing headers with same name are
-         * overridden.
+         * Sets value of an response header. Existing headers with same name
+         * are overridden.
          *
          * \param name  Name of the header
          * \param value Value of the header
@@ -74,11 +74,32 @@ namespace tempearly
 
         void AddHeader(const String& name, const String& value);
 
-        // TODO: void RemoveHeader(const String& name);
+        /**
+         * Removes an response header from the response.
+         *
+         * \param name Name of the header to remove
+         */
+        void RemoveHeader(const String& name);
 
-        virtual void Write(const String& string);
+        /**
+         * Sends binary data to the client. Must be overridden by derived
+         * classes. If response headers haven't been sent before this method
+         * is called, they must be sent to the client before any data is
+         * being sent.
+         *
+         * \param data Binary data which is going to be sent to the client
+         */
+        virtual void Write(const ByteString& data) = 0;
 
-        virtual void Write(std::size_t size, const char* data) = 0;
+        /**
+         * Sends text data to the client. It will be encoded with UTF-8
+         * character encoding and sent to the client. Response headers are
+         * also sent to the client before any text will be sent, if the
+         * headers haven't already been sent.
+         *
+         * \param text Text which is going to be sent to the client
+         */
+        virtual void Write(const String& text);
 
         void SendException(const Value& exception);
 
