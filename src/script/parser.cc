@@ -2287,7 +2287,8 @@ SCAN_EXPONENT:
                         kind == Token::ASSIGN_SUB     ? "__sub__" :
                         kind == Token::ASSIGN_MUL     ? "__mul__" :
                         kind == Token::ASSIGN_DIV     ? "__div__" :
-                                                        "__mod__"
+                                                        "__mod__",
+                        Vector<Handle<Node> >(1, operand)
                     )
                 );
             }
