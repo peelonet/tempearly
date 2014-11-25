@@ -397,6 +397,74 @@ namespace tempearly
             m_front = m_back = 0;
         }
 
+        /**
+         * Removes an entry from the dictionary.
+         *
+         * \param id Identifier of the entry to remove
+         */
+        void Erase(const String& id)
+        {
+            const std::size_t hash = id.HashCode();
+            const std::size_t index = hash % kBucketSize;
+            Entry* entry = m_bucket[index];
+
+            if (!entry)
+            {
+                return;
+            }
+            if (entry->m_hash_code == hash)
+            {
+                m_bucket[index] = entry->m_child;
+                if (entry->m_next && entry->m_previous)
+                {
+                    entry->m_next->m_previous = entry->m_previous;
+                    entry->m_previous->m_next = entry->m_next;
+                }
+                else if (entry->m_next)
+                {
+                    entry->m_next->m_previous = 0;
+                    m_front = entry->m_next;
+                }
+                else if (entry->m_previous)
+                {
+                    entry->m_previous->m_next = 0;
+                    m_back = entry->m_previous;
+                } else {
+                    m_front = m_back = 0;
+                }
+                delete entry;
+                return;
+            }
+            for (; entry->m_child; entry = entry->m_child)
+            {
+                if (entry->m_child->m_hash_code == hash)
+                {
+                    Entry* child = entry->m_child;
+
+                    entry->m_child = entry->m_child->m_child;
+                    if (child->m_next && child->m_previous)
+                    {
+                        child->m_next->m_previous = child->m_previous;
+                        child->m_previous->m_next = child->m_next;
+                    }
+                    else if (child->m_next)
+                    {
+                        child->m_next->m_previous = 0;
+                        m_front = child->m_next;
+                    }
+                    else if (child->m_previous)
+                    {
+                        child->m_previous->m_next = 0;
+                        m_back = child->m_previous;
+                    } else {
+                        m_front = m_back = 0;
+                    }
+                    delete entry;
+                    return;
+                }
+            }
+        }
+
     private:
         /** The actual hash table. */
         Entry** m_bucket;
