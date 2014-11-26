@@ -27,7 +27,6 @@ namespace tempearly
         {
             return;
         }
-        IncReferenceCount();
         if ((value->m_previous = m_value_tail))
         {
             m_value_tail->m_next = value;
@@ -43,7 +42,6 @@ namespace tempearly
         {
             return;
         }
-        DecReferenceCount();
         if (value->m_next && value->m_previous)
         {
             value->m_previous->m_next = value->m_next;

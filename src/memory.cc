@@ -170,9 +170,9 @@ namespace tempearly
             std::fprintf(stderr, "GC: Generation 0 reached threshold.\n");
 #endif
             generation0.counter = 0;
-            generation0.Mark();
-            generation1.Mark();
             generation2.Mark();
+            generation1.Mark();
+            generation0.Mark();
             generation0.Examine(generation1);
             if (++generation1.counter >= TEMPEARLY_GC_THRESHOLD1)
             {
