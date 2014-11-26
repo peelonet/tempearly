@@ -6,6 +6,10 @@
 - Builtin support for SQLite
 - Interfaces/mixins for classes
 - More detailed error messages. (Include source position.)
+- Separate development and production modes. Full stack traces should not
+  be shown when the interpreter is being run in production mode. Only some
+  generic "an error happened" message should be sent to the client for
+  security reasons.
 
 ## API
 
