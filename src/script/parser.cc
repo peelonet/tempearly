@@ -6,6 +6,7 @@
 
 namespace tempearly
 {
+    static bool parse_escape_sequence(const Handle<ScriptParser>&, StringBuilder&);
     static bool parse_text_block(const Handle<ScriptParser>&, Vector<Handle<Node> >&, bool&);
     static bool parse_script_block(const Handle<ScriptParser>&, Vector<Handle<Node> >&, bool&);
     static Handle<Node> parse_stmt(const Handle<ScriptParser>&);
@@ -462,7 +463,12 @@ READ_NEXT_CHAR:
                     }
                     else if (c == '\\')
                     {
-                        // TODO: process escape sequence
+                        if (!parse_escape_sequence(this, m_buffer))
+                        {
+                            token.kind = Token::ERROR;
+
+                            return token;
+                        }
                     } else {
                         m_buffer << c;
                     }
@@ -719,6 +725,95 @@ SCAN_EXPONENT:
         }
 
         return false;
+    }
+
+    static bool parse_escape_sequence(const Handle<ScriptParser>& parser, StringBuilder& buffer)
+    {
+        rune r = parser->ReadRune();
+
+        switch (r)
+        {
+            case '\\':
+            case '"':
+            case '\'':
+                buffer << r;
+                break;
+
+            // New lines are ignored
+            case '\n':
+                break;
+            case '\r':
+                parser->ReadRune('\n');
+                break;
+
+            // Bell character
+            case 'a':
+                buffer << 0x07;
+                break;
+
+            // Backspace
+            case 'b':
+                buffer << 0x08;
+                break;
+
+            // Formfeed
+            case 'f':
+                buffer << 0x0c;
+                break;
+
+            // New line
+            case 'n':
+                buffer << 0x0a;
+                break;
+
+            // Carriage return
+            case 'r':
+                buffer << 0x0d;
+                break;
+
+            // Horizontal tab
+            case 't':
+                buffer << 0x09;
+                break;
+
+            // Vertical tab
+            case 'v':
+                buffer << 0x0b;
+                break;
+
+            case 'u':
+            {
+                rune result = 0;
+
+                for (int i = 0; i < 4; ++i)
+                {
+                    if (!std::isxdigit(r = parser->ReadRune()))
+                    {
+                        parser->SetErrorMessage("Malformed escape sequence");
+
+                        return false;
+                    }
+                    if (r >= 'A' && r <= 'F')
+                    {
+                        result = result * 16 + (i - 'A' + 10);
+                    }
+                    else if (r >= 'a' && r <= 'f')
+                    {
+                        result = result * 16 + (i - 'a' + 10);
+                    } else {
+                        result = result * 16 + (i - '0');
+                    }
+                }
+                buffer << result;
+                break;
+            }
+
+            default:
+                parser->SetErrorMessage("Malformed escape sequence");
+                return false;
+        }
+
+        return true;
     }
 
     static bool parse_text_block(const Handle<ScriptParser>& parser, Vector<Handle<Node> >& nodes, bool& should_continue)
