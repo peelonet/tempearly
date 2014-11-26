@@ -1,7 +1,6 @@
 #include <cmath>
 
 #include "interpreter.h"
-#include "api/function.h"
 #include "core/bytestring.h"
 
 namespace tempearly

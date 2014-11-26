@@ -1,7 +1,6 @@
 #include "interpreter.h"
 #include "node.h"
 #include "parameter.h"
-#include "api/function.h"
 #include "api/list.h"
 #include "api/map.h"
 #include "api/range.h"
@@ -260,7 +259,6 @@ namespace tempearly
         {
             return Result(Result::KIND_ERROR);
         }
-        interpreter->PushScope(interpreter->GetScope());
         while (iterator.GetNext(interpreter, element))
         {
             if (m_variable->AssignLocal(interpreter, element))
@@ -274,20 +272,15 @@ namespace tempearly
                         break;
 
                     case Result::KIND_BREAK:
-                        interpreter->PopScope();
                         return Result();
 
                     default:
-                        interpreter->PopScope();
                         return result;
                 }
             } else {
-                interpreter->PopScope();
-
                 return Result(Result::KIND_ERROR);
             }
         }
-        interpreter->PopScope();
         if (interpreter->HasException())
         {
             return Result(Result::KIND_ERROR);
@@ -905,19 +898,18 @@ namespace tempearly
     {
         Value value;
 
-        for (Handle<Scope> scope = interpreter->GetScope();
-             scope;
-             scope = scope->GetParent())
+        for (Handle<Frame> frame = interpreter->GetFrame(); frame; frame = frame->GetEnclosingFrame())
         {
-            if (scope->GetVariable(m_id, value))
+            if (frame->GetLocalVariable(m_id, value))
             {
                 return value;
             }
         }
-        interpreter->Throw(interpreter->eNameError,
-                           "Name '"
-                           + m_id
-                           + "' is not defined");
+        if (interpreter->GetGlobalVariable(m_id, value))
+        {
+            return value;
+        }
+        interpreter->Throw(interpreter->eNameError, "Name '" + m_id + "' is not defined");
 
         return Result(Result::KIND_ERROR);
     }
@@ -925,33 +917,28 @@ namespace tempearly
     bool IdentifierNode::Assign(const Handle<Interpreter>& interpreter,
                                 const Value& value) const
     {
-        Handle<Scope> scope;
+        Handle<Frame> frame;
 
         // First go through the scope chain and see if some scope already has
         // the variable.
-        for (scope = interpreter->GetScope(); scope; scope = scope->GetParent())
+        for (frame = interpreter->GetFrame(); frame; frame = frame->GetEnclosingFrame())
         {
-            if (scope->HasVariable(m_id))
+            if (frame->ReplaceLocalVariable(m_id, value))
             {
-                scope->SetVariable(m_id, value);
-
                 return true;
             }
         }
 
         // If no scope has variable with given identifier, create a new variable
         // at the topmost scope.
-        if ((scope = interpreter->GetScope()))
+        if ((frame = interpreter->GetFrame()))
         {
-            scope->SetVariable(m_id, value);
+            frame->SetLocalVariable(m_id, value);
 
             return true;
         }
 
-        interpreter->Throw(interpreter->eNameError,
-                           "Name '"
-                           + m_id
-                           + "' is not defined");
+        interpreter->Throw(interpreter->eNameError, "Name '" + m_id + "' is not defined");
 
         return false;
     }
@@ -959,19 +946,16 @@ namespace tempearly
     bool IdentifierNode::AssignLocal(const Handle<Interpreter>& interpreter,
                                      const Value& value) const
     {
-        Handle<Scope> scope = interpreter->GetScope();
+        Handle<Frame> frame = interpreter->GetFrame();
 
-        if (scope)
+        if (frame)
         {
-            scope->SetVariable(m_id, value);
+            frame->SetLocalVariable(m_id, value);
 
             return true;
         }
 
-        interpreter->Throw(interpreter->eNameError,
-                           "Name '"
-                           + m_id
-                           + "' is not defined");
+        interpreter->Throw(interpreter->eNameError, "Name '" + m_id + "' is not defined");
 
         return false;
     }

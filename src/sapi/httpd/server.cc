@@ -212,9 +212,9 @@ namespace tempearly
         );
         interpreter->response = new HttpServerResponse(client);
         interpreter->Initialize();
+        interpreter->PushFrame();
         if (mapping.script)
         {
-            interpreter->PushScope(interpreter->globals);
             if (!mapping.script->Execute(interpreter))
             {
                 interpreter->response->SendException(interpreter->GetException());
@@ -227,6 +227,7 @@ namespace tempearly
             interpreter->Throw(interpreter->eSyntaxError, mapping.error);
             interpreter->response->SendException(interpreter->GetException());
         }
+        interpreter->PopFrame();
         client->Close();
     }
 

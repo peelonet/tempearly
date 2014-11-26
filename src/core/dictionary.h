@@ -46,6 +46,14 @@ namespace tempearly
             }
 
             /**
+             * Sets new value for the entry.
+             */
+            inline void SetValue(const T& value)
+            {
+                m_value = value;
+            }
+
+            /**
              * Returns pointer to the next entry.
              */
             inline const Entry* GetNext() const

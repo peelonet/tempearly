@@ -983,7 +983,7 @@ SCAN_EXPONENT:
         Handle<Node> condition;
         Handle<Node> statement;
 
-        if (!expect_token(parser, Token::KW_IF)
+        if (!expect_token(parser, Token::KW_WHILE)
             || !(condition = parse_expr(parser))
             || !expect_token(parser, Token::COLON)
             || !(statement = parse_block(parser))
@@ -2287,7 +2287,8 @@ SCAN_EXPONENT:
                         kind == Token::ASSIGN_SUB     ? "__sub__" :
                         kind == Token::ASSIGN_MUL     ? "__mul__" :
                         kind == Token::ASSIGN_DIV     ? "__div__" :
-                                                        "__mod__"
+                                                        "__mod__",
+                        Vector<Handle<Node> >(1, operand)
                     )
                 );
             }

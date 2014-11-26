@@ -1,7 +1,6 @@
 #include "interpreter.h"
 #include "utils.h"
 #include "api/exception.h"
-#include "api/function.h"
 #include "api/iterator.h"
 #include "api/map.h"
 #include "core/bytestring.h"
@@ -35,13 +34,17 @@ namespace tempearly
     Interpreter::Interpreter()
         : request(0)
         , response(0)
-        , globals(0)
-        , m_scope(0)
+        , m_frame(0)
+        , m_global_variables(0)
         , m_empty_iterator(0)
         , m_imported_files(0) {}
 
     Interpreter::~Interpreter()
     {
+        if (m_global_variables)
+        {
+            delete m_global_variables;
+        }
         if (m_imported_files)
         {
             delete m_imported_files;
@@ -54,8 +57,6 @@ namespace tempearly
         {
             return;
         }
-
-        globals = new Scope(Handle<Scope>(), Handle<Scope>());
 
         init_object(this);
         init_iterable(this);
@@ -91,17 +92,18 @@ namespace tempearly
             Handle<Script> script = parser->Compile();
 
             parser->Close();
+            PushFrame();
             if (script)
             {
                 bool result;
 
-                PushScope(globals);
                 result = script->Execute(this);
-                PopScope();
+                PopFrame();
 
                 return result;
             } else {
                 Throw(eSyntaxError, parser->GetErrorMessage());
+                PopFrame();
             }
         } else {
             Throw(eImportError, "Unable to include file");
@@ -131,21 +133,21 @@ namespace tempearly
             Value result;
 
             parser->Close();
+            PushFrame();
             if (!script)
             {
                 Throw(eSyntaxError, parser->GetErrorMessage());
 
                 return Value();
             }
-            PushScope(globals);
             if (!script->Execute(this))
             {
-                PopScope();
+                PopFrame();
 
                 return Value();
             }
-            result = m_scope->ToObject(this);
-            PopScope();
+            result = m_frame->GetLocalVariables(this);
+            PopFrame();
             if (!m_imported_files)
             {
                 m_imported_files = new Dictionary<Value>();
@@ -160,18 +162,14 @@ namespace tempearly
         }
     }
 
-    Handle<Class> Interpreter::AddClass(const String& name,
-                                        const Handle<Class>& base)
+    Handle<Class> Interpreter::AddClass(const String& name, const Handle<Class>& base)
     {
         Handle<Class> cls = new Class(base);
 
         if (!name.IsEmpty())
         {
             cls->SetAttribute("__name__", Value::NewString(name));
-        }
-        if (globals)
-        {
-            globals->SetVariable(name, Value(cls));
+            SetGlobalVariable(name, Value(cls));
         }
 
         return cls;
@@ -193,6 +191,7 @@ namespace tempearly
             {
                 Value result;
 
+                interpreter->PushFrame(Handle<Frame>(), this);
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
@@ -201,10 +200,11 @@ namespace tempearly
                         StringBuilder sb;
 
                         sb << "Function expected at least "
-                           << (-(m_arity) - 1)
+                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
                            << " arguments, got "
                            << Utils::ToString(static_cast<u64>(args.GetSize()));
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                        interpreter->PopFrame();
 
                         return Value();
                     }
@@ -214,14 +214,16 @@ namespace tempearly
                     StringBuilder sb;
 
                     sb << "Function expected "
-                       << m_arity
+                       << Utils::ToString(static_cast<u64>(m_arity))
                        << " arguments, got "
                        << Utils::ToString(static_cast<u64>(args.GetSize()));
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->PopFrame();
 
                     return Value();
                 }
                 result = m_callback(interpreter, args);
+                interpreter->PopFrame();
 
                 return result;
             }
@@ -239,38 +241,68 @@ namespace tempearly
     {
         Handle<FunctionObject> function = new GlobalFunction(this, arity, callback);
 
-        if (globals)
+        if (!name.IsEmpty())
         {
-            globals->SetVariable(name, Value(function));
+            function->SetAttribute("__name__", Value::NewString(name));
+            SetGlobalVariable(name, Value(function));
         }
+    }
+
+    void Interpreter::PushFrame(const Handle<Frame>& enclosing, const Handle<FunctionObject>& function)
+    {
+        m_frame = new Frame(m_frame, enclosing, function);
+    }
+
+    void Interpreter::PopFrame()
+    {
+        if (m_frame)
+        {
+            m_frame = m_frame->GetPrevious().Get();
+        }
+    }
+
+    bool Interpreter::HasGlobalVariable(const String& id) const
+    {
+        return m_global_variables && m_global_variables->Find(id);
+    }
+
+    bool Interpreter::GetGlobalVariable(const String& id, Value& slot) const
+    {
+        if (m_global_variables)
+        {
+            const Dictionary<Value>::Entry* e = m_global_variables->Find(id);
+
+            if (e)
+            {
+                slot = e->GetValue();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void Interpreter::SetGlobalVariable(const String& id, const Value& value)
+    {
+        if (!m_global_variables)
+        {
+            m_global_variables = new Dictionary<Value>();
+        }
+        m_global_variables->Insert(id, value);
     }
 
     void Interpreter::Throw(const Handle<Class>& cls, const String& message)
     {
         if (cls)
         {
-            Handle<ExceptionObject> exception = new ExceptionObject(cls);
+            Handle<ExceptionObject> exception = new ExceptionObject(cls, m_frame);
 
             exception->SetAttribute("message", Value::NewString(message));
             m_exception = Value(exception);
         } else {
-            std::fprintf(stderr,
-                         "%s (fatal internal error)\n",
-                         message.Encode().c_str());
+            std::fprintf(stderr, "%s (fatal internal error)\n", message.Encode().c_str());
             std::abort();
-        }
-    }
-
-    void Interpreter::PushScope(const Handle<Scope>& parent)
-    {
-        m_scope = new Scope(m_scope, parent);
-    }
-
-    void Interpreter::PopScope()
-    {
-        if (m_scope)
-        {
-            m_scope = m_scope->GetPrevious();
         }
     }
 
@@ -313,25 +345,28 @@ namespace tempearly
         {
             response->Mark();
         }
-        if (globals && !globals->IsMarked())
+        if (m_frame && !m_frame->IsMarked())
         {
-            globals->Mark();
+            m_frame->Mark();
+        }
+        if (m_global_variables)
+        {
+            for (const Dictionary<Value>::Entry* e = m_global_variables->GetFront(); e; e = e->GetNext())
+            {
+                e->GetValue().Mark();
+            }
         }
         m_exception.Mark();
         m_caught_exception.Mark();
-        if (m_scope && !m_scope->IsMarked())
-        {
-            m_scope->Mark();
-        }
         if (m_empty_iterator && !m_empty_iterator->IsMarked())
         {
             m_empty_iterator->Mark();
         }
         if (m_imported_files)
         {
-            for (const Dictionary<Value>::Entry* entry = m_imported_files->GetFront(); entry; entry = entry->GetNext())
+            for (const Dictionary<Value>::Entry* e = m_imported_files->GetFront(); e; e = e->GetNext())
             {
-                entry->GetValue().Mark();
+                e->GetValue().Mark();
             }
         }
     }

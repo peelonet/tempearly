@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "api/function.h"
 #include "script/node.h"
 #include "script/parameter.h"
 
@@ -19,15 +18,16 @@ namespace tempearly
                                       const Vector<Handle<Parameter> >& parameters,
                                       const Vector<Handle<Node> >& nodes)
                 : FunctionObject(interpreter)
+                , m_enclosing_frame(interpreter->GetFrame())
                 , m_parameters(parameters)
                 , m_nodes(nodes) {}
 
             Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
-                interpreter->PushScope(interpreter->GetScope());
+                interpreter->PushFrame(m_enclosing_frame, this);
                 if (!Parameter::Apply(interpreter, m_parameters, args))
                 {
-                    interpreter->PopScope();
+                    interpreter->PopFrame();
 
                     return Value();
                 }
@@ -41,7 +41,7 @@ namespace tempearly
                             break;
 
                         case Result::KIND_RETURN:
-                            interpreter->PopScope();
+                            interpreter->PopFrame();
                             if (result.HasValue())
                             {
                                 return result.GetValue();
@@ -51,20 +51,20 @@ namespace tempearly
 
                         case Result::KIND_BREAK:
                             interpreter->Throw(interpreter->eSyntaxError, "Unexpected 'break'");
-                            interpreter->PopScope();
+                            interpreter->PopFrame();
                             return Value();
 
                         case Result::KIND_CONTINUE:
                             interpreter->Throw(interpreter->eSyntaxError, "Unexpected 'continue'");
-                            interpreter->PopScope();
+                            interpreter->PopFrame();
                             return Value();
 
                         default:
-                            interpreter->PopScope();
+                            interpreter->PopFrame();
                             return Value();
                     }
                 }
-                interpreter->PopScope();
+                interpreter->PopFrame();
 
                 return Value::NullValue();
             }
@@ -72,6 +72,10 @@ namespace tempearly
             void Mark()
             {
                 FunctionObject::Mark();
+                if (m_enclosing_frame && !m_enclosing_frame->IsMarked())
+                {
+                    m_enclosing_frame->Mark();
+                }
                 for (std::size_t i = 0; i < m_parameters.GetSize(); ++i)
                 {
                     if (!m_parameters[i]->IsMarked())
@@ -89,6 +93,7 @@ namespace tempearly
             }
 
         private:
+            Frame* m_enclosing_frame;
             const Vector<Parameter*> m_parameters;
             const Vector<Node*> m_nodes;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ScriptedFunction);

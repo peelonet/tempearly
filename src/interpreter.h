@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_INTERPRETER_H_GUARD
 #define TEMPEARLY_INTERPRETER_H_GUARD
 
-#include "scope.h"
+#include "frame.h"
 #include "sapi/request.h"
 #include "sapi/response.h"
 
@@ -27,6 +27,57 @@ namespace tempearly
                          int arity,
                          Value(*callback)(const Handle<Interpreter>&,
                                           const Vector<Value>&));
+
+        /**
+         * Returns current stack frame or null handle if nothing is being
+         * executed by this interpreter.
+         */
+        inline Handle<Frame> GetFrame() const
+        {
+            return m_frame;
+        }
+
+        /**
+         * Pushes new stack frame in the frame chain.
+         *
+         * \param enclosing Optional handle of enclosing frame
+         * \param function  Optional handle of function being executed
+         */
+        void PushFrame(const Handle<Frame>& enclosing = Handle<Frame>(),
+                       const Handle<FunctionObject>& function = Handle<FunctionObject>());
+
+        /**
+         * Pops the most recent stack frame from frame chain.
+         */
+        void PopFrame();
+
+        /**
+         * Searches for an global variable with specified name.
+         *
+         * \param id Name of the variable to look for
+         * \return   A boolean flag indicating whether variable with given name
+         *           was found or not
+         */
+        bool HasGlobalVariable(const String& id) const;
+
+        /**
+         * Attempts to retrieve an global variable with specified name.
+         *
+         * \param id   Name of the variable to look for
+         * \param slot Where value of the variable will be assigned to
+         * \return     A boolean flag indicating whether a variable with given
+         *             name was found or not
+         */
+        bool GetGlobalVariable(const String& id, Value& slot) const;
+
+        /**
+         * Assigns a new global variable with given name and value. Existing
+         * global variables with same name will be overridden.
+         *
+         * \param id    Name of the variable
+         * \param value Value of the variable
+         */
+        void SetGlobalVariable(const String& id, const Value& value);
 
         /**
          * Returns true if this interpreter has an uncaught exception.
@@ -95,26 +146,6 @@ namespace tempearly
         void Throw(const Handle<Class>& cls, const String& message);
 
         /**
-         * Returns current local variable scope.
-         */
-        inline Handle<Scope> GetScope() const
-        {
-            return m_scope;
-        }
-
-        /**
-         * Inserts new local variable scope into the scope chain.
-         *
-         * \param parent Optional parent scope in scope chain
-         */
-        void PushScope(const Handle<Scope>& parent = Handle<Scope>());
-
-        /**
-         * Removes topmost local variable scope from the scope chain.
-         */
-        void PopScope();
-
-        /**
          * Returns shared instance of empty iterator.
          */
         Handle<IteratorObject> GetEmptyIterator();
@@ -127,9 +158,6 @@ namespace tempearly
 
         Request* request;
         Response* response;
-
-        /** Global variable scope. */
-        Scope* globals;
 
         Handle<Class> cBinary;
         Handle<Class> cBool;
@@ -166,12 +194,14 @@ namespace tempearly
         Handle<Class> eZeroDivisionError;
 
     private:
+        /** Current stack frame. */
+        Frame* m_frame;
+        /** Container for global variables. */
+        Dictionary<Value>* m_global_variables;
         /** Current uncaught exception. */
         Value m_exception;
         /** Current caught exception. */
         Value m_caught_exception;
-        /** Current local variable scope. */
-        Scope* m_scope;
         /** Shared instance of empty iterator. */
         IteratorObject* m_empty_iterator;
         /** Container for imported files. */

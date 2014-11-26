@@ -25,9 +25,9 @@ int main(int argc, char** argv)
             interpreter->request = new CgiRequest();
             interpreter->response = new CgiResponse();
             interpreter->Initialize();
+            interpreter->PushFrame();
             if (script)
             {
-                interpreter->PushScope(interpreter->globals);
                 if (!script->Execute(interpreter))
                 {
                     interpreter->response->SendException(interpreter->GetException());
@@ -40,6 +40,7 @@ int main(int argc, char** argv)
                 interpreter->Throw(interpreter->eSyntaxError, error_message);
                 interpreter->response->SendException(interpreter->GetException());
             }
+            interpreter->PopFrame();
         }
     }
 

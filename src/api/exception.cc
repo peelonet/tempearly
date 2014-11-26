@@ -3,8 +3,9 @@
 
 namespace tempearly
 {
-    ExceptionObject::ExceptionObject(const Handle<Class>& cls)
-        : Object(cls) {}
+    ExceptionObject::ExceptionObject(const Handle<Class>& cls, const Handle<Frame>& frame)
+        : Object(cls)
+        , m_frame(frame.Get()) {}
 
     String ExceptionObject::GetMessage() const
     {
@@ -15,6 +16,15 @@ namespace tempearly
             return message.AsString();
         } else {
             return String();
+        }
+    }
+
+    void ExceptionObject::Mark()
+    {
+        Object::Mark();
+        if (m_frame && !m_frame->IsMarked())
+        {
+            m_frame->Mark();
         }
     }
 
@@ -56,7 +66,7 @@ namespace tempearly
     static Handle<CoreObject> ex_alloc(const Handle<Interpreter>& interpreter,
                                        const Handle<Class>& cls)
     {
-        return new ExceptionObject(cls);
+        return new ExceptionObject(cls, interpreter->GetFrame());
     }
 
     void init_exception(Interpreter* i)

@@ -17,7 +17,7 @@ namespace tempearly
                           const Vector<Handle<Parameter> >& parameters,
                           const Vector<Value>& arguments)
     {
-        const Handle<Scope> scope = interpreter->GetScope();
+        const Handle<Frame> frame = interpreter->GetFrame();
 
         for (std::size_t i = 0; i < parameters.GetSize(); ++i)
         {
@@ -49,7 +49,7 @@ namespace tempearly
                     }
                     list->Append(value);
                 }
-                scope->SetVariable(parameter->m_name, Value(list));
+                frame->SetLocalVariable(parameter->m_name, Value(list));
 
                 return true;
             }
@@ -73,7 +73,7 @@ namespace tempearly
                         return false;
                     }
                 }
-                scope->SetVariable(parameter->m_name, arguments[i]);
+                frame->SetLocalVariable(parameter->m_name, arguments[i]);
             }
             else if (parameter->m_default_value)
             {
@@ -83,7 +83,7 @@ namespace tempearly
                 {
                     return false;
                 }
-                scope->SetVariable(parameter->m_name, value);
+                frame->SetLocalVariable(parameter->m_name, value);
             } else {
                 interpreter->Throw(interpreter->eValueError, "Too few arguments");
 
