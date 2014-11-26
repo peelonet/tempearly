@@ -1,12 +1,12 @@
 #!/usr/bin/env tempearly-cgi
 {%
 if request.is_ajax():
-    response["Content-Type"] = "application/json";
     if Bool.rand():
         image = "http://www.eurocoins.co.uk/images/2002eurozone2eurorev240.jpg";
     else:
         image = "http://www.eurocoins.co.uk/images/2002finland2euroobv240.jpg";
-    end if
+    end if;
+    response["Content-Type"] = "application/json";
     response.write({"image": image}.as_json());
     return;
 end if;
@@ -33,7 +33,7 @@ end if;
             $("img").fadeOut(function()
             {
                 $.ajax({
-                    url: "{{request.path()}}",
+                    url: "{! request.path().escape_js() !}",
                     success: function(data)
                     {
                         $("img").attr("src", data.image).fadeIn();
