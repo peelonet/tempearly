@@ -246,13 +246,13 @@ namespace tempearly
                             }
                             if (r >= 'A' && r <= 'F')
                             {
-                                result = result * 16 + (i - 'A' + 10);
+                                result = result * 16 + (r - 'A' + 10);
                             }
                             else if (r >= 'a' && r <= 'f')
                             {
-                                result = result * 16 + (i - 'a' + 10);
+                                result = result * 16 + (r - 'a' + 10);
                             } else {
-                                result = result * 16 + (i - '0');
+                                result = result * 16 + (r - '0');
                             }
                         }
                         buffer << result;
