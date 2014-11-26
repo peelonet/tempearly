@@ -118,6 +118,7 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(req_json)
     {
         const ByteString body = interpreter->request->GetBody();
+        Handle<Stream> stream;
         Handle<JsonParser> parser;
         Value value;
 
@@ -127,7 +128,8 @@ namespace tempearly
 
             return Value();
         }
-        parser = new JsonParser(body.AsStream());
+        stream = body.AsStream();
+        parser = new JsonParser(stream);
         if (!parser->ParseValue(interpreter, value))
         {
             if (!interpreter->HasException())

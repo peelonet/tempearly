@@ -17,7 +17,7 @@ namespace tempearly
 
         explicit Parser(const Handle<Stream>& stream);
 
-        ~Parser();
+        virtual ~Parser();
 
         inline const String& GetErrorMessage() const
         {
