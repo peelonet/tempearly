@@ -305,8 +305,10 @@ namespace tempearly
     void init_object(Interpreter* i)
     {
         Handle<Class> cObject = i->AddClass("Object", Handle<Class>());
+        Handle<Class> cFunction = i->AddClass("Function", cObject);
 
         i->cObject = cObject.Get();
+        i->cFunction = cFunction.Get();
 
         cObject->AddMethod(i, "__init__", 0, obj_init);
         cObject->AddMethod(i, "__hash__", 0, obj_hash);

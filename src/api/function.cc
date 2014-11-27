@@ -161,7 +161,7 @@ namespace tempearly
 
     void init_function(Interpreter* i)
     {
-        i->cFunction = i->AddClass("Function", i->cObject);
+        Handle<Class> cFunction = i->cFunction;
 
         i->cFunction->SetAllocator(Class::kNoAlloc);
 
