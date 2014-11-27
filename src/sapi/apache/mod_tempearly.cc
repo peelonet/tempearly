@@ -6,12 +6,95 @@
 
 #include "interpreter.h"
 #include "core/filename.h"
+#include "io/stream.h"
 #include "sapi/apache/request.h"
 #include "sapi/apache/response.h"
+#include "script/parser.h"
 
 #include <apr_strings.h>
 
 using namespace tempearly;
+
+struct ScriptMapping
+{
+    /** Timestamp when the script was last compiled. */
+    apr_time_t last_cached;
+    /** Contains compiled script or NULL if syntax error occurred. */
+    Handle<Script> script;
+    /** Contains error message if an syntax error occurred. */
+    String error;
+};
+
+static Dictionary<ScriptMapping> script_cache;
+
+static void compile_script(const Filename& filename, ScriptMapping& mapping)
+{
+    Handle<Stream> stream = filename.Open(Filename::MODE_READ);
+
+    if (stream)
+    {
+        Handle<ScriptParser> parser = new ScriptParser(stream);
+        Handle<Script> script = parser->Compile();
+
+        parser->Close();
+        mapping.script = script.Get();
+        mapping.error.Clear();
+    } else {
+        mapping.error = "Unable to include file";
+    }
+    mapping.last_cached = apr_time_now();
+}
+
+static bool serve_script(request_rec* request)
+{
+    const String filename = request->finfo.fname;
+    Dictionary<ScriptMapping>::Entry* entry = script_cache.Find(filename);
+    Handle<Interpreter> interpreter;
+    ScriptMapping mapping;
+
+    if (!entry)
+    {
+        ScriptMapping& cached = entry->GetValue();
+
+        if (cached.last_cached < request->finfo.mtime)
+        {
+            compile_script(filename, cached);
+        }
+        mapping = cached;
+    } else {
+        compile_script(filename, mapping);
+    }
+    interpreter = new Interpreter();
+    interpreter->request = new ApacheRequest(request);
+    interpreter->response = new ApacheResponse(request);
+    interpreter->Initialize();
+    interpreter->PushFrame();
+    if (mapping.script)
+    {
+        const bool result = mapping.script->Execute(interpreter);
+
+        interpreter->PopFrame();
+        if (result)
+        {
+            if (!interpreter->response->IsCommitted())
+            {
+                interpreter->response->Commit();
+            }
+
+            return true;
+        } else {
+            interpreter->response->SendException(interpreter->GetException());
+
+            return false;
+        }
+    } else {
+        interpreter->Throw(interpreter->eSyntaxError, mapping.error);
+        interpreter->response->SendException(interpreter->GetException());
+        interpreter->PopFrame();
+
+        return false;
+    }
+}
 
 extern "C" int tempearly_handler(request_rec* request)
 {
@@ -33,24 +116,7 @@ extern "C" int tempearly_handler(request_rec* request)
         return HTTP_FORBIDDEN;
     }
 
-    Handle<Interpreter> interpreter = new Interpreter();
-
-    interpreter->request = new ApacheRequest(request);
-    interpreter->response = new ApacheResponse(request);
-    interpreter->Initialize();
-
-    if (!interpreter->Include(Filename(request->filename)))
-    {
-        interpreter->response->SendException(interpreter->GetException());
-
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
-    else if (!interpreter->response->IsCommitted())
-    {
-        interpreter->response->Commit();
-    }
-
-    return OK;
+    return serve_script(request) ? OK : HTTP_INTERNAL_SERVER_ERROR;
 }
 
 extern "C" void tempearly_register_hooks(apr_pool_t* pool)
