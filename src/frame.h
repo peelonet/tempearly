@@ -21,10 +21,14 @@ namespace tempearly
          * \param enclosing_frame Handle to enclosing frame
          * \param function        Handle to function being executed by this
          *                        frame
+         * \param receiver        Value which is calling the function
+         * \param args            Arguments given for the function
          */
         explicit Frame(const Handle<Frame>& previous,
                        const Handle<Frame>& enclosing_frame,
-                       const Handle<FunctionObject>& function);
+                       const Handle<FunctionObject>& function,
+                       const Value& receiver,
+                       const Vector<Value>& args);
 
         ~Frame();
 
@@ -52,6 +56,22 @@ namespace tempearly
         inline Handle<FunctionObject> GetFunction() const
         {
             return m_function;
+        }
+
+        /**
+         * Returns value which is calling the function.
+         */
+        inline const Value& GetReceiver() const
+        {
+            return m_receiver;
+        }
+
+        /**
+         * Returns arguments given for the function.
+         */
+        inline const Vector<Value>& GetArgs() const
+        {
+            return m_args;
         }
 
         /**
@@ -116,6 +136,10 @@ namespace tempearly
         Frame* m_enclosing_frame;
         /** Pointer to function being executed by this frame. */
         FunctionObject* m_function;
+        /** Value which is calling the function. */
+        const Value m_receiver;
+        /** Arguments given for the function. */
+        const Vector<Value> m_args;
         /** Container for local variables. */
         Dictionary<Value>* m_local_variables;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Frame);

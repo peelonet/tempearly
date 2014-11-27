@@ -21,11 +21,17 @@ int main(int argc, char** argv)
         while (FCGI_Accept() >= 0)
         {
             Handle<Interpreter> interpreter = new Interpreter();
+            Handle<Frame> frame;
 
             interpreter->request = new CgiRequest();
             interpreter->response = new CgiResponse();
             interpreter->Initialize();
-            interpreter->PushFrame();
+            frame = interpreter->PushFrame(
+                    Handle<Frame>(),
+                    Handle<FunctionObject>(),
+                    Value::NullValue(),
+                    Vector<Value>()
+            );
             if (script)
             {
                 if (!script->Execute(interpreter))

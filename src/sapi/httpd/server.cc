@@ -185,6 +185,7 @@ namespace tempearly
         Dictionary<ScriptMapping>::Entry* entry = m_script_cache.Find(full_name);
         Handle<Interpreter> interpreter;
         ScriptMapping mapping;
+        Handle<Frame> frame;
 
         if (entry)
         {
@@ -212,7 +213,7 @@ namespace tempearly
         );
         interpreter->response = new HttpServerResponse(client);
         interpreter->Initialize();
-        interpreter->PushFrame();
+        frame = interpreter->PushFrame(Handle<Frame>(), Handle<FunctionObject>(), Value::NullValue(), Vector<Value>());
         if (mapping.script)
         {
             if (!mapping.script->Execute(interpreter))

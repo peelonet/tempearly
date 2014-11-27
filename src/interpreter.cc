@@ -90,9 +90,14 @@ namespace tempearly
         {
             Handle<ScriptParser> parser = new ScriptParser(stream);
             Handle<Script> script = parser->Compile();
+            Handle<Frame> frame = PushFrame(
+                Handle<Frame>(),
+                Handle<FunctionObject>(),
+                Value::NullValue(),
+                Vector<Value>()
+            );
 
             parser->Close();
-            PushFrame();
             if (script)
             {
                 bool result;
@@ -130,10 +135,15 @@ namespace tempearly
         {
             Handle<ScriptParser> parser = new ScriptParser(stream);
             Handle<Script> script = parser->Compile();
+            Handle<Frame> frame = PushFrame(
+                Handle<Frame>(),
+                Handle<FunctionObject>(),
+                Value::NullValue(),
+                Vector<Value>()
+            );
             Value result;
 
             parser->Close();
-            PushFrame();
             if (!script)
             {
                 Throw(eSyntaxError, parser->GetErrorMessage());
@@ -189,9 +199,9 @@ namespace tempearly
 
             Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this, Value::NullValue(), args);
                 Value result;
 
-                interpreter->PushFrame(Handle<Frame>(), this);
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
@@ -248,9 +258,16 @@ namespace tempearly
         }
     }
 
-    void Interpreter::PushFrame(const Handle<Frame>& enclosing, const Handle<FunctionObject>& function)
+    Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing,
+                                         const Handle<FunctionObject>& function,
+                                         const Value& receiver,
+                                         const Vector<Value>& args)
     {
-        m_frame = new Frame(m_frame, enclosing, function);
+        Handle<Frame> frame = new Frame(m_frame, enclosing, function, receiver, args);
+
+        m_frame = frame.Get();
+
+        return frame;
     }
 
     void Interpreter::PopFrame()

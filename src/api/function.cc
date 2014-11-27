@@ -24,7 +24,8 @@ namespace tempearly
 
             Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
-                interpreter->PushFrame(m_enclosing_frame, this);
+                Handle<Frame> frame = interpreter->PushFrame(m_enclosing_frame, this, Value::NullValue(), args);
+
                 if (!Parameter::Apply(interpreter, m_parameters, args))
                 {
                     interpreter->PopFrame();

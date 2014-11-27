@@ -114,20 +114,20 @@ namespace tempearly
 
             Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
+                Handle<Frame> frame;
                 Value result;
 
-                interpreter->PushFrame(Handle<Frame>(), this);
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
                     interpreter->Throw(interpreter->eTypeError,
                                        "Missing method receiver");
-                    interpreter->PopFrame();
 
                     return Value();
                 }
+                frame = interpreter->PushFrame(Handle<Frame>(), this, args[0], args.SubVector(1));
                 // Test that the first argument is correct type.
-                else if (!args[0].IsInstance(interpreter, m_declaring_class))
+                if (!args[0].IsInstance(interpreter, m_declaring_class))
                 {
                     StringBuilder sb;
 
@@ -223,9 +223,9 @@ namespace tempearly
 
             Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
             {
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this, Value(m_declaring_class), args);
                 Value result;
 
-                interpreter->PushFrame(Handle<Frame>(), this);
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
@@ -312,10 +312,8 @@ namespace tempearly
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
-                    interpreter->PushFrame(Handle<Frame>(), this);
                     interpreter->Throw(interpreter->eTypeError,
                                        "Missing method receiver");
-                    interpreter->PopFrame();
 
                     return Value();
                 }
