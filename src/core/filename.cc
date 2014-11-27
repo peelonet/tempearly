@@ -287,7 +287,7 @@ namespace tempearly
 
             bool IsWritable() const
             {
-                return m_mode == Filename::MODE_READ || m_mode == Filename::MODE_READ_WRITE;
+                return m_mode == Filename::MODE_WRITE || m_mode == Filename::MODE_READ_WRITE;
             }
 
             void Close()
