@@ -1,5 +1,5 @@
 #include <cstring>
-#include <apache2/http_protocol.h>
+#include <http_protocol.h>
 
 #include "utils.h"
 #include "core/bytestring.h"
