@@ -91,6 +91,7 @@ SET(
     src/api/request.cc
     src/api/response.cc
     src/api/set.cc
+    src/api/stream.cc
     src/api/string.cc
     src/api/void.cc
     src/core/bytestring.cc

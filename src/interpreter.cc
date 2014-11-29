@@ -28,6 +28,7 @@ namespace tempearly
     void init_request(Interpreter*);
     void init_response(Interpreter*);
     void init_set(Interpreter*);
+    void init_stream(Interpreter*);
     void init_string(Interpreter*);
     void init_void(Interpreter*);
 
@@ -60,6 +61,7 @@ namespace tempearly
 
         init_object(this);
         init_iterable(this);
+        init_stream(this);
         init_bool(this);
         init_number(this);
         init_string(this);

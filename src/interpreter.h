@@ -164,6 +164,7 @@ namespace tempearly
         Handle<Class> cClass;
         Handle<Class> cException;
         Handle<Class> cFile;
+        Handle<Class> cFileStream;
         Handle<Class> cFloat;
         Handle<Class> cFunction;
         Handle<Class> cInt;
@@ -175,7 +176,7 @@ namespace tempearly
         Handle<Class> cObject;
         Handle<Class> cRange;
         Handle<Class> cSet;
-        Handle<Class> cFileStream;
+        Handle<Class> cStream;
         Handle<Class> cString;
         Handle<Class> cVoid;
 

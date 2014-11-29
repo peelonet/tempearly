@@ -3,6 +3,7 @@
 #include "api/iterator.h"
 #include "api/list.h"
 #include "core/bytestring.h"
+#include "core/stringbuilder.h"
 #include "io/stream.h"
 
 #if defined(_WIN32)
@@ -402,14 +403,11 @@ namespace tempearly
         {
         public:
             explicit FileStreamObject(const Handle<Interpreter>& interpreter,
-                                      const String& path,
-                                      const Filename::OpenMode mode,
-                                      bool binary_mode,
-                                      bool append)
-                : Object(interpreter->cFileStream),
-                m_filename(path),
-                m_stream(m_filename.Open(mode, append)),
-                m_is_binary(binary_mode) {}
+                                      const Handle<Stream>& stream,
+                                      bool binary)
+                : Object(interpreter->cFileStream)
+                , m_stream(stream.Get())
+                , m_binary(binary) {}
 
             ~FileStreamObject()
             {
@@ -431,61 +429,110 @@ namespace tempearly
                 return m_stream && m_stream->IsWritable();
             }
 
-            inline bool Exists() const
-            {
-                return m_filename.Exists();
-            }
-
-            inline bool IsFile() const
-            {
-                return m_filename.IsFile();
-            }
-
             inline bool IsBinary() const
             {
-                return m_is_binary;
+                return m_binary;
             }
 
-            std::size_t Write(ByteString data)
+            bool Write(const ByteString& bytes)
             {
-                if (m_stream && m_stream->Write(data))
-                {
-                    return data.GetLength();
-                }
-
-                return 0;
+                return m_stream && m_stream->Write(bytes);
             }
 
-            bool Read(ByteString& out, std::size_t size)
+            bool ReadBytes(ByteString& out, std::size_t size)
             {
-                std::size_t read;
-                std::size_t left;
-                byte buffer[Stream::kBufferSize];
-
                 if (m_stream)
                 {
-                    left = size ? size : String::npos;
+                    byte buffer[Stream::kBufferSize];
+                    Vector<byte> result;
+                    std::size_t read;
 
-                    while (true)
+                    if (size > 0)
                     {
-                        if (m_stream->Read(buffer,
-                                           (left < Stream::kBufferSize)
-                                            ? left : Stream::kBufferSize,
-                                           read))
+                        result.Reserve(size);
+                        while (size > 0)
                         {
-                            out = out.Concat(ByteString(buffer, read));
-                            left -= read;
-
-                            if (!left || read < Stream::kBufferSize)
+                            if (!m_stream->Read(buffer, size < Stream::kBufferSize ? size : Stream::kBufferSize, read))
                             {
-                                return true;
+                                return false;
                             }
-
-                            continue;
+                            if (read > 0)
+                            {
+                                result.PushBack(buffer, read);
+                                size -= read;
+                            } else {
+                                break;
+                            }
                         }
-
-                        break;
+                    } else {
+                        for (;;)
+                        {
+                            if (!m_stream->Read(buffer, Stream::kBufferSize, read))
+                            {
+                                return false;
+                            }
+                            if (read > 0)
+                            {
+                                result.PushBack(buffer, read);
+                            } else {
+                                break;
+                            }
+                        }
                     }
+                    out = ByteString(result.GetData(), result.GetSize());
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool ReadText(String& out, std::size_t size)
+            {
+                if (m_stream)
+                {
+                    StringBuilder buffer;
+                    rune r;
+
+                    if (size > 0)
+                    {
+                        buffer.Reserve(size);
+                        while (size > 0)
+                        {
+                            Stream::ReadResult result = m_stream->ReadRune(r);
+
+                            if (result == Stream::ERROR)
+                            {
+                                return false;
+                            }
+                            else if (result == Stream::SUCCESS)
+                            {
+                                buffer.Append(r);
+                                --size;
+                            } else {
+                                break;
+                            }
+                        }
+                    } else {
+                        for (;;)
+                        {
+                            Stream::ReadResult result = m_stream->ReadRune(r);
+
+                            if (result == Stream::ERROR)
+                            {
+                                return false;
+                            }
+                            else if (result == Stream::SUCCESS)
+                            {
+                                buffer.Append(r);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    out = buffer.ToString();
+
+                    return true;
                 }
 
                 return false;
@@ -502,6 +549,7 @@ namespace tempearly
 
             void Mark()
             {
+                Object::Mark();
                 if (m_stream && !m_stream->IsMarked())
                 {
                     m_stream->Mark();
@@ -509,42 +557,53 @@ namespace tempearly
             }
 
         private:
-            Filename m_filename;
             Stream* m_stream;
-            const bool m_is_binary;
+            const bool m_binary;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FileStreamObject);
         };
     }
 
     /**
-     * File.open(Path, [Mode = "r"]) => File Stream Object
+     * File.open(path, [mode = "r"]) => Stream
      *
-     * Opens a stream to a file and returns a handle (the stream object) to it
+     * Opens specified file for reading or writing (or both) depending on the
+     * given mode string and returns an stream object.
      */
     TEMPEARLY_NATIVE_METHOD(stream_s_open)
     {
-        String mode_str;
-        String path;
+        Filename path;
         Filename::OpenMode mode = Filename::MODE_READ;
-        bool binary = false;
-        bool append = false;
+        Handle<Stream> stream;
+        bool is_binary = false;
+        bool append;
 
+        if (args[0].IsFile())
+        {
+            path = args[0].As<FileObject>()->GetPath();
+        }
+        else if (args[0].IsString())
+        {
+            path = args[0].AsString();
+        } else {
+            interpreter->Throw(interpreter->eValueError, "Filename must be either file or a string");
+
+            return Value();
+        }
         if (args.GetSize() > 1)
         {
-            if (!args[1].AsString(interpreter, mode_str))
-            {
-                interpreter->Throw(interpreter->eValueError,
-                                   "File mode must be a string");
-                return Value();
-            }
-
+            String mode_string;
             bool got_read = false;
 
-            for(size_t i = 0; i < mode_str.GetLength(); ++i)
+            if (!args[1].AsString(interpreter, mode_string))
             {
-                switch (mode_str[i])
+                return Value();
+            }
+            for (std::size_t i = 0; i < mode_string.GetLength(); ++i)
+            {
+                switch (mode_string[i])
                 {
                     case 'a':
-                        append = true; // Case fall-trough is intended
+                        append = true; // Case fall-through is intended
                     case 'w':
                         if (got_read)
                         {
@@ -553,162 +612,157 @@ namespace tempearly
                             mode = Filename::MODE_WRITE;
                         }
                         break;
+
                     case 'b':
-                        binary = true;
+                        is_binary = true;
                         break;
+
                     case 'r':
                         got_read = true;
-
                         if (mode != Filename::MODE_READ)
                         {
                             mode = Filename::MODE_READ_WRITE;
                         }
                         break;
+
                     default:
-                        interpreter->Throw(interpreter->eValueError,
-                                           "Invalid file mode");
+                        interpreter->Throw(interpreter->eValueError, "Invalid open mode");
                         return Value();
                 }
             }
         }
-
-        if (!args[0].AsString(interpreter, path))
+        if (mode == Filename::MODE_READ && !append && !path.Exists())
         {
-            interpreter->Throw(interpreter->eValueError,
-                               "Invalid file path");
+            interpreter->Throw(interpreter->eIOError, "File does not exist");
+
+            return Value();
+        }
+        if (!(stream = path.Open(mode, append)))
+        {
+            interpreter->Throw(interpreter->eIOError, "File cannot be opened");
+
             return Value();
         }
 
-        if (mode == Filename::MODE_READ && !append && !(Filename(path).Exists()))
-        {
-            interpreter->Throw(interpreter->eValueError,
-                               "File does not exist");
-            return Value();
-        }
-
-        return Value(new FileStreamObject(interpreter, path, mode, binary, append));
+        return Value(new FileStreamObject(interpreter, stream, is_binary));
     }
 
     /**
-     * Stream#close() => Void
+     * Stream#close()
      *
-     * Closes the stream
+     * Closes the stream.
      */
     TEMPEARLY_NATIVE_METHOD(stream_close)
     {
-        Handle<FileStreamObject> stream = args[0].As<FileStreamObject>();
-
-        stream->Close();
+        args[0].As<FileStreamObject>()->Close();
 
         return Value::NullValue();
     }
 
     /**
-     * Stream#read([size = null]) => String
+     * Stream#read(amount = null) => Binary or String
      *
-     * Reads the contents of the underlying file pointed by the stream and
-     * returns the result as a string or in binary if binary mode is set
+     * Reads specified amount of bytes or characters (depending on whether the
+     * file was opened in binary mode or not) and returns them either as a
+     * Binary or String object.
+     *
+     * If amount is omitted or it's null, entire contents of the file are read.
+     *
+     * Returns null when end of file is reached.
+     *
+     * Throws: IOError - If file is not readable or an IO error occurs while
+     * reading.
      */
     TEMPEARLY_NATIVE_METHOD(stream_read)
     {
         Handle<FileStreamObject> stream = args[0].As<FileStreamObject>();
-        i64 read_size = 0;
+        std::size_t amount = 0;
 
-        if (args.GetSize() > 1)
+        if (args.GetSize() > 1 && !args[1].IsNull())
         {
-            if (!args[1].IsNull())
-            {
-                if (!args[1].AsInt(interpreter, read_size))
-                {
-                    interpreter->Throw(interpreter->eValueError,
-                                       "Read size must be an integer");
-                    return Value();
-                }
+            i64 number;
 
-                if (read_size < 0)
-                {
-                    interpreter->Throw(interpreter->eValueError,
-                                       "Read size cannot be negative");
-                    return Value();
-                }
+            if (!args[1].AsInt(interpreter, number))
+            {
+                return Value();
+            }
+            else if (number < 0)
+            {
+                interpreter->Throw(interpreter->eValueError, "Read size cannot be negative");
+
+                return Value();
+            }
+            amount = static_cast<std::size_t>(number);
+        }
+        if (stream->IsBinary())
+        {
+            ByteString bytes;
+
+            if (!stream->ReadBytes(bytes, amount))
+            {
+                interpreter->Throw(interpreter->eIOError, "File is not readable");
+
+                return Value();
+            }
+            if (!bytes.IsEmpty())
+            {
+                return Value::NewBinary(bytes);
+            }
+        } else {
+            String text;
+
+            if (!stream->ReadText(text, amount))
+            {
+                interpreter->Throw(interpreter->eIOError, "File is not readable");
+
+                return Value();
+            }
+            if (!text.IsEmpty())
+            {
+                return Value::NewString(text);
             }
         }
 
-        ByteString data;
-
-        if (!stream->Read(data, read_size))
-        {
-            interpreter->Throw(interpreter->eValueError, "File is not readable");
-            return Value();
-        }
-
-        if (stream->IsBinary())
-        {
-            return Value::NewBinary(data);
-        }
-
-        return Value::NewString(data.c_str());
+        return Value::NullValue();
     }
 
     /**
-     * Stream#write(Object) => Int
+     * Stream#write(object) => Int
      *
-     * Takes a string or binary object as a parameter and writes it to the stream
-     * Returns the number of bytes written
+     * Takes a string or binary object as a parameter and writes it to the
+     * stream. Returns the number of bytes written.
      */
     TEMPEARLY_NATIVE_METHOD(stream_write)
     {
         Handle<FileStreamObject> stream = args[0].As<FileStreamObject>();
-        std::size_t len;
+        ByteString bytes;
 
         if (!stream->IsWritable())
         {
-            interpreter->Throw(interpreter->eValueError,
-                               "File is not writable");
+            interpreter->Throw(interpreter->eIOError, "Stream is not writable");
+
+            return Value();
+        }
+        if (args[1].IsBinary())
+        {
+            bytes = args[1].AsBinary();
+        }
+        else if (args[1].IsString())
+        {
+            bytes = args[1].AsString().Encode();
+        } else {
+            interpreter->Throw(interpreter->eValueError, "Either string or binary is required");
+
+            return Value();
+        }
+        if (!stream->Write(bytes))
+        {
+            interpreter->Throw(interpreter->eIOError, "Stream is not writable");
+
             return Value();
         }
 
-        if (stream->IsBinary())
-        {
-            ByteString data;
-
-            if (!args[1].AsBinary(interpreter, data))
-            {
-                interpreter->Throw(interpreter->eValueError,
-                                   "Cannot convert the argument to binary");
-                return Value();
-            }
-            else if(data.IsEmpty())
-            {
-                return Value::NewInt(0);
-            }
-
-            len = stream->Write(data);
-        }
-        else
-        {
-            String data;
-
-            if (!args[1].AsString(interpreter, data))
-            {
-                interpreter->Throw(interpreter->eValueError,
-                                   "Cannot convert the argument to a string");
-                return Value();
-            }
-            else if (data.IsEmpty())
-            {
-                return Value::NewInt(0);
-            }
-
-            len = stream->Write(data.Encode());
-        }
-
-        if (len)
-        {
-            return Value::NewInt(static_cast<i64>(len));
-        }
-
-        return Value();
+        return Value::NewInt(bytes.GetLength());
     }
 
     void init_file(Interpreter* i)
@@ -740,10 +794,10 @@ namespace tempearly
         i->cFile->AddMethod(i, "__str__", 0, file_str);
 
         // File Stream Object initializer
-        i->cFile->AddStaticMethod(i, "open", -1, stream_s_open);
+        i->cFile->AddStaticMethod(i, "open", -2, stream_s_open);
 
         // File Stream Object methods
-        i->cFileStream = new Class(i->cObject);
+        i->cFileStream = new Class(i->cStream);
         i->cFileStream->AddMethod(i, "close", 0, stream_close);
         i->cFileStream->AddMethod(i, "read", -1, stream_read);
         i->cFileStream->AddMethod(i, "write", -1, stream_write);

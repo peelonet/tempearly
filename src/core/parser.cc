@@ -60,8 +60,9 @@ namespace tempearly
         if (m_stream)
         {
             rune slot;
+            Stream::ReadResult result = m_stream->ReadRune(slot);
 
-            if (!m_stream->ReadRune(slot))
+            if (result != Stream::SUCCESS && result != Stream::DECODING_ERROR)
             {
                 m_stream->Close();
                 m_stream = 0;

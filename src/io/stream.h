@@ -14,6 +14,14 @@ namespace tempearly
         /** Default buffer size. */
         static const std::size_t kBufferSize;
 
+        enum ReadResult
+        {
+            SUCCESS = 1,
+            ERROR = 0,
+            END_OF_INPUT = -1,
+            DECODING_ERROR = -2
+        };
+
         /**
          * Constructor for the abstract Stream class.
          *
@@ -124,10 +132,10 @@ namespace tempearly
          *
          * \param slot Where the resulting Unicode code point will be stored
          *             into
-         * \return     A boolean flag indicating whether the operation was
+         * \return     An enum which indicates whether the operation was
          *             successfull or not
          */
-        bool ReadRune(rune& slot);
+        ReadResult ReadRune(rune& slot);
 
         /**
          * Writes bytes directly to the stream, bypassing the stream buffer.
