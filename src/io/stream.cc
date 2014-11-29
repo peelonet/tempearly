@@ -118,15 +118,19 @@ namespace tempearly
         }
     }
 
-    bool Stream::ReadRune(rune& slot)
+    Stream::ReadResult Stream::ReadRune(rune& slot)
     {
         byte buffer[6];
         std::size_t read;
         std::size_t size;
         
-        if (!Read(buffer, 1, read) || read < 1)
+        if (!Read(buffer, 1, read))
         {
-            return false;
+            return ERROR;
+        }
+        else if (read < 1)
+        {
+            return END_OF_INPUT;
         }
         switch (size = utf8_size(buffer[0]))
         {
@@ -156,13 +160,13 @@ namespace tempearly
 
             default:
                 slot = 0xfffd; // Invalid code point
-                return true;
+                return DECODING_ERROR;
         }
         if (size > 1 && (!Read(buffer + 1, size - 1, read) || read < size - 1))
         {
             slot = 0xfffd;
 
-            return true;
+            return DECODING_ERROR;
         }
         for (std::size_t i = 1; i < size; ++i)
         {
@@ -172,11 +176,11 @@ namespace tempearly
             } else {
                 slot = 0xfffd;
 
-                return true;
+                return DECODING_ERROR;
             }
         }
 
-        return true;
+        return SUCCESS;
     }
 
     bool Stream::Write(const byte* data, std::size_t size)
