@@ -287,7 +287,7 @@ namespace tempearly
 
             bool IsWritable() const
             {
-                return m_mode == Filename::MODE_READ || m_mode == Filename::MODE_READ_WRITE;
+                return m_mode == Filename::MODE_WRITE || m_mode == Filename::MODE_READ_WRITE;
             }
 
             void Close()
@@ -373,9 +373,19 @@ namespace tempearly
             if (append)
             {
                 flags |= O_APPEND;
+            } else {
+                flags |= O_TRUNC;
             }
+
+            flags |= O_CREAT;
         }
-        if ((handle = ::open(m_full_name.Encode().c_str(), flags)) < 0)
+
+        // Default file permissions are rw+r+r
+        handle = ::open(m_full_name.Encode().c_str(),
+                        flags,
+                        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+        if (handle < 0)
         {
             return Handle<Stream>();
         } else {

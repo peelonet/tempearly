@@ -175,6 +175,7 @@ namespace tempearly
         Handle<Class> cObject;
         Handle<Class> cRange;
         Handle<Class> cSet;
+        Handle<Class> cFileStream;
         Handle<Class> cString;
         Handle<Class> cVoid;
 
