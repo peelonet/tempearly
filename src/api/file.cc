@@ -564,18 +564,24 @@ namespace tempearly
     }
 
     /**
-     * File.open(path, [mode = "r"]) => Stream
+     * File.open(path, [mode = "r"], [function]) => Stream
      *
      * Opens specified file for reading or writing (or both) depending on the
      * given mode string and returns an stream object.
+     *
+     * If an function is given as third argument, it is called with the stream
+     * as it's argument and the stream is closed afterwards. Return value will
+     * be the value returned by that function, not the stream object itself.
      */
-    TEMPEARLY_NATIVE_METHOD(stream_s_open)
+    TEMPEARLY_NATIVE_METHOD(file_s_open)
     {
         Filename path;
         Filename::OpenMode mode = Filename::MODE_READ;
         Handle<Stream> stream;
-        bool is_binary = false;
+        Handle<FileStreamObject> stream_object;
+        bool binary = false;
         bool append;
+        Value function;
 
         if (args[0].IsFile())
         {
@@ -614,7 +620,7 @@ namespace tempearly
                         break;
 
                     case 'b':
-                        is_binary = true;
+                        binary = true;
                         break;
 
                     case 'r':
@@ -631,6 +637,10 @@ namespace tempearly
                 }
             }
         }
+        if (args.GetSize() > 2)
+        {
+            function = args[2];
+        }
         if (mode == Filename::MODE_READ && !append && !path.Exists())
         {
             interpreter->Throw(interpreter->eIOError, "File does not exist");
@@ -643,8 +653,17 @@ namespace tempearly
 
             return Value();
         }
+        stream_object = new FileStreamObject(interpreter, stream, binary);
+        if (function)
+        {
+            Value result = function.Call(interpreter, "__call__", Vector<Value>(1, Value(stream_object)));
 
-        return Value(new FileStreamObject(interpreter, stream, is_binary));
+            stream_object->Close();
+
+            return result;
+        } else {
+            return Value(stream_object);
+        }
     }
 
     /**
@@ -794,7 +813,7 @@ namespace tempearly
         i->cFile->AddMethod(i, "__str__", 0, file_str);
 
         // File Stream Object initializer
-        i->cFile->AddStaticMethod(i, "open", -2, stream_s_open);
+        i->cFile->AddStaticMethod(i, "open", -2, file_s_open);
 
         // File Stream Object methods
         i->cFileStream = new Class(i->cStream);
