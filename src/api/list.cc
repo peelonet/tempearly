@@ -159,8 +159,6 @@ namespace tempearly
         {
             list->Append(args.SubVector(1));
         }
-
-        return Value::NullValue();
     }
 
     /**
@@ -170,7 +168,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_size)
     {
-        return Value::NewInt(args[0].As<ListObject>()->GetSize());
+        frame->SetReturnValue(Value::NewInt(args[0].As<ListObject>()->GetSize()));
     }
 
     /**
@@ -186,8 +184,7 @@ namespace tempearly
         {
             args[0].As<ListObject>()->Append(args.SubVector(1));
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -203,8 +200,7 @@ namespace tempearly
         {
             args[0].As<ListObject>()->Prepend(args.SubVector(1));
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -215,8 +211,7 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(list_clear)
     {
         args[0].As<ListObject>()->Clear();
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     namespace
@@ -274,8 +269,7 @@ namespace tempearly
         } else {
             iterator = new ListIterator(interpreter->cIterator, list);
         }
-
-        return Value(iterator);
+        frame->SetReturnValue(Value(iterator));
     }
 
     /**
@@ -297,7 +291,7 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
         result = new ListObject(interpreter->cList);
         result->Append(original);
@@ -305,12 +299,10 @@ namespace tempearly
         {
             result->Append(element);
         }
-        if (interpreter->HasException())
+        if (!interpreter->HasException())
         {
-            return Value();
+            frame->SetReturnValue(Value(result));
         }
-
-        return Value(result);
     }
 
     /**
@@ -320,7 +312,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_bool)
     {
-        return Value::NewBool(!args[0].As<ListObject>()->IsEmpty());
+        frame->SetReturnValue(Value::NewBool(!args[0].As<ListObject>()->IsEmpty()));
     }
 
     void init_list(Interpreter* i)

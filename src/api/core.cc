@@ -37,9 +37,7 @@ namespace tempearly
 
         if (value_to_file(interpreter, args[0], file) && interpreter->Include(file))
         {
-            return Value::NewBool(true);
-        } else {
-            return Value();
+            frame->SetReturnValue(Value::NewBool(true));
         }
     }
 
@@ -62,9 +60,7 @@ namespace tempearly
 
         if (value_to_file(interpreter, args[0], file))
         {
-            return interpreter->Import(file);
-        } else {
-            return Value();
+            frame->SetReturnValue(interpreter->Import(file));
         }
     }
 

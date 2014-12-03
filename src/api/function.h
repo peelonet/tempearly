@@ -11,7 +11,7 @@ namespace tempearly
     class FunctionObject : public Object
     {
     public:
-        typedef Value(*Callback)(const Handle<Interpreter>&, const Vector<Value>&);
+        typedef void (*Callback)(const Handle<Interpreter>&, const Handle<Frame>&, const Vector<Value>&);
 
         /**
          * Default constructor.
@@ -39,11 +39,15 @@ namespace tempearly
          *
          * \param interpreter Script interpreter
          * \param args        Arguments given for the function
-         * \return            Value returned by the function, or error value if
+         * \param slot        Where result of the function execution will be
+         *                    assigned to
+         * \return            A boolean flag indicating whether execution of
+         *                    the function was successfull or not, or whether
          *                    an exception was thrown
          */
-        virtual Value Invoke(const Handle<Interpreter>& interpreter,
-                             const Vector<Value>& args) = 0;
+        virtual bool Invoke(const Handle<Interpreter>& interpreter,
+                            const Vector<Value>& args,
+                            Value& slot) = 0;
 
         /**
          * Creates curry function which uses this function as it's base.

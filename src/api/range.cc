@@ -34,10 +34,9 @@ namespace tempearly
 
         if (args.GetSize() > 2 && !args[2].AsBool(interpreter, exclusive))
         {
-            return Value();
+            return;
         }
-
-        return Value(new RangeObject(interpreter, begin, end, exclusive));
+        frame->SetReturnValue(Value(new RangeObject(interpreter, begin, end, exclusive)));
     }
 
     /**
@@ -49,7 +48,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(range_begin)
     {
-        return args[0].As<RangeObject>()->GetBegin();
+        frame->SetReturnValue(args[0].As<RangeObject>()->GetBegin());
     }
 
     /**
@@ -61,7 +60,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(range_end)
     {
-        return args[0].As<RangeObject>()->GetEnd();
+        frame->SetReturnValue(args[0].As<RangeObject>()->GetEnd());
     }
 
     /**
@@ -74,7 +73,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(range_is_exclusive)
     {
-        return Value::NewBool(args[0].As<RangeObject>()->IsExclusive());
+        frame->SetReturnValue(Value::NewBool(args[0].As<RangeObject>()->IsExclusive()));
     }
 
     namespace
@@ -196,8 +195,7 @@ namespace tempearly
                                          end,
                                          range->IsExclusive());
         }
-
-        return Value(iterator);
+        frame->SetReturnValue(Value(iterator));
     }
 
     /**
@@ -218,8 +216,7 @@ namespace tempearly
             if (!range->GetBegin().ToString(interpreter, string))
             {
                 range->UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                return Value();
+                return;
             }
             buffer << string << '.' << '.';
             if (range->IsExclusive())
@@ -229,14 +226,12 @@ namespace tempearly
             if (!range->GetEnd().ToString(interpreter, string))
             {
                 range->UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                return Value();
+                return;
             }
             range->UnsetFlag(CountedObject::FLAG_INSPECTING);
             buffer << string;
         }
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     void init_range(Interpreter* i)

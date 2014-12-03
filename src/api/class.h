@@ -9,9 +9,8 @@ namespace tempearly
     class Class : public CoreObject
     {
     public:
-        typedef Handle<CoreObject> (*Allocator)(const Handle<Interpreter>&,
-                                                const Handle<Class>&);
-        typedef Value (*MethodCallback)(const Handle<Interpreter>&, const Vector<Value>&);
+        typedef Handle<CoreObject> (*Allocator)(const Handle<Interpreter>&, const Handle<Class>&);
+        typedef void (*MethodCallback)(const Handle<Interpreter>&, const Handle<Frame>&, const Vector<Value>&);
 
         /**
          * Allocator which allocates nothing.

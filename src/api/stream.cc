@@ -10,10 +10,7 @@ namespace tempearly
      *
      * Closes the stream. Default implementation does nothing.
      */
-    TEMPEARLY_NATIVE_METHOD(stream_close)
-    {
-        return Value::NullValue();
-    }
+    TEMPEARLY_NATIVE_METHOD(stream_close) {}
 
     /**
      * Stream#read(amount = null) => Binary or String
@@ -32,8 +29,6 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(stream_read)
     {
         interpreter->Throw(interpreter->eIOError, "Stream is not readable");
-
-        return Value();
     }
 
     /**
@@ -56,7 +51,7 @@ namespace tempearly
 
         if (!result)
         {
-            return Value();
+            return;
         }
         else if (result.IsBinary())
         {
@@ -68,7 +63,7 @@ namespace tempearly
                 buffer.PushBack(bytes.GetBytes(), bytes.GetLength());
                 if (!(result = receiver.Call(interpreter, "read", one)))
                 {
-                    return Value();
+                    return;
                 }
                 else if (!result.IsBinary())
                 {
@@ -80,8 +75,7 @@ namespace tempearly
             {
                 buffer.Erase(buffer.GetSize() - 1);
             }
-
-            return Value::NewBinary(ByteString(buffer.GetData(), buffer.GetSize()));
+            frame->SetReturnValue(Value::NewBinary(ByteString(buffer.GetData(), buffer.GetSize())));
         }
         else if (result.IsString())
         {
@@ -93,7 +87,7 @@ namespace tempearly
                 buffer.Append(runes);
                 if (!(result = receiver.Call(interpreter, "read", one)))
                 {
-                    return Value();
+                    return;
                 }
                 else if (!result.IsString())
                 {
@@ -105,10 +99,7 @@ namespace tempearly
             {
                 buffer.Erase(buffer.GetLength() - 1);
             }
-
-            return Value::NewString(buffer.ToString());
-        } else {
-            return Value::NullValue();
+            frame->SetReturnValue(Value::NewString(buffer.ToString()));
         }
     }
 
@@ -124,8 +115,6 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(stream_write)
     {
         interpreter->Throw(interpreter->eIOError, "Stream is not writable");
-
-        return Value();
     }
 
     /**
@@ -145,15 +134,13 @@ namespace tempearly
         {
             if (!args[i].ToString(interpreter, string))
             {
-                return Value();
+                return;
             }
             else if (!args[0].Call(interpreter, "write", Vector<Value>(1, Value::NewString(string))))
             {
-                return Value();
+                return;
             }
         }
-
-        return Value::NullValue();
     }
 
     namespace
@@ -205,7 +192,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(stream_iter)
     {
-        return Value(new StreamIterator(interpreter, args[0]));
+        frame->SetReturnValue(Value(new StreamIterator(interpreter, args[0])));
     }
 
     void init_stream(Interpreter* i)

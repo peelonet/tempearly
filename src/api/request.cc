@@ -15,7 +15,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_method)
     {
-        return Value::NewString(HttpMethod::ToString(interpreter->request->GetMethod()));
+        frame->SetReturnValue(Value::NewString(HttpMethod::ToString(interpreter->request->GetMethod())));
     }
 
     /**
@@ -25,7 +25,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_path)
     {
-        return Value::NewString(interpreter->request->GetPath());
+        frame->SetReturnValue(Value::NewString(interpreter->request->GetPath()));
     }
 
     /**
@@ -38,11 +38,9 @@ namespace tempearly
     {
         const String content_type = interpreter->request->GetContentType();
 
-        if (content_type.IsEmpty())
+        if (!content_type.IsEmpty())
         {
-            return Value::NullValue();
-        } else {
-            return Value::NewString(content_type);
+            frame->SetReturnValue(Value::NewString(content_type));
         }
     }
 
@@ -53,7 +51,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_get)
     {
-        return Value::NewBool(interpreter->request->GetMethod() == HttpMethod::GET);
+        frame->SetReturnValue(Value::NewBool(interpreter->request->GetMethod() == HttpMethod::GET));
     }
 
     /**
@@ -63,7 +61,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_post)
     {
-        return Value::NewBool(interpreter->request->GetMethod() == HttpMethod::POST);
+        frame->SetReturnValue(Value::NewBool(interpreter->request->GetMethod() == HttpMethod::POST));
     }
 
     /**
@@ -74,7 +72,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_secure)
     {
-        return Value::NewBool(interpreter->request->IsSecure());
+        frame->SetReturnValue(Value::NewBool(interpreter->request->IsSecure()));
     }
 
     /**
@@ -86,7 +84,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_ajax)
     {
-        return Value::NewBool(interpreter->request->IsAjax());
+        frame->SetReturnValue(Value::NewBool(interpreter->request->IsAjax()));
     }
 
     /**
@@ -99,11 +97,9 @@ namespace tempearly
     {
         const ByteString body = interpreter->request->GetBody();
 
-        if (body.IsEmpty())
+        if (!body.IsEmpty())
         {
-            return Value::NullValue();
-        } else {
-            return Value::NewBinary(body);
+            frame->SetReturnValue(Value::NewBinary(body));
         }
     }
 
@@ -125,8 +121,7 @@ namespace tempearly
         if (body.IsEmpty())
         {
             interpreter->Throw(interpreter->eValueError, "No JSON object could be decoded");
-
-            return Value();
+            return;
         }
         stream = body.AsStream();
         parser = new JsonParser(stream);
@@ -136,11 +131,9 @@ namespace tempearly
             {
                 interpreter->Throw(interpreter->eValueError, "No JSON object could be decoded");
             }
-
-            return Value();
+            return;
         }
-
-        return value;
+        frame->SetReturnValue(value);
     }
 
     /**
@@ -156,13 +149,11 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, name))
         {
-            return Value();
+            return;
         }
         else if (interpreter->request->GetParameter(name, value))
         {
-            return Value::NewString(value);
-        } else {
-            return Value::NullValue();
+            frame->SetReturnValue(Value::NewString(value));
         }
     }
 
@@ -180,7 +171,7 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, name))
         {
-            return Value();
+            return;
         }
         else if (interpreter->request->GetParameter(name, value))
         {
@@ -188,14 +179,15 @@ namespace tempearly
 
             if (Utils::ParseInt(value, number, 10))
             {
-                return Value::NewInt(number);
+                frame->SetReturnValue(Value::NewInt(number));
+                return;
             }
         }
         if (args.GetSize() > 2)
         {
-            return args[2];
+            frame->SetReturnValue(args[2]);
         } else {
-            return Value::NewInt(0);
+            frame->SetReturnValue(Value::NewInt(0));
         }
     }
 
@@ -214,7 +206,7 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, name))
         {
-            return Value();
+            return;
         }
         else if (interpreter->request->GetParameter(name, value))
         {
@@ -222,14 +214,15 @@ namespace tempearly
 
             if (Utils::ParseFloat(value, number))
             {
-                return Value::NewFloat(number);
+                frame->SetReturnValue(Value::NewFloat(number));
+                return;
             }
         }
         if (args.GetSize() > 2)
         {
-            return args[2];
+            frame->SetReturnValue(args[2]);
         } else {
-            return Value::NewFloat(0.0);
+            frame->SetReturnValue(Value::NewFloat(0.0));
         }
     }
 
@@ -246,7 +239,7 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, name))
         {
-            return Value();
+            return;
         }
         list = new ListObject(interpreter->cList);
         if (interpreter->request->GetAllParameters(name, values))
@@ -256,8 +249,7 @@ namespace tempearly
                 list->Append(Value::NewString(values[i]));
             }
         }
-
-        return Value(list);
+        frame->SetReturnValue(Value(list));
     }
 
     /**
@@ -273,7 +265,7 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, name))
         {
-            return Value();
+            return;
         }
         set = new SetObject(interpreter->cSet);
         if (interpreter->request->GetAllParameters(name, values))
@@ -286,13 +278,12 @@ namespace tempearly
                 value = Value::NewString(values[i]);
                 if (!value.GetHash(interpreter, hash))
                 {
-                    return Value();
+                    return;
                 }
                 set->Add(hash, value);
             }
         }
-
-        return Value(set);
+        frame->SetReturnValue(Value(set));
     }
 
     void init_request(Interpreter* i)

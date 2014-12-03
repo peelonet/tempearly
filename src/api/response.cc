@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "api/object.h"
+#include "core/bytestring.h"
 
 namespace tempearly
 {
@@ -23,7 +24,7 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, name))
         {
-            return Value();
+            return;
         }
         exists = interpreter->response->GetHeader(name, old_value);
         if (args.GetSize() > 2)
@@ -32,22 +33,18 @@ namespace tempearly
 
             if (!args[2].AsString(interpreter, new_value))
             {
-                return Value();
+                return;
             }
             else if (interpreter->response->IsCommitted())
             {
-                interpreter->Throw(interpreter->eStateError,
-                                   "Headers are already sent");
-
-                return Value();
+                interpreter->Throw(interpreter->eStateError, "Headers are already sent");
+                return;
             }
             interpreter->response->SetHeader(name, new_value);
         }
         if (exists)
         {
-            return Value::NewString(old_value);
-        } else {
-            return Value::NullValue();
+            frame->SetReturnValue(Value::NewString(old_value));
         }
     }
 
@@ -58,7 +55,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(res_is_committed)
     {
-        return Value::NewBool(interpreter->response->IsCommitted());
+        frame->SetReturnValue(Value::NewBool(interpreter->response->IsCommitted()));
     }
 
     /**
@@ -74,24 +71,20 @@ namespace tempearly
 
         if (!args[1].AsString(interpreter, location))
         {
-            return Value();
+            return;
         }
         if (args.GetSize() > 2 && !args[2].AsBool(interpreter, permanent))
         {
-            return Value();
+            return;
         }
         if (interpreter->response->IsCommitted())
         {
-            interpreter->Throw(interpreter->eStateError,
-                               "Headers are already sent");
-
-            return Value();
+            interpreter->Throw(interpreter->eStateError, "Headers are already sent");
+            return;
         }
         interpreter->response->SetStatus(permanent ? 301 : 302);
         interpreter->response->SetHeader("Location", location);
         interpreter->response->Commit();
-
-        return Value::NullValue();
     }
 
     /**
@@ -106,7 +99,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(res_status)
     {
-        int old_status = interpreter->response->GetStatus();
+        const int old_status = interpreter->response->GetStatus();
 
         if (args.GetSize() > 1)
         {
@@ -114,42 +107,46 @@ namespace tempearly
 
             if (!args[1].AsInt(interpreter, new_status))
             {
-                return Value();
+                return;
             }
             else if (interpreter->response->IsCommitted())
             {
-                interpreter->Throw(interpreter->eStateError,
-                                   "Headers are already sent");
-
-                return Value();
+                interpreter->Throw(interpreter->eStateError, "Headers are already sent");
+                return;
             }
             interpreter->response->SetStatus(new_status);
         }
-
-        return Value::NewInt(old_status);
+        frame->SetReturnValue(Value::NewInt(old_status));
     }
 
     /**
-     * Response#write(string)
+     * Response#write(object) => Int
      *
-     * Writes given string into the body of the response.
+     * Takes a string or binary object as a parameter and writes it to the
+     * body of the response. Returns the number of bytes written.
      */
     TEMPEARLY_NATIVE_METHOD(res_write)
     {
-        String string;
+        ByteString bytes;
 
-        if (!args[1].AsString(interpreter, string))
+        if (args[1].IsBinary())
         {
-            return Value();
+            bytes = args[1].AsBinary();
         }
-        interpreter->response->Write(string);
-
-        return Value::NullValue();
+        else if (args[1].IsString())
+        {
+            bytes = args[1].AsString().Encode();
+        } else {
+            interpreter->Throw(interpreter->eValueError, "Either string or binary is required");
+            return;
+        }
+        interpreter->response->Write(bytes);
+        frame->SetReturnValue(Value::NewInt(bytes.GetLength()));
     }
 
     void init_response(Interpreter* i)
     {
-        Handle<Class> cResponse = new Class(i->cObject);
+        Handle<Class> cResponse = new Class(i->cStream);
         Handle<Object> instance = new Object(cResponse);
 
         i->SetGlobalVariable("response", Value(instance));

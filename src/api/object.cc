@@ -79,10 +79,7 @@ namespace tempearly
      *
      * Works as constructor or initializer for the object.
      */
-    TEMPEARLY_NATIVE_METHOD(obj_init)
-    {
-        return Value::NullValue();
-    }
+    TEMPEARLY_NATIVE_METHOD(obj_init) {}
 
     /**
      * Object#__hash__() => Int
@@ -97,11 +94,11 @@ namespace tempearly
         if (args[0].Is(Value::KIND_OBJECT))
         {
             Handle<CoreObject> object = args[0].AsObject();
-
-            return Value::NewInt(reinterpret_cast<u64>(object.Get()));
+            
+            frame->SetReturnValue(Value::NewInt(reinterpret_cast<u64>(object.Get())));
+        } else {
+            frame->SetReturnValue(Value::NewInt(0));
         }
-
-        return Value::NewInt(0);
     }
 
     /**
@@ -111,13 +108,13 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_bool)
     {
-        const Value& self = args[0];
+        const Value& receiver = args[0];
 
-        if (self.IsBool())
+        if (receiver.IsBool())
         {
-            return self;
+            frame->SetReturnValue(receiver);
         } else {
-            return Value::NewBool(!self.IsNull());
+            frame->SetReturnValue(Value::NewBool(!receiver.IsNull()));
         }
     }
 
@@ -128,13 +125,13 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_str)
     {
-        const Value& self = args[0];
+        const Value& receiver = args[0];
 
-        if (self.IsString())
+        if (receiver.IsString())
         {
-            return self;
+            frame->SetReturnValue(receiver);
         } else {
-            return Value::NewString("<object>");
+            frame->SetReturnValue(Value::NewString("<object>"));
         }
     }
 
@@ -165,8 +162,7 @@ namespace tempearly
                 if (!(result = entry->GetValue().Call(interpreter, "as_json")) || !result.AsString(interpreter, value))
                 {
                     self.UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                    return Value();
+                    return;
                 }
                 if (first)
                 {
@@ -179,8 +175,7 @@ namespace tempearly
             self.UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
         buffer << '}';
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     /**
@@ -211,8 +206,7 @@ namespace tempearly
         } else {
             result = false;
         }
-
-        return Value::NewBool(result);
+        frame->SetReturnValue(Value::NewBool(result));
     }
 
     /**
@@ -230,17 +224,15 @@ namespace tempearly
 
         if (!self.IsLessThan(interpreter, operand, slot))
         {
-            return Value();
+            return;
         }
         else if (slot)
         {
-            return Value::NewBool(false);
+            frame->SetReturnValue(Value::NewBool(false));
         }
-        else if (!self.Equals(interpreter, operand, slot))
+        else if (self.Equals(interpreter, operand, slot))
         {
-            return Value();
-        } else {
-            return Value::NewBool(!slot);
+            frame->SetReturnValue(Value::NewBool(!slot));
         }
     }
 
@@ -259,17 +251,15 @@ namespace tempearly
 
         if (!self.IsLessThan(interpreter, operand, slot))
         {
-            return Value();
+            return;
         }
         else if (slot)
         {
-            return Value::NewBool(true);
+            frame->SetReturnValue(Value::NewBool(true));
         }
-        else if (!self.Equals(interpreter, operand, slot))
+        else if (self.Equals(interpreter, operand, slot))
         {
-            return Value();
-        } else {
-            return Value::NewBool(slot);
+            frame->SetReturnValue(Value::NewBool(slot));
         }
     }
 
@@ -288,17 +278,15 @@ namespace tempearly
 
         if (!self.IsLessThan(interpreter, operand, slot))
         {
-            return Value();
+            return;
         }
         else if (slot)
         {
-            return Value::NewBool(false);
+            frame->SetReturnValue(Value::NewBool(false));
         }
-        else if (!self.Equals(interpreter, operand, slot))
+        else if (self.Equals(interpreter, operand, slot))
         {
-            return Value();
-        } else {
-            return Value::NewBool(slot);
+            frame->SetReturnValue(Value::NewBool(slot));
         }
     }
 

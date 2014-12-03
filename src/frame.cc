@@ -106,5 +106,6 @@ namespace tempearly
                 e->GetValue().Mark();
             }
         }
+        m_return_value.Mark();
     }
 }

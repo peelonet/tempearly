@@ -22,7 +22,7 @@ namespace tempearly
                 , m_parameters(parameters)
                 , m_nodes(nodes) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
                 interpreter->PushFrame(m_enclosing_frame, this);
                 if (!Parameter::Apply(interpreter, m_parameters, args))
@@ -44,29 +44,31 @@ namespace tempearly
                             interpreter->PopFrame();
                             if (result.HasValue())
                             {
-                                return result.GetValue();
+                                slot = result.GetValue();
                             } else {
-                                return Value::NullValue();
+                                slot = Value::NullValue();
                             }
+                            return true;
 
                         case Result::KIND_BREAK:
                             interpreter->Throw(interpreter->eSyntaxError, "Unexpected 'break'");
                             interpreter->PopFrame();
-                            return Value();
+                            return false;
 
                         case Result::KIND_CONTINUE:
                             interpreter->Throw(interpreter->eSyntaxError, "Unexpected 'continue'");
                             interpreter->PopFrame();
-                            return Value();
+                            return false;
 
                         default:
                             interpreter->PopFrame();
-                            return Value();
+                            return false;
                     }
                 }
                 interpreter->PopFrame();
+                slot = Value::NullValue();
 
-                return Value::NullValue();
+                return true;
             }
 
             void Mark()
@@ -119,9 +121,9 @@ namespace tempearly
                 , m_base(base)
                 , m_args(args) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                return m_base->Invoke(interpreter, m_args + args);
+                return m_base->Invoke(interpreter, m_args + args, slot);
             }
 
             void Mark()
@@ -156,7 +158,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(func_call)
     {
-        return args[0].As<FunctionObject>()->Invoke(interpreter, args.SubVector(1));
+        Value result;
+
+        if (args[0].As<FunctionObject>()->Invoke(interpreter, args.SubVector(1), result))
+        {
+            frame->SetReturnValue(result);
+        }
     }
 
     void init_function(Interpreter* i)

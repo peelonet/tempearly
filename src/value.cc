@@ -269,7 +269,7 @@ namespace tempearly
             }
             if (m_kind == KIND_OBJECT && m_data.o->GetAttribute("__getattr__", value) && value.IsFunction())
             {
-                return value = value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, NewString(id)));
+                return value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, NewString(id)), value);
             }
             else if (cls->GetAttribute("__getattr__", value) && value.IsFunction())
             {
@@ -279,7 +279,7 @@ namespace tempearly
                 args.PushBack(*this);
                 args.PushBack(NewString(id));
 
-                return value = value.As<FunctionObject>()->Invoke(interpreter, args);
+                return value.As<FunctionObject>()->Invoke(interpreter, args, value);
             }
             interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
 
@@ -309,7 +309,12 @@ namespace tempearly
         {
             if (value.IsFunction())
             {
-                return value.As<FunctionObject>()->Invoke(interpreter, args);
+                if (value.As<FunctionObject>()->Invoke(interpreter, args, value))
+                {
+                    return value;
+                } else {
+                    return Value();
+                }
             } else {
                 return value.Call(interpreter, "__call__", args);
             }
@@ -320,21 +325,30 @@ namespace tempearly
             {
                 if (value.IsStaticMethod())
                 {
-                    return value.As<FunctionObject>()->Invoke(interpreter, args);
+                    if (value.As<FunctionObject>()->Invoke(interpreter, args, value))
+                    {
+                        return value;
+                    } else {
+                        return Value();
+                    }
                 } else {
                     Vector<Value> new_args(args);
 
                     new_args.PushFront(*this);
                     if (value.IsFunction())
                     {
-                        return value.As<FunctionObject>()->Invoke(interpreter, new_args);
+                        if (value.As<FunctionObject>()->Invoke(interpreter, new_args, value))
+                        {
+                            return value;
+                        } else {
+                            return Value();
+                        }
                     } else {
                         return value.Call(interpreter, "__call__", new_args);
                     }
                 }
             }
-            interpreter->Throw(interpreter->eAttributeError,
-                               "Missing attribute: " + id);
+            interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
 
             return Value();
         }
