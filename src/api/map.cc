@@ -26,19 +26,36 @@ namespace tempearly
         delete[] m_bucket;
     }
 
-    Value MapObject::Find(i64 hash) const
+    bool MapObject::Has(i64 hash) const
     {
-        std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
+        const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
 
         for (Entry* entry = m_bucket[index]; entry; entry = entry->m_child)
         {
             if (entry->m_hash == hash)
             {
-                return entry->m_value;
+                return true;
             }
         }
 
-        return Value();
+        return false;
+    }
+
+    bool MapObject::Find(i64 hash, Value& slot) const
+    {
+        const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
+
+        for (Entry* entry = m_bucket[index]; entry; entry = entry->m_child)
+        {
+            if (entry->m_hash == hash)
+            {
+                slot = entry->m_value;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void MapObject::Insert(i64 hash, const Value& key, const Value& value)
@@ -66,6 +83,72 @@ namespace tempearly
         entry->m_child = m_bucket[index];
         m_bucket[index] = entry;
         ++m_size;
+    }
+
+    bool MapObject::Erase(i64 hash, Value& slot)
+    {
+        const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
+        Handle<Entry> entry = m_bucket[index];
+
+        if (!entry)
+        {
+            return false;
+        }
+        if (entry->m_hash == hash)
+        {
+            m_bucket[index] = entry->m_child;
+            if (entry->m_next && entry->m_prev)
+            {
+                entry->m_next->m_prev = entry->m_prev;
+                entry->m_prev->m_next = entry->m_next;
+            }
+            else if (entry->m_next)
+            {
+                entry->m_next->m_prev = 0;
+                m_front = entry->m_next;
+            }
+            else if (entry->m_prev)
+            {
+                entry->m_prev->m_next = 0;
+                m_back = entry->m_prev;
+            } else {
+                m_front = m_back = 0;
+            }
+            slot = entry->m_value;
+
+            return true;
+        }
+        for (; entry->m_child; entry = entry->m_child)
+        {
+            if (entry->m_child->m_hash == hash)
+            {
+                Entry* child = entry->m_child;
+
+                entry->m_child = entry->m_child->m_child;
+                if (child->m_next && child->m_prev)
+                {
+                    child->m_next->m_prev = child->m_prev;
+                    child->m_prev->m_next = child->m_next;
+                }
+                else if (child->m_next)
+                {
+                    child->m_next->m_prev = 0;
+                    m_front = child->m_next;
+                }
+                else if (child->m_prev)
+                {
+                    child->m_prev->m_next = 0;
+                    m_back = child->m_prev;
+                } else {
+                    m_front = m_back = 0;
+                }
+                slot = child->m_value;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void MapObject::Clear()
@@ -179,7 +262,7 @@ namespace tempearly
 
         if (args[1].GetHash(interpreter, hash))
         {
-            frame->SetReturnValue(Value::NewBool(args[0].As<MapObject>()->Find(hash)));
+            frame->SetReturnValue(Value::NewBool(args[0].As<MapObject>()->Has(hash)));
         }
     }
 
@@ -197,9 +280,9 @@ namespace tempearly
 
         if (args[1].GetHash(interpreter, hash))
         {
-            Value value = args[0].As<MapObject>()->Find(hash);
+            Value value;
 
-            if (value)
+            if (args[0].As<MapObject>()->Find(hash, value))
             {
                 frame->SetReturnValue(value);
             }
@@ -219,6 +302,38 @@ namespace tempearly
     {
         args[0].As<MapObject>()->Clear();
         frame->SetReturnValue(args[0]);
+    }
+
+    /**
+     * Map#pop(key, [default_value]) => Object
+     *
+     * Removes an key-value pair from the map identified by given key and
+     * returns it's value. If no key-value pair for given key exists in the
+     * map, an optional default value is returned instead. If no default
+     * value is given, an exception is thrown instead.
+     *
+     * Throws: KeyError - If no key-value pair for given key exists in the
+     * map and no default value is given.
+     */
+    TEMPEARLY_NATIVE_METHOD(map_pop)
+    {
+        i64 hash;
+        Value value;
+
+        if (!args[1].GetHash(interpreter, hash))
+        {
+            return;
+        }
+        else if (args[0].As<MapObject>()->Erase(hash, value))
+        {
+            frame->SetReturnValue(value);
+        }
+        else if (args.GetSize() > 2)
+        {
+            frame->SetReturnValue(args[2]);
+        } else {
+            frame->SetReturnValue(args[0].Call(interpreter, "__missing__", args[1]));
+        }
     }
 
     /**
@@ -298,6 +413,31 @@ namespace tempearly
     }
 
     /**
+     * Map#reverse() => Map
+     *
+     * Returns an reversed copy of the map where keys are values and values are
+     * keys.
+     */
+    TEMPEARLY_NATIVE_METHOD(map_reverse)
+    {
+        Handle<MapObject> result = new MapObject(interpreter->cMap);
+        i64 hash;
+
+        for (Handle<MapObject::Entry> entry = args[0].As<MapObject>()->GetFront(); entry; entry = entry->GetNext())
+        {
+            const Value& key = entry->GetKey();
+            const Value& value = entry->GetValue();
+
+            if (!value.GetHash(interpreter, hash))
+            {
+                return;
+            }
+            result->Insert(hash, value, key);
+        }
+        frame->SetReturnValue(Value(result));
+    }
+
+    /**
      * Map#update(other_map)
      *
      * Copies entries from another map into this map.
@@ -369,7 +509,7 @@ namespace tempearly
      * map, returning each one of them in a list of two objects.
      *
      *     m = [a: 100, b: 200];
-     *     i = m.__iter_();
+     *     i = m.__iter__();
      *     i.next();            #=> ["a", 100]
      */
     TEMPEARLY_NATIVE_METHOD(map_iter)
@@ -400,9 +540,9 @@ namespace tempearly
 
         if (args[1].GetHash(interpreter, hash))
         {
-            Value value = args[0].As<MapObject>()->Find(hash);
+            Value value;
 
-            if (value)
+            if (args[0].As<MapObject>()->Find(hash, value))
             {
                 frame->SetReturnValue(value);
             } else {
@@ -551,7 +691,9 @@ namespace tempearly
         cMap->AddMethod(i, "clear", 0, map_clear);
         cMap->AddMethod(i, "has", 1, map_has);
         cMap->AddMethod(i, "get", -2, map_get);
+        cMap->AddMethod(i, "pop", -2, map_pop);
         cMap->AddMethod(i, "join", -1, map_join);
+        cMap->AddMethod(i, "reverse", 0, map_reverse);
         cMap->AddMethod(i, "update", 1, map_update);
 
         cMap->AddMethod(i, "__iter__", 0, map_iter);
