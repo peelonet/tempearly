@@ -145,13 +145,19 @@ namespace tempearly
         }
 
         /**
+         * Returns true if map contains an entry for given hash code.
+         */
+        bool Has(i64 hash) const;
+
+        /**
          * Searches for an entry from the map.
          *
          * \param hash Hash code to look for
-         * \return     Value for given hash code, or error value if no such
-         *             entry exists in the map
+         * \param slot Where value of the entry is assigned to
+         * \return     A boolean flag indicating whether entry with given hash
+         *             code was found or not
          */
-        Value Find(i64 hash) const;
+        bool Find(i64 hash, Value& slot) const;
 
         /**
          * Inserts an entry into the map. Existing entries with same hash code
@@ -162,6 +168,16 @@ namespace tempearly
          * \param value Value of the entry
          */
         void Insert(i64 hash, const Value& key, const Value& value);
+
+        /**
+         * Removes an entry from the map.
+         *
+         * \param hash Hash code to look for
+         * \param slot Where value of the removed entry is assigned to
+         * \return     A boolean flag indicating whether entry with given hash
+         *             code was found or not
+         */
+        bool Erase(i64 hash, Value& slot);
 
         /**
          * Removes all entries from the map.
