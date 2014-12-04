@@ -41,13 +41,11 @@ namespace tempearly
 
             if (!path.IsEmpty())
             {
-                return Value(new FileObject(interpreter, path));
+                frame->SetReturnValue(Value(new FileObject(interpreter, path)));
+            } else {
+                interpreter->Throw(interpreter->eValueError, "Unable to parse given string into path");
             }
-            interpreter->Throw(interpreter->eValueError,
-                               "Unable to parse given string into path");
         }
-
-        return Value();
     }
 
     /**
@@ -67,8 +65,7 @@ namespace tempearly
         if (::GetCurrentDirectoryW(1024, buffer) == 0)
         {
             interpreter->Throw(interpreter->eIOError, "Unable to retrieve current working directory");
-
-            return Value();
+            return;
         }
         path = String::narrow(buffer);
 #else
@@ -77,13 +74,11 @@ namespace tempearly
         if (!::getcwd(buffer, 1024))
         {
             interpreter->Throw(interpreter->eIOError, "Unable to retrieve current working directory");
-
-            return Value();
+            return;
         }
         path = buffer;
 #endif
-
-        return Value(new FileObject(interpreter, path));
+        frame->SetReturnValue(Value(new FileObject(interpreter, path)));
     }
 
     /**
@@ -102,8 +97,7 @@ namespace tempearly
         {
             list->Append(Value::NewString(parts[i]));
         }
-
-        return Value(list);
+        frame->SetReturnValue(Value(list));
     }
 
     /**
@@ -115,7 +109,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_name)
     {
-        return Value::NewString(args[0].As<FileObject>()->GetPath().GetName());
+        frame->SetReturnValue(Value::NewString(args[0].As<FileObject>()->GetPath().GetName()));
     }
 
     /**
@@ -139,11 +133,9 @@ namespace tempearly
     {
         String extension = args[0].As<FileObject>()->GetPath().GetExtension();
 
-        if (extension.IsEmpty())
+        if (!extension.IsEmpty())
         {
-            return Value::NullValue();
-        } else {
-            return Value::NewString(extension);
+            frame->SetReturnValue(Value::NewString(extension));
         }
     }
 
@@ -154,7 +146,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_exists)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().Exists());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().Exists()));
     }
 
     /**
@@ -165,7 +157,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_is_dir)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().IsDir());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().IsDir()));
     }
 
     /**
@@ -176,7 +168,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_is_symlink)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().IsSymlink());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().IsSymlink()));
     }
 
     /**
@@ -187,7 +179,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_is_socket)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().IsSocket());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().IsSocket()));
     }
 
     /**
@@ -197,7 +189,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_is_fifo)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().IsFifo());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().IsFifo()));
     }
 
     /**
@@ -208,7 +200,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_is_char_device)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().IsCharDevice());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().IsCharDevice()));
     }
 
     /**
@@ -219,7 +211,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_is_block_device)
     {
-        return Value::NewBool(args[0].As<FileObject>()->GetPath().IsBlockDevice());
+        frame->SetReturnValue(Value::NewBool(args[0].As<FileObject>()->GetPath().IsBlockDevice()));
     }
 
     /**
@@ -232,9 +224,9 @@ namespace tempearly
         const String path = args[0].As<FileObject>()->GetPath().GetFullName();
 
 #if defined(_WIN32)
-        return Value::NewInt(path.Map(String::ToLower).HashCode() ^ 1234321);
+        frame->SetReturnValue(Value::NewInt(path.Map(String::ToLower).HashCode() ^ 1234321));
 #else
-        return Value::NewInt(path.HashCode() ^ 1234321);
+        frame->SetReturnValue(Value::NewInt(path.HashCode() ^ 1234321));
 #endif
     }
 
@@ -352,20 +344,19 @@ namespace tempearly
             Handle<IteratorObject> iterator = new WinFileIterator(interpreter->cIterator, parent, handle);
 
             iterator->Feed(Value(new FileObject(interpreter, parent + String::Narrow(find_data.cFileName))));
-
-            return Value(iterator);
+            frame->SetReturnValue(Value(iterator));
+            return;
         }
 #else
         DIR* handle = ::opendir(parent.GetFullName().Encode().c_str());
 
         if (handle)
         {
-            return Value(new PosixFileIterator(interpreter->cIterator, parent, handle));
+            frame->SetReturnValue(Value(new PosixFileIterator(interpreter->cIterator, parent, handle)));
+            return;
         }
 #endif
         interpreter->Throw(interpreter->eIOError, "Unable to iterate directory");
-
-        return Value();
     }
 
     /**
@@ -381,9 +372,13 @@ namespace tempearly
 
         if (operand.IsFile())
         {
-            return Value::NewBool(self.As<FileObject>()->GetPath().Equals(operand.As<FileObject>()->GetPath()));
+            frame->SetReturnValue(
+                Value::NewBool(
+                    self.As<FileObject>()->GetPath().Equals(operand.As<FileObject>()->GetPath())
+                )
+            );
         } else {
-            return Value::NewBool(false);
+            frame->SetReturnValue(Value::NewBool(false));
         }
     }
 
@@ -394,7 +389,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(file_str)
     {
-        return Value::NewString(args[0].As<FileObject>()->GetPath().GetFullName());
+        frame->SetReturnValue(Value::NewString(args[0].As<FileObject>()->GetPath().GetFullName()));
     }
 
     namespace
@@ -592,8 +587,7 @@ namespace tempearly
             path = args[0].AsString();
         } else {
             interpreter->Throw(interpreter->eValueError, "Filename must be either file or a string");
-
-            return Value();
+            return;
         }
         if (args.GetSize() > 1)
         {
@@ -602,7 +596,7 @@ namespace tempearly
 
             if (!args[1].AsString(interpreter, mode_string))
             {
-                return Value();
+                return;
             }
             for (std::size_t i = 0; i < mode_string.GetLength(); ++i)
             {
@@ -633,7 +627,7 @@ namespace tempearly
 
                     default:
                         interpreter->Throw(interpreter->eValueError, "Invalid open mode");
-                        return Value();
+                        return;
                 }
             }
         }
@@ -644,25 +638,20 @@ namespace tempearly
         if (mode == Filename::MODE_READ && !append && !path.Exists())
         {
             interpreter->Throw(interpreter->eIOError, "File does not exist");
-
-            return Value();
+            return;
         }
         if (!(stream = path.Open(mode, append)))
         {
             interpreter->Throw(interpreter->eIOError, "File cannot be opened");
-
-            return Value();
+            return;
         }
         stream_object = new FileStreamObject(interpreter, stream, binary);
         if (function)
         {
-            Value result = function.Call(interpreter, "__call__", Vector<Value>(1, Value(stream_object)));
-
+            frame->SetReturnValue(function.Call(interpreter, "__call__", Vector<Value>(1, Value(stream_object))));
             stream_object->Close();
-
-            return result;
         } else {
-            return Value(stream_object);
+            frame->SetReturnValue(Value(stream_object));
         }
     }
 
@@ -674,8 +663,6 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(stream_close)
     {
         args[0].As<FileStreamObject>()->Close();
-
-        return Value::NullValue();
     }
 
     /**
@@ -703,13 +690,12 @@ namespace tempearly
 
             if (!args[1].AsInt(interpreter, number))
             {
-                return Value();
+                return;
             }
             else if (number < 0)
             {
                 interpreter->Throw(interpreter->eValueError, "Read size cannot be negative");
-
-                return Value();
+                return;
             }
             amount = static_cast<std::size_t>(number);
         }
@@ -720,12 +706,11 @@ namespace tempearly
             if (!stream->ReadBytes(bytes, amount))
             {
                 interpreter->Throw(interpreter->eIOError, "File is not readable");
-
-                return Value();
+                return;
             }
             if (!bytes.IsEmpty())
             {
-                return Value::NewBinary(bytes);
+                frame->SetReturnValue(Value::NewBinary(bytes));
             }
         } else {
             String text;
@@ -733,16 +718,13 @@ namespace tempearly
             if (!stream->ReadText(text, amount))
             {
                 interpreter->Throw(interpreter->eIOError, "File is not readable");
-
-                return Value();
+                return;
             }
             if (!text.IsEmpty())
             {
-                return Value::NewString(text);
+                frame->SetReturnValue(Value::NewString(text));
             }
         }
-
-        return Value::NullValue();
     }
 
     /**
@@ -759,8 +741,7 @@ namespace tempearly
         if (!stream->IsWritable())
         {
             interpreter->Throw(interpreter->eIOError, "Stream is not writable");
-
-            return Value();
+            return;
         }
         if (args[1].IsBinary())
         {
@@ -771,17 +752,14 @@ namespace tempearly
             bytes = args[1].AsString().Encode();
         } else {
             interpreter->Throw(interpreter->eValueError, "Either string or binary is required");
-
-            return Value();
+            return;
         }
         if (!stream->Write(bytes))
         {
             interpreter->Throw(interpreter->eIOError, "Stream is not writable");
-
-            return Value();
+            return;
         }
-
-        return Value::NewInt(bytes.GetLength());
+        frame->SetReturnValue(Value::NewInt(bytes.GetLength()));
     }
 
     void init_file(Interpreter* i)

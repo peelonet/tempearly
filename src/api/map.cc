@@ -127,7 +127,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(map_size)
     {
-        return Value::NewInt(args[0].As<MapObject>()->GetSize());
+        frame->SetReturnValue(Value::NewInt(args[0].As<MapObject>()->GetSize()));
     }
 
     /**
@@ -146,8 +146,7 @@ namespace tempearly
         {
             set->Add(e->GetHash(), e->GetKey());
         }
-
-        return Value(set);
+        frame->SetReturnValue(Value(set));
     }
 
     /**
@@ -166,8 +165,7 @@ namespace tempearly
         {
             list->Append(e->GetValue());
         }
-
-        return Value(list);
+        frame->SetReturnValue(Value(list));
     }
 
     /**
@@ -181,9 +179,7 @@ namespace tempearly
 
         if (args[1].GetHash(interpreter, hash))
         {
-            return Value::NewBool(args[0].As<MapObject>()->Find(hash));
-        } else {
-            return Value();
+            frame->SetReturnValue(Value::NewBool(args[0].As<MapObject>()->Find(hash)));
         }
     }
 
@@ -205,16 +201,12 @@ namespace tempearly
 
             if (value)
             {
-                return value;
+                frame->SetReturnValue(value);
             }
             else if (args.GetSize() > 2)
             {
-                return args[2];
-            } else {
-                return Value::NullValue();
+                frame->SetReturnValue(args[2]);
             }
-        } else {
-            return Value();
         }
     }
 
@@ -226,8 +218,7 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(map_clear)
     {
         args[0].As<MapObject>()->Clear();
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -260,7 +251,7 @@ namespace tempearly
                 }
                 else if (!args[1].AsString(interpreter, sep1))
                 {
-                    return Value();
+                    return;
                 }
                 if (args.GetSize() > 2)
                 {
@@ -270,7 +261,7 @@ namespace tempearly
                     }
                     else if (!args[2].AsString(interpreter, sep2))
                     {
-                        return Value();
+                        return;
                     }
                 } else {
                     sep2 = ", ";
@@ -291,22 +282,19 @@ namespace tempearly
                 if (!entry->GetKey().ToString(interpreter, string))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                    return Value();
+                    return;
                 }
                 buffer << string << sep1;
                 if (!entry->GetValue().ToString(interpreter, string))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                    return Value();
+                    return;
                 }
                 buffer.Append(string);
             }
             map->UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     /**
@@ -322,16 +310,14 @@ namespace tempearly
         if (!args[1].IsMap())
         {
             interpreter->Throw(interpreter->eValueError, "Map required");
-
-            return Value();
+            return;
         }
         other = args[1].As<MapObject>();
         for (Handle<MapObject::Entry> entry = other->GetFront(); entry; entry = entry->GetNext())
         {
             map->Insert(entry->GetHash(), entry->GetKey(), entry->GetValue());
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     namespace
@@ -397,8 +383,7 @@ namespace tempearly
         } else {
             iterator = new MapIterator(interpreter, map);
         }
-
-        return Value(iterator);
+        frame->SetReturnValue(Value(iterator));
     }
 
     /**
@@ -419,12 +404,10 @@ namespace tempearly
 
             if (value)
             {
-                return value;
+                frame->SetReturnValue(value);
             } else {
-                return args[0].Call(interpreter, "__missing__", args[1]);
+                frame->SetReturnValue(args[0].Call(interpreter, "__missing__", args[1]));
             }
-        } else {
-            return Value();
         }
     }
 
@@ -448,11 +431,10 @@ namespace tempearly
 
         if (!key.GetHash(interpreter, hash))
         {
-            return Value();
+            return;
         }
         args[0].As<MapObject>()->Insert(hash, key, value);
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -469,8 +451,6 @@ namespace tempearly
         {
             interpreter->Throw(interpreter->eKeyError, repr);
         }
-
-        return Value();
     }
 
     /**
@@ -481,7 +461,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(map_bool)
     {
-        return Value::NewBool(!args[0].As<MapObject>()->IsEmpty());
+        frame->SetReturnValue(Value::NewBool(!args[0].As<MapObject>()->IsEmpty()));
     }
 
     /**
@@ -511,8 +491,7 @@ namespace tempearly
                     || !result.AsString(interpreter, value))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                    return Value();
+                    return;
                 }
                 if (first)
                 {
@@ -525,8 +504,7 @@ namespace tempearly
             map->UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
         buffer << '}';
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     /**
@@ -543,8 +521,7 @@ namespace tempearly
         if (!args[1].IsMap())
         {
             interpreter->Throw(interpreter->eValueError, "Map required");
-
-            return Value();
+            return;
         }
         result = new MapObject(interpreter->cMap);
         for (Handle<MapObject::Entry> entry = map->GetFront(); entry; entry = entry->GetNext())
@@ -556,8 +533,7 @@ namespace tempearly
         {
             result->Insert(entry->GetHash(), entry->GetKey(), entry->GetValue());
         }
-
-        return Value(result);
+        frame->SetReturnValue(Value(result));
     }
 
     void init_map(Interpreter* i)

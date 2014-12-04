@@ -112,68 +112,76 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                Value result;
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
 
-                interpreter->PushFrame(Handle<Frame>(), this);
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
-                    interpreter->Throw(interpreter->eTypeError,
-                                       "Missing method receiver");
+                    interpreter->Throw(interpreter->eTypeError, "Missing method receiver");
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
                 // Test that the first argument is correct type.
                 else if (!args[0].IsInstance(interpreter, m_declaring_class))
                 {
-                    StringBuilder sb;
-
-                    sb << "Method requires a '"
-                       << m_declaring_class->GetName()
-                       << "' object but received a '"
-                       << args[0].GetClass(interpreter)->GetName();
-                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->Throw(
+                        interpreter->eTypeError,
+                        "Method requires a '"
+                        + m_declaring_class->GetName()
+                        + "' object but received a '"
+                        + args[0].GetClass(interpreter)->GetName()
+                    );
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
                 // Test that we have correct amount of arguments.
                 else if (m_arity < 0)
                 {
                     if (args.GetSize() < static_cast<unsigned>(-(m_arity + 1) + 1))
                     {
-                        StringBuilder sb;
-
-                        sb << "Method expected at least "
-                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
-                           << " arguments, got "
-                           << Utils::ToString(static_cast<u64>(args.GetSize()));
-                        interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                        interpreter->Throw(
+                            interpreter->eTypeError,
+                            "Method expected at least "
+                            + Utils::ToString(static_cast<u64>(-(m_arity) - 1))
+                            + " arguments, got "
+                            + Utils::ToString(static_cast<u64>(args.GetSize()))
+                        );
                         interpreter->PopFrame();
 
-                        return Value();
+                        return false;
                     }
                 }
                 else if (args.GetSize() != static_cast<unsigned>(m_arity) + 1)
                 {
-                    StringBuilder sb;
-
-                    sb << "Method expected "
-                       << Utils::ToString(static_cast<u64>(m_arity))
-                       << " arguments, got "
-                       << Utils::ToString(static_cast<u64>(args.GetSize()));
-                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->Throw(
+                        interpreter->eTypeError,
+                        "Method expected "
+                        + Utils::ToString(static_cast<u64>(m_arity))
+                        + " arguments, got "
+                        + Utils::ToString(static_cast<u64>(args.GetSize()))
+                    );
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
-                result = m_callback(interpreter, args);
+                m_callback(interpreter, frame, args);
                 interpreter->PopFrame();
+                if (interpreter->HasException())
+                {
+                    return false;
+                }
+                else if (frame->HasReturnValue())
+                {
+                    slot = frame->GetReturnValue();
+                } else {
+                    slot = Value::NullValue();
+                }
 
-                return result;
+                return true;
             }
 
             void Mark()
@@ -221,45 +229,54 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                Value result;
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
 
-                interpreter->PushFrame(Handle<Frame>(), this);
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
                     if (args.GetSize() < static_cast<unsigned>(-(m_arity + 1)))
                     {
-                        StringBuilder sb;
-
-                        sb << "Method expected at least "
-                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
-                           << " arguments, got "
-                           << Utils::ToString(static_cast<u64>(args.GetSize()));
-                        interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                        interpreter->Throw(
+                            interpreter->eTypeError,
+                            "Method expected at least "
+                            + Utils::ToString(static_cast<u64>(-(m_arity) - 1))
+                            + " arguments, got "
+                            + Utils::ToString(static_cast<u64>(args.GetSize()))
+                        );
                         interpreter->PopFrame();
 
-                        return Value();
+                        return false;
                     }
                 }
                 else if (args.GetSize() != static_cast<unsigned>(m_arity))
                 {
-                    StringBuilder sb;
-
-                    sb << "Method expected "
-                       << Utils::ToString(static_cast<u64>(m_arity))
-                       << " arguments, got "
-                       << Utils::ToString(static_cast<u64>(args.GetSize()));
-                    interpreter->Throw(interpreter->eTypeError, sb.ToString());
+                    interpreter->Throw(
+                        interpreter->eTypeError,
+                        "Method expected "
+                        + Utils::ToString(static_cast<u64>(m_arity))
+                        + " arguments, got "
+                        + Utils::ToString(static_cast<u64>(args.GetSize()))
+                    );
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
-                result = m_callback(interpreter, args);
+                m_callback(interpreter, frame, args);
                 interpreter->PopFrame();
+                if (interpreter->HasException())
+                {
+                    return false;
+                }
+                else if (frame->HasReturnValue())
+                {
+                    slot = frame->GetReturnValue();
+                } else {
+                    slot = Value::NullValue();
+                }
 
-                return result;
+                return true;
             }
 
             bool IsStaticMethod() const
@@ -307,20 +324,19 @@ namespace tempearly
                 : FunctionObject(interpreter)
                 , m_alias(alias) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
                     interpreter->PushFrame(Handle<Frame>(), this);
-                    interpreter->Throw(interpreter->eTypeError,
-                                       "Missing method receiver");
+                    interpreter->Throw(interpreter->eTypeError, "Missing method receiver");
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
 
-                return args[0].Call(interpreter, m_alias, args.SubVector(1));
+                return slot = args[0].Call(interpreter, m_alias, args.SubVector(1));
             }
 
         private:
@@ -391,14 +407,12 @@ namespace tempearly
                 interpreter->Throw(interpreter->eTypeError,
                                    "Cannot allocate instance of "
                                    + cls->GetName());
-
-                return Value();
+                return;
             }
         } else {
             instance = new Object(cls);
         }
-
-        return Value(instance);
+        frame->SetReturnValue(Value(instance));
     }
 
     /**
@@ -413,15 +427,10 @@ namespace tempearly
     {
         Value instance = args[0].Call(interpreter, "alloc");
 
-        if (instance)
+        if (instance && instance.Call(interpreter, "__init__", args.SubVector(1)))
         {
-            if (instance.Call(interpreter, "__init__", args.SubVector(1)))
-            {
-                return instance;
-            }
+            frame->SetReturnValue(instance);
         }
-
-        return Value();
     }
 
     /**
@@ -436,9 +445,9 @@ namespace tempearly
 
         if (args[0].As<Class>()->GetAttribute("__name__", name) && name.IsString())
         {
-            return name;
+            frame->SetReturnValue(name);
         } else {
-            return Value::NewString("<anonymous type>");
+            frame->SetReturnValue(Value::NewString("<anonymous type>"));
         }
     }
 

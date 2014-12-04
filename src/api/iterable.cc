@@ -15,26 +15,25 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(iterable_first)
     {
         Value iterator = args[0].Call(interpreter, "__iter__");
+        Value element;
 
-        if (iterator)
+        if (!iterator)
         {
-            Value element;
-
-            if (iterator.GetNext(interpreter, element))
+            return;
+        }
+        else if (iterator.GetNext(interpreter, element))
+        {
+            frame->SetReturnValue(element);
+        }
+        else if (!interpreter->HasException())
+        {
+            if (args.GetSize() > 1)
             {
-                return element;
-            }
-            else if (!interpreter->HasException())
-            {
-                if (args.GetSize() > 1)
-                {
-                    return args[1];
-                }
+                frame->SetReturnValue(args[1]);
+            } else {
                 interpreter->Throw(interpreter->eStateError, "Iteration is empty");
             }
         }
-
-        return Value();
     }
 
     /**
@@ -52,26 +51,25 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
         else if (iterator.GetNext(interpreter, element))
         {
             while (iterator.GetNext(interpreter, element));
             if (!interpreter->HasException())
             {
-                return element;
+                frame->SetReturnValue(element);
             }
         }
         else if (!interpreter->HasException())
         {
             if (args.GetSize() > 1)
             {
-                return args[1];
+                frame->SetReturnValue(args[1]);
+            } else {
+                interpreter->Throw(interpreter->eStateError, "Iteration is empty");
             }
-            interpreter->Throw(interpreter->eStateError, "Iteration is empty");
         }
-
-        return Value();
     }
 
     /**
@@ -89,33 +87,31 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
-        if (iterator.GetNext(interpreter, element))
+        else if (iterator.GetNext(interpreter, element))
         {
             Value remaining;
 
             if (iterator.GetNext(interpreter, remaining))
             {
                 interpreter->Throw(interpreter->eStateError, "Iteration contains more than one element");
-
-                return Value();
+                return;
             }
             if (!interpreter->HasException())
             {
-                return element;
+                frame->SetReturnValue(element);
             }
         }
         else if (!interpreter->HasException())
         {
             if (args.GetSize() > 1)
             {
-                return args[1];
+                frame->SetReturnValue(args[1]);
+            } else {
+                interpreter->Throw(interpreter->eStateError, "Iteration is empty");
             }
-            interpreter->Throw(interpreter->eStateError, "Iteration is empty");
         }
-
-        return Value();
     }
 
     /**
@@ -158,7 +154,7 @@ namespace tempearly
                         if (!(result = element.Call(interpreter, "__gt__", args2))
                             || !result.AsBool(interpreter, b))
                         {
-                            return Value();
+                            return;
                         }
                         else if (b)
                         {
@@ -177,7 +173,7 @@ namespace tempearly
                         if (!(result = args[1].Call(interpreter, "__call__", args2))
                             || !result.AsInt(interpreter, i))
                         {
-                            return Value();
+                            return;
                         }
                         else if (i > 0)
                         {
@@ -187,7 +183,7 @@ namespace tempearly
                 }
                 if (!interpreter->HasException())
                 {
-                    return max;
+                    frame->SetReturnValue(max);
                 }
             }
             else if (!interpreter->HasException())
@@ -195,8 +191,6 @@ namespace tempearly
                 interpreter->Throw(interpreter->eStateError, "Iteration is empty");
             }
         }
-
-        return Value();
     }
 
     /**
@@ -238,7 +232,7 @@ namespace tempearly
                         args2.PushBack(min);
                         if (!(result = element.Call(interpreter, "__lt__", args2)) || !result.AsBool(interpreter, b))
                         {
-                            return Value();
+                            return;
                         }
                         else if (b)
                         {
@@ -256,7 +250,7 @@ namespace tempearly
                         args2.PushBack(element);
                         if (!(result = args[1].Call(interpreter, "__call__", args2)) || !result.AsInt(interpreter, i))
                         {
-                            return Value();
+                            return;
                         }
                         else if (i < 0)
                         {
@@ -266,7 +260,7 @@ namespace tempearly
                 }
                 if (!interpreter->HasException())
                 {
-                    return min;
+                    frame->SetReturnValue(min);
                 }
             }
             else if (!interpreter->HasException())
@@ -274,8 +268,6 @@ namespace tempearly
                 interpreter->Throw(interpreter->eStateError, "Iteration is empty");
             }
         }
-
-        return Value();
     }
 
     /**
@@ -300,7 +292,7 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
         if (iterator.GetNext(interpreter, element))
         {
@@ -317,7 +309,7 @@ namespace tempearly
                     args2.PushBack(element);
                     if (!(sum = sum.Call(interpreter, "__add__", args2)))
                     {
-                        return Value();
+                        return;
                     }
                     ++count;
                 }
@@ -330,7 +322,7 @@ namespace tempearly
                     args2.PushBack(element);
                     if (!(sum = args[1].Call(interpreter, "__call__", args2)))
                     {
-                        return Value();
+                        return;
                     }
                     ++count;
                 }
@@ -339,16 +331,13 @@ namespace tempearly
             {
                 args2.Clear();
                 args2.PushBack(Value::NewInt(count));
-
-                return sum.Call(interpreter, "__div__", args2);
+                frame->SetReturnValue(sum.Call(interpreter, "__div__", args2));
             }
         }
         else if (!interpreter->HasException())
         {
             interpreter->Throw(interpreter->eStateError, "Iteration is empty");
         }
-
-        return Value();
     }
 
     /**
@@ -373,7 +362,7 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
         if (iterator.GetNext(interpreter, element))
         {
@@ -389,7 +378,7 @@ namespace tempearly
                     args2.PushBack(element);
                     if (!(sum = sum.Call(interpreter, "__add__", args2)))
                     {
-                        return Value();
+                        return;
                     }
                 }
             } else {
@@ -401,21 +390,19 @@ namespace tempearly
                     args2.PushBack(element);
                     if (!(sum = args[1].Call(interpreter, "__call__", args2)))
                     {
-                        return Value();
+                        return;
                     }
                 }
             }
             if (!interpreter->HasException())
             {
-                return sum;
+                frame->SetReturnValue(sum);
             }
         }
         else if (!interpreter->HasException())
         {
             interpreter->Throw(interpreter->eStateError, "Iteration is empty");
         }
-
-        return Value();
     }
 
     /**
@@ -434,7 +421,7 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
         if (iterator.GetNext(interpreter, element))
         {
@@ -445,26 +432,23 @@ namespace tempearly
 
                 if (!result || !result.AsBool(interpreter, b))
                 {
-                    return Value();
+                    return;
                 }
                 else if (!b)
                 {
-                    return Value::NewBool(false);
+                    frame->SetReturnValue(Value::NewBool(false));
+                    return;
                 }
             }
             while (iterator.GetNext(interpreter, element));
-            if (interpreter->HasException())
+            if (!interpreter->HasException())
             {
-                return Value();
+                frame->SetReturnValue(Value::NewBool(true));
             }
-
-            return Value::NewBool(true);
         }
-        else if (interpreter->HasException())
+        else if (!interpreter->HasException())
         {
-            return Value();
-        } else {
-            return Value::NewBool(false);
+            frame->SetReturnValue(Value::NewBool(false));
         }
     }
 
@@ -484,7 +468,7 @@ namespace tempearly
 
         if (!iterator)
         {
-            return Value();
+            return;
         }
         if (iterator.GetNext(interpreter, element))
         {
@@ -495,21 +479,20 @@ namespace tempearly
 
                 if (!result || !result.AsBool(interpreter, b))
                 {
-                    return Value();
+                    return;
                 }
                 else if (b)
                 {
-                    return Value::NewBool(true);
+                    frame->SetReturnValue(Value::NewBool(true));
+                    return;
                 }
             }
             while (iterator.GetNext(interpreter, element));
         }
-        if (interpreter->HasException())
+        if (!interpreter->HasException())
         {
-            return Value();
+            frame->SetReturnValue(Value::NewBool(false));
         }
-
-        return Value::NewBool(false);
     }
 
     /**
@@ -530,16 +513,14 @@ namespace tempearly
             {
                 if (!args[1].Call(interpreter, "__call__", element))
                 {
-                    return Value();
+                    return;
                 }
             }
             if (!interpreter->HasException())
             {
-                return args[0];
+                frame->SetReturnValue(args[0]);
             }
         }
-
-        return Value();
     }
 
     /**
@@ -566,7 +547,7 @@ namespace tempearly
 
                 if (!result || !result.AsBool(interpreter, b))
                 {
-                    return Value();
+                    return;
                 }
                 else if (b)
                 {
@@ -575,11 +556,9 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                return Value(list);
+                frame->SetReturnValue(Value(list));
             }
         }
-
-        return Value();
     }
 
     /**
@@ -606,7 +585,7 @@ namespace tempearly
 
                 if (!result || !result.AsBool(interpreter, b))
                 {
-                    return Value();
+                    return;
                 }
                 else if (b)
                 {
@@ -615,11 +594,9 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                return Value(list);
+                frame->SetReturnValue(Value(list));
             }
         }
-
-        return Value();
     }
 
     /**
@@ -647,19 +624,18 @@ namespace tempearly
                 {
                     if (b)
                     {
-                        return Value::NewBool(true);
+                        frame->SetReturnValue(Value::NewBool(true));
+                        return;
                     }
                 } else {
-                    return Value();
+                    return;
                 }
             }
             if (!interpreter->HasException())
             {
-                return Value::NewBool(false);
+                frame->SetReturnValue(Value::NewBool(false));
             }
         }
-
-        return Value();
     }
 
     /**
@@ -684,12 +660,11 @@ namespace tempearly
         {
             if (!args[1].AsString(interpreter, separator))
             {
-                return Value();
+                return;
             }
         } else {
             interpreter->Throw(interpreter->eValueError, "Too many arguments");
-
-            return Value();
+            return;
         }
         if (!args[0].HasFlag(CountedObject::FLAG_INSPECTING))
         {
@@ -701,8 +676,7 @@ namespace tempearly
             if (!(iterator = args[0].Call(interpreter, "__iter__")))
             {
                 args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                return Value();
+                return;
             }
             while (iterator.GetNext(interpreter, element))
             {
@@ -711,8 +685,7 @@ namespace tempearly
                 if (!element.ToString(interpreter, repr))
                 {
                     args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                    return Value();
+                    return;
                 }
                 if (first)
                 {
@@ -725,11 +698,10 @@ namespace tempearly
             args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
             if (interpreter->HasException())
             {
-                return Value();
+                return;
             }
         }
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     /**
@@ -755,17 +727,15 @@ namespace tempearly
 
                 if (!result)
                 {
-                    return Value();
+                    return;
                 }
                 list->Append(result);
             }
             if (!interpreter->HasException())
             {
-                return Value(list);
+                frame->SetReturnValue(Value(list));
             }
         }
-
-        return Value();
     }
 
     static bool quicksort(const Handle<Interpreter>& interpreter,
@@ -952,8 +922,7 @@ namespace tempearly
                         Handle<ListObject> list = new ListObject(interpreter->cList);
 
                         list->Append(vector);
-
-                        return Value(list);
+                        frame->SetReturnValue(Value(list));
                     }
                 }
                 else if (quicksort_callback(interpreter, vector, 0, vector.GetSize(), args[1]))
@@ -961,13 +930,10 @@ namespace tempearly
                     Handle<ListObject> list = new ListObject(interpreter->cList);
 
                     list->Append(vector);
-
-                    return Value(list);
+                    frame->SetReturnValue(Value(list));
                 }
             }
         }
-
-        return Value();
     }
 
     /**
@@ -1000,7 +966,7 @@ namespace tempearly
 
                 if (!result || !result.AsBool(interpreter, slot))
                 {
-                    return Value();
+                    return;
                 }
                 else if (slot)
                 {
@@ -1013,12 +979,9 @@ namespace tempearly
             {
                 result->Append(Value(a));
                 result->Append(Value(b));
-
-                return Value(result);
+                frame->SetReturnValue(Value(result));
             }
         }
-
-        return Value();
     }
 
     /**
@@ -1038,32 +1001,29 @@ namespace tempearly
         
         if (!args[1].AsInt(interpreter, count))
         {
-            return Value();
+            return;
         }
         else if (count < 0)
         {
             interpreter->Throw(interpreter->eValueError, "Negative count");
-
-            return Value();
+            return;
         }
         else if (!(iterator = args[0].Call(interpreter, "__iter__")))
         {
-            return Value();
+            return;
         }
         while (count-- > 0)
         {
             if (!iterator.GetNext(interpreter, element))
             {
-                if (interpreter->HasException())
+                if (!interpreter->HasException())
                 {
-                    return Value();
-                } else {
-                    return iterator;
+                    frame->SetReturnValue(iterator);
                 }
+                return;
             }
         }
-
-        return iterator;
+        frame->SetReturnValue(iterator);
     }
 
     /**
@@ -1086,8 +1046,7 @@ namespace tempearly
             if (!(iterator = args[0].Call(interpreter, "__iter__")))
             {
                 args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                return Value();
+                return;
             }
             while (iterator.GetNext(interpreter, element))
             {
@@ -1097,8 +1056,7 @@ namespace tempearly
                 if (!result || !result.AsString(interpreter, json))
                 {
                     args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
-
-                    return Value();
+                    return;
                 }
                 if (first)
                 {
@@ -1111,12 +1069,11 @@ namespace tempearly
             args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
             if (interpreter->HasException())
             {
-                return Value();
+                return;
             }
         }
         buffer << ']';
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     void init_iterable(Interpreter* i)

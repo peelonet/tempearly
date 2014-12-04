@@ -107,6 +107,31 @@ namespace tempearly
          */
         bool ReplaceLocalVariable(const String& id, const Value& value);
 
+        /**
+         * Returns true if this frame has a return value.
+         */
+        inline bool HasReturnValue() const
+        {
+            return m_return_value;
+        }
+
+        /**
+         * Returns value returned by the function invocation or error value if
+         * no value was returned.
+         */
+        inline const Value& GetReturnValue() const
+        {
+            return m_return_value;
+        }
+
+        /**
+         * Sets value returned by the function invocation.
+         */
+        inline void SetReturnValue(const Value& return_value)
+        {
+            m_return_value = return_value;
+        }
+
         void Mark();
 
     private:
@@ -118,6 +143,8 @@ namespace tempearly
         FunctionObject* m_function;
         /** Container for local variables. */
         Dictionary<Value>* m_local_variables;
+        /** Value returned by the function. */
+        Value m_return_value;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Frame);
     };
 }

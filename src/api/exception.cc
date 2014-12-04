@@ -49,18 +49,12 @@ namespace tempearly
             else if (!message.Is(Value::KIND_NULL))
             {
                 interpreter->Throw(interpreter->eTypeError, "String required");
-
-                return Value();
             }
         }
         else if (args.GetSize() > 2)
         {
             interpreter->Throw(interpreter->eValueError, "Too many arguments");
-
-            return Value();
         }
-
-        return Value::NullValue();
     }
 
     static Handle<CoreObject> ex_alloc(const Handle<Interpreter>& interpreter,

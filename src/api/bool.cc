@@ -24,18 +24,18 @@ namespace tempearly
                 || input.EqualsIgnoreCase("yes")
                 || input.EqualsIgnoreCase("on"))
             {
-                return Value::NewBool(true);
+                frame->SetReturnValue(Value::NewBool(true));
+                return;
             }
             else if (input.EqualsIgnoreCase("false")
                     || input.EqualsIgnoreCase("no")
                     || input.EqualsIgnoreCase("off"))
             {
-                return Value::NewBool(false);
+                frame->SetReturnValue(Value::NewBool(false));
+                return;
             }
             interpreter->Throw(interpreter->eValueError, "Invalid boolean");
         }
-
-        return Value();
     }
 
     /**
@@ -46,7 +46,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bool_s_rand)
     {
-        return Value::NewBool(Random::NextBool());
+        frame->SetReturnValue(Value::NewBool(Random::NextBool()));
     }
 
     /**
@@ -56,7 +56,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bool_hash)
     {
-        return Value::NewInt(args[0].AsBool() ? 1231 : 1237);
+        frame->SetReturnValue(Value::NewInt(args[0].AsBool() ? 1231 : 1237));
     }
 
     /**
@@ -67,7 +67,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bool_str)
     {
-        return Value::NewString(args[0].AsBool() ? "true" : "false");
+        frame->SetReturnValue(Value::NewString(args[0].AsBool() ? "true" : "false"));
     }
 
     /**
@@ -82,15 +82,14 @@ namespace tempearly
         {
             bool b;
 
-            if (args[1].ToBool(interpreter, b))
+            if (!args[1].ToBool(interpreter, b))
             {
-                return b ? args[0] : Value::NewBool(false);
-            } else {
-                return Value();
+                return;
             }
+            frame->SetReturnValue(b ? args[0] : Value::NewBool(false));
+        } else {
+            frame->SetReturnValue(Value::NewBool(false));
         }
-
-        return Value::NewBool(false);
     }
 
     /**
@@ -103,15 +102,13 @@ namespace tempearly
     {
         if (args[0].AsBool())
         {
-            return args[0];
+            frame->SetReturnValue(args[0]);
         } else {
             bool b;
 
             if (args[1].ToBool(interpreter, b))
             {
-                return Value::NewBool(b);
-            } else {
-                return Value();
+                frame->SetReturnValue(Value::NewBool(b));
             }
         }
     }
@@ -130,12 +127,10 @@ namespace tempearly
         {
             if (b)
             {
-                return Value::NewBool(!args[0].AsBool());
+                frame->SetReturnValue(Value::NewBool(!args[0].AsBool()));
             } else {
-                return args[0];
+                frame->SetReturnValue(args[0]);
             }
-        } else {
-            return Value();
         }
     }
 

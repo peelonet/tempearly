@@ -26,8 +26,7 @@ namespace tempearly
                 case Result::KIND_BREAK:
                     if (!interpreter->HasException())
                     {
-                        interpreter->Throw(interpreter->eStopIteration,
-                                           "Iteration reached end");
+                        interpreter->Throw(interpreter->eStopIteration, "Iteration reached end");
                     }
 
                 default:
@@ -104,7 +103,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iter_next)
     {
-        return args[0].As<IteratorObject>()->Next(interpreter);
+        frame->SetReturnValue(args[0].As<IteratorObject>()->Next(interpreter));
     }
 
     /**
@@ -128,8 +127,7 @@ namespace tempearly
         {
             iterator->Feed(args[i]);
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -146,7 +144,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iter_peek)
     {
-        return args[0].As<IteratorObject>()->Peek(interpreter);
+        frame->SetReturnValue(args[0].As<IteratorObject>()->Peek(interpreter));
     }
 
     /**
@@ -156,7 +154,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iter_iter)
     {
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -169,15 +167,12 @@ namespace tempearly
     {
         if (args[0].As<IteratorObject>()->Peek(interpreter))
         {
-            return Value::NewBool(true);
+            frame->SetReturnValue(Value::NewBool(true));
         }
         else if (interpreter->GetException().IsInstance(interpreter, interpreter->eStopIteration))
         {
             interpreter->ClearException();
-
-            return Value::NewBool(false);
-        } else {
-            return Value();
+            frame->SetReturnValue(Value::NewBool(false));
         }
     }
 

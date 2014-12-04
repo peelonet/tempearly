@@ -25,7 +25,8 @@ namespace tempearly
 
         void AddFunction(const String& name,
                          int arity,
-                         Value(*callback)(const Handle<Interpreter>&,
+                         void (*callback)(const Handle<Interpreter>&,
+                                          const Handle<Frame>&,
                                           const Vector<Value>&));
 
         /**
@@ -42,9 +43,10 @@ namespace tempearly
          *
          * \param enclosing Optional handle of enclosing frame
          * \param function  Optional handle of function being executed
+         * \return          Newly created stack frame
          */
-        void PushFrame(const Handle<Frame>& enclosing = Handle<Frame>(),
-                       const Handle<FunctionObject>& function = Handle<FunctionObject>());
+        Handle<Frame> PushFrame(const Handle<Frame>& enclosing = Handle<Frame>(),
+                                const Handle<FunctionObject>& function = Handle<FunctionObject>());
 
         /**
          * Pops the most recent stack frame from frame chain.

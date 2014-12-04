@@ -32,19 +32,19 @@ namespace tempearly
 
                 if (!value.AsInt(interpreter, number))
                 {
-                    return Value();
+                    return;
                 }
                 else if (number < 0 || number > 255)
                 {
                     interpreter->Throw(interpreter->eValueError,
                                        "Value out of bounds: "
                                        + Utils::ToString(number));
+                    return;
                 }
                 result.PushBack(static_cast<byte>(number));
             }
         }
-
-        return Value::NewBinary(ByteString(result.GetData(), result.GetSize()));
+        frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
     }
 
     /**
@@ -57,30 +57,28 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(bin_s_rand)
     {
         i64 length;
+        Vector<byte> result;
 
-        if (args[0].AsInt(interpreter, length))
+        if (!args[0].AsInt(interpreter, length))
         {
-            if (length == 0)
-            {
-                interpreter->Throw(interpreter->eValueError, "Length cannot be zero");
-            }
-            else if (length < 0)
-            {
-                interpreter->Throw(interpreter->eValueError, "Length cannot be less than one");
-            } else {
-                Vector<byte> result;
-
-                result.Reserve(length);
-                for (i64 i = 0; i < length; ++i)
-                {
-                    result.PushBack(Random::NextU8());
-                }
-
-                return Value::NewBinary(ByteString(result.GetData(), result.GetSize()));
-            }
+            return;
         }
-
-        return Value();
+        else if (length == 0)
+        {
+            interpreter->Throw(interpreter->eValueError, "Length cannot be zero");
+            return;
+        }
+        else if (length < 0)
+        {
+            interpreter->Throw(interpreter->eValueError, "Length cannot be less than one");
+            return;
+        }
+        result.Reserve(length);
+        for (i64 i = 0; i < length; ++i)
+        {
+            result.PushBack(Random::NextU8());
+        }
+        frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
     }
 
     /**
@@ -90,7 +88,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_length)
     {
-        return Value::NewInt(args[0].AsBinary().GetLength());
+        frame->SetReturnValue(Value::NewInt(args[0].AsBinary().GetLength()));
     }
 
     /**
@@ -104,9 +102,9 @@ namespace tempearly
 
         if (b.IsEmpty())
         {
-            return args[0];
+            frame->SetReturnValue(args[0]);
         } else {
-            return Value::NewBinary(ByteString(b.GetBytes(), b.GetLength() - 1));
+            frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes(), b.GetLength() - 1)));
         }
     }
 
@@ -126,15 +124,16 @@ namespace tempearly
 
             if (length > 1 && b[length - 2] == '\r' && b[length - 1] == '\n')
             {
-                return Value::NewBinary(ByteString(b.GetBytes(), length - 2));
+                frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes(), length - 2)));
+                return;
             }
             else if (b[length - 1] == '\n' || b[length - 1] == '\r')
             {
-                return Value::NewBinary(ByteString(b.GetBytes(), length - 1));
+                frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes(), length - 1)));
+                return;
             }
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -155,10 +154,9 @@ namespace tempearly
             {
                 result.PushBack(b[i - 1]);
             }
-
-            return Value::NewBinary(ByteString(result.GetData(), result.GetSize()));
+            frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
         } else {
-            return args[0];
+            frame->SetReturnValue(args[0]);
         }
     }
 
@@ -181,8 +179,7 @@ namespace tempearly
         hash += (hash << 3);
         hash ^= (hash >> 11);
         hash += (hash << 15);
-
-        return Value::NewInt(hash);
+        frame->SetReturnValue(Value::NewInt(hash));
     }
 
     namespace
@@ -228,8 +225,7 @@ namespace tempearly
         } else {
             iterator = new BinaryIterator(interpreter, b);
         }
-
-        return Value(iterator);
+        frame->SetReturnValue(Value(iterator));
     }
 
     /**
@@ -240,7 +236,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_bool)
     {
-        return Value::NewBool(!args[0].AsBinary().IsEmpty());
+        frame->SetReturnValue(Value::NewBool(!args[0].AsBinary().IsEmpty()));
     }
 
     /**
@@ -255,20 +251,19 @@ namespace tempearly
         const ByteString& a = args[0].AsBinary();
         ByteString b;
 
-        if (args[1].AsBinary(interpreter, b))
+        if (!args[1].AsBinary(interpreter, b))
         {
-            if (a.IsEmpty())
-            {
-                return args[1];
-            }
-            else if (b.IsEmpty())
-            {
-                return args[0];
-            } else {
-                return Value::NewBinary(a + b);
-            }
+            return;
+        }
+        if (a.IsEmpty())
+        {
+            frame->SetReturnValue(args[1]);
+        }
+        else if (b.IsEmpty())
+        {
+            frame->SetReturnValue(args[0]);
         } else {
-            return Value();
+            frame->SetReturnValue(Value::NewBinary(a + b));
         }
     }
 
@@ -290,10 +285,12 @@ namespace tempearly
             if (count < 0)
             {
                 interpreter->Throw(interpreter->eValueError, "Negative multiplier");
+                return;
             }
             else if (count == 1 || b.IsEmpty())
             {
-                return args[0];
+                frame->SetReturnValue(args[0]);
+                return;
             } else {
                 Vector<byte> result;
 
@@ -302,12 +299,10 @@ namespace tempearly
                 {
                     result.PushBack(b.GetBytes(), b.GetLength());
                 }
-
-                return Value::NewBinary(ByteString(result.GetData(), result.GetSize()));
+                frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
+                return;
             }
         }
-
-        return Value();
     }
 
     /**
@@ -322,9 +317,9 @@ namespace tempearly
 
         if (operand.IsBinary())
         {
-            return Value::NewBool(self.AsBinary().Equals(operand.AsBinary()));
+            frame->SetReturnValue(Value::NewBool(self.AsBinary().Equals(operand.AsBinary())));
         } else {
-            return Value::NewBool(false);
+            frame->SetReturnValue(Value::NewBool(false));
         }
     }
 
@@ -343,14 +338,13 @@ namespace tempearly
 
         if (operand.IsBinary())
         {
-            return Value::NewBool(self.AsBinary().Compare(operand.AsBinary()) < 0);
+            frame->SetReturnValue(Value::NewBool(self.AsBinary().Compare(operand.AsBinary()) < 0));
+        } else {
+            interpreter->Throw(
+                interpreter->eTypeError,
+                "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Binary'"
+            );
         }
-        interpreter->Throw(
-            interpreter->eTypeError,
-            "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Binary'"
-        );
-
-        return Value();
     }
 
     /**
@@ -381,7 +375,7 @@ namespace tempearly
 
             if (!range->GetBegin().AsInt(interpreter, begin) || !range->GetEnd().AsInt(interpreter, end))
             {
-                return Value();
+                return;
             }
             if (range->IsExclusive())
             {
@@ -398,17 +392,15 @@ namespace tempearly
             if (begin < 0 || begin >= static_cast<i64>(length) || end < 0 || end >= static_cast<i64>(length))
             {
                 interpreter->Throw(interpreter->eIndexError, "Index out of bounds");
-
-                return Value();
+                return;
             }
-
-            return Value::NewBinary(ByteString(b.GetBytes() + begin, end - begin));
+            frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes() + begin, end - begin)));
         } else {
             i64 index;
 
             if (!argument.AsInt(interpreter, index))
             {
-                return Value();
+                return;
             }
             if (index < 0)
             {
@@ -417,11 +409,9 @@ namespace tempearly
             if (index < 0 || index >= static_cast<i64>(length))
             {
                 interpreter->Throw(interpreter->eIndexError, "Index out of bounds");
-
-                return Value();
+                return;
             }
-
-            return Value::NewInt(b[index]);
+            frame->SetReturnValue(Value::NewInt(b[index]));
         }
     }
 

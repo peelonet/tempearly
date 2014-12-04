@@ -16,9 +16,7 @@ namespace tempearly
 
         if (args[0].ToString(interpreter, string))
         {
-            return Value::NewString(string.EscapeJavaScript());
-        } else {
-            return Value();
+            frame->SetReturnValue(Value::NewString(string.EscapeJavaScript()));
         }
     }
 
@@ -34,9 +32,7 @@ namespace tempearly
 
         if (args[0].ToString(interpreter, string))
         {
-            return Value::NewString(string.EscapeXml());
-        } else {
-            return Value();
+            frame->SetReturnValue(Value::NewString(string.EscapeXml()));
         }
     }
 

@@ -24,7 +24,7 @@ namespace tempearly
 
         if (size == 1 && args[0].IsString())
         {
-            return args[0];
+            frame->SetReturnValue(args[0]);
         } else {
             StringBuilder result;
             String slot;
@@ -33,12 +33,11 @@ namespace tempearly
             {
                 if (!args[i].ToString(interpreter, slot))
                 {
-                    return Value();
+                    return;
                 }
                 result << slot;
             }
-
-            return Value::NewString(result.ToString());
+            frame->SetReturnValue(Value::NewString(result.ToString()));
         }
     }
 
@@ -59,13 +58,11 @@ namespace tempearly
         {
             if (length == 0)
             {
-                interpreter->Throw(interpreter->eValueError,
-                                   "Length cannot be zero");
+                interpreter->Throw(interpreter->eValueError, "Length cannot be zero");
             }
             else if (length < 0)
             {
-                interpreter->Throw(interpreter->eValueError,
-                                   "Length cannot be less than one");
+                interpreter->Throw(interpreter->eValueError, "Length cannot be less than one");
             } else {
                 StringBuilder buffer(length);
 
@@ -73,12 +70,9 @@ namespace tempearly
                 {
                     buffer.Append(input[Random::NextU64() % 36]);
                 }
-
-                return Value::NewString(buffer.ToString());
+                frame->SetReturnValue(Value::NewString(buffer.ToString()));
             }
         }
-
-        return Value();
     }
 
     /**
@@ -90,7 +84,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(str_length)
     {
-        return Value::NewInt(args[0].AsString().GetLength());
+        frame->SetReturnValue(Value::NewInt(args[0].AsString().GetLength()));
     }
 
     /**
@@ -126,8 +120,7 @@ namespace tempearly
         {
             list->Append(Value::NewString(s.SubString(begin)));
         }
-
-        return Value(list);
+        frame->SetReturnValue(Value(list));
     }
 
     /**
@@ -147,8 +140,7 @@ namespace tempearly
         {
             list->Append(Value::NewInt(s[i]));
         }
-
-        return Value(list);
+        frame->SetReturnValue(Value(list));
     }
 
     /**
@@ -183,8 +175,7 @@ namespace tempearly
         {
             list->Append(Value::NewString(s.SubString(begin)));
         }
-
-        return Value(list);
+        frame->SetReturnValue(Value(list));
     }
 
     /**
@@ -208,11 +199,10 @@ namespace tempearly
             {
                 buffer.Append(String::ToLower(s[i]));
             }
-
-            return Value::NewString(buffer.ToString());
+            frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        } else {
+            frame->SetReturnValue(args[0]);
         }
-
-        return args[0];
     }
 
     /**
@@ -235,15 +225,16 @@ namespace tempearly
 
             if (len > 1 && s[len - 2] == '\r' && s[len - 1] == '\n')
             {
-                return Value::NewString(s.SubString(0, len - 2));
+                frame->SetReturnValue(Value::NewString(s.SubString(0, len - 2)));
+                return;
             }
             else if (s[len - 1] == '\n' || s[len - 1] == '\r')
             {
-                return Value::NewString(s.SubString(0, len - 1));
+                frame->SetReturnValue(Value::NewString(s.SubString(0, len - 1)));
+                return;
             }
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -260,9 +251,9 @@ namespace tempearly
 
         if (s.IsEmpty())
         {
-            return args[0];
+            frame->SetReturnValue(args[0]);
         } else {
-            return Value::NewString(s.SubString(0, s.GetLength() - 1));
+            frame->SetReturnValue(Value::NewString(s.SubString(0, s.GetLength() - 1)));
         }
     }
 
@@ -291,12 +282,11 @@ namespace tempearly
                 {
                     buffer.Append(String::ToLower(s[j]));
                 }
-
-                return Value::NewString(buffer.ToString());
+                frame->SetReturnValue(Value::NewString(buffer.ToString()));
+                return;
             }
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -318,11 +308,10 @@ namespace tempearly
             {
                 buffer.Append(s[i - 1]);
             }
-
-            return Value::NewString(buffer.ToString());
+            frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        } else {
+            frame->SetReturnValue(args[0]);
         }
-
-        return args[0];
     }
 
     /**
@@ -355,11 +344,10 @@ namespace tempearly
                 }
                 buffer.Append(c);
             }
-
-            return Value::NewString(buffer.ToString());
+            frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        } else {
+            frame->SetReturnValue(args[0]);
         }
-
-        return args[0];
     }
 
     /**
@@ -408,11 +396,10 @@ namespace tempearly
                     buffer.Append(s.SubString(begin + 1, end - begin - 1));
                 }
             }
-
-            return Value::NewString(buffer.ToString());
+            frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        } else {
+            frame->SetReturnValue(args[0]);
         }
-
-        return args[0];
     }
 
     /**
@@ -444,10 +431,10 @@ namespace tempearly
         }
         if (i != 0 || j != s.GetLength())
         {
-            return Value::NewString(s.SubString(i, j - i));
+            frame->SetReturnValue(Value::NewString(s.SubString(i, j - i)));
+        } else {
+            frame->SetReturnValue(args[0]);
         }
-
-        return args[0];
     }
 
     /**
@@ -475,12 +462,11 @@ namespace tempearly
                 {
                     buffer.Append(String::ToUpper(s[j]));
                 }
-
-                return Value::NewString(buffer.ToString());
+                frame->SetReturnValue(Value::NewString(buffer.ToString()));
+                return;
             }
         }
-
-        return args[0];
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -492,7 +478,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(str_hash)
     {
-        return Value::NewInt(args[0].AsString().HashCode());
+        frame->SetReturnValue(Value::NewInt(args[0].AsString().HashCode()));
     }
 
     namespace
@@ -540,8 +526,7 @@ namespace tempearly
         } else {
             iterator = new StringIterator(interpreter->cIterator, s);
         }
-
-        return Value(iterator);
+        frame->SetReturnValue(Value(iterator));
     }
 
     /**
@@ -552,7 +537,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(str_bool)
     {
-        return Value::NewBool(!args[0].AsString().IsEmpty());
+        frame->SetReturnValue(Value::NewBool(!args[0].AsString().IsEmpty()));
     }
 
     /**
@@ -565,8 +550,7 @@ namespace tempearly
         StringBuilder buffer;
 
         buffer << '"' << args[0].AsString().EscapeJavaScript() << '"';
-
-        return Value::NewString(buffer.ToString());
+        frame->SetReturnValue(Value::NewString(buffer.ToString()));
     }
 
     /**
@@ -589,18 +573,17 @@ namespace tempearly
 
             if (a.IsEmpty())
             {
-                return operand;
+                frame->SetReturnValue(operand);
             }
             else if (b.IsEmpty())
             {
-                return args[0];
+                frame->SetReturnValue(args[0]);
             } else {
-                return Value::NewString(a + b);
+                frame->SetReturnValue(Value::NewString(a + b));
             }
+        } else {
+            interpreter->Throw(interpreter->eValueError, "String value required");
         }
-        interpreter->Throw(interpreter->eValueError, "String value required");
-
-        return Value();
     }
 
     /**
@@ -622,12 +605,11 @@ namespace tempearly
 
             if (count < 0)
             {
-                interpreter->Throw(interpreter->eValueError,
-                                   "Negative multiplier");
+                interpreter->Throw(interpreter->eValueError, "Negative multiplier");
             }
             else if (count == 1 || string.IsEmpty())
             {
-                return args[0];
+                frame->SetReturnValue(args[0]);
             } else {
                 StringBuilder buffer(string.GetLength() * count);
 
@@ -635,12 +617,9 @@ namespace tempearly
                 {
                     buffer.Append(string);
                 }
-
-                return Value::NewString(buffer.ToString());
+                frame->SetReturnValue(Value::NewString(buffer.ToString()));
             }
         }
-
-        return Value();
     }
 
     /**
@@ -654,12 +633,11 @@ namespace tempearly
         const Value& self = args[0];
         const Value& operand = args[1];
 
-        if (operand.IsString())
-        {
-            return Value::NewBool(self.AsString().Equals(operand.AsString()));
-        } else {
-            return Value::NewBool(false);
-        }
+        frame->SetReturnValue(
+            Value::NewBool(
+                operand.IsString() ? self.AsString().Equals(operand.AsString()) : false
+            )
+        );
     }
 
     /**
@@ -678,14 +656,13 @@ namespace tempearly
 
         if (operand.IsString())
         {
-            return Value::NewBool(self.AsString().Compare(operand.AsString()) < 0);
+            frame->SetReturnValue(Value::NewBool(self.AsString().Compare(operand.AsString()) < 0));
+        } else {
+            interpreter->Throw(
+                interpreter->eTypeError,
+                "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'String'"
+            );
         }
-        interpreter->Throw(
-            interpreter->eTypeError,
-            "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'String'"
-        );
-
-        return Value();
     }
 
     /**
@@ -704,14 +681,12 @@ namespace tempearly
 
         if (parser->ParseValue(interpreter, value))
         {
-            return value;
+            frame->SetReturnValue(value);
         }
         else if (!interpreter->HasException())
         {
             interpreter->Throw(interpreter->eValueError, parser->GetErrorMessage());
         }
-
-        return Value();
     }
 
     void init_string(Interpreter* i)

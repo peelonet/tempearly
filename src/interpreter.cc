@@ -189,11 +189,10 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            Value Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                Value result;
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
 
-                interpreter->PushFrame(Handle<Frame>(), this);
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
                 {
@@ -208,7 +207,7 @@ namespace tempearly
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
                         interpreter->PopFrame();
 
-                        return Value();
+                        return false;
                     }
                 }
                 else if (args.GetSize() != static_cast<unsigned>(m_arity))
@@ -222,12 +221,22 @@ namespace tempearly
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
-                result = m_callback(interpreter, args);
+                m_callback(interpreter, frame, args);
                 interpreter->PopFrame();
-
-                return result;
+                if (interpreter->HasException())
+                {
+                    return false;
+                }
+                else if (frame->HasReturnValue())
+                {
+                    slot = frame->GetReturnValue();
+                } else {
+                    slot = Value::NullValue();
+                }
+                
+                return true;
             }
 
         private:
@@ -250,9 +259,13 @@ namespace tempearly
         }
     }
 
-    void Interpreter::PushFrame(const Handle<Frame>& enclosing, const Handle<FunctionObject>& function)
+    Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing, const Handle<FunctionObject>& function)
     {
-        m_frame = new Frame(m_frame, enclosing, function);
+        Handle<Frame> frame = new Frame(m_frame, enclosing, function);
+
+        m_frame = frame.Get();
+
+        return frame;
     }
 
     void Interpreter::PopFrame()
