@@ -467,7 +467,7 @@ namespace tempearly
                     } else {
                         m_front = m_back = 0;
                     }
-                    delete entry;
+                    delete child;
                     return;
                 }
             }
