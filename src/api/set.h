@@ -139,10 +139,10 @@ namespace tempearly
          * Searches for an entry based on the hash code.
          *
          * \param hash Hash code to look for
-         * \return     Entry with the given hash code or NULL if such entry
-         *             does not appear in the set
+         * \return     A boolean flag indicating whether the set has an entry
+         *             with given hash code
          */
-        Handle<Entry> Find(i64 hash) const;
+        bool Has(i64 hash) const;
 
         /**
          * Inserts an entry to the set. Existing entries with same hash code
@@ -152,6 +152,20 @@ namespace tempearly
          * \param value Value of the entry to insert
          */
         void Add(i64 hash, const Value& value);
+
+        /**
+         * Inserts all entries from given set into this one.
+         */
+        void Add(const Handle<SetObject>& that);
+
+        /**
+         * Removes an entry with given hash code from the set.
+         *
+         * \param hash Hash code to look for
+         * \®eturn     A boolean flag indicating whether an entry with given
+         *             hash code was found from the set
+         */
+        bool Remove(i64 hash);
 
         /**
          * Removes all entries from the set.
