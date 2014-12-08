@@ -8,6 +8,198 @@
 namespace tempearly
 {
     /**
+     * Num#is_inf() => Bool
+     *
+     * Returns true if number is infinity.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_is_inf)
+    {
+        const Value& receiver = args[0];
+
+        frame->SetReturnValue(Value::NewBool(receiver.IsFloat() && std::isinf(receiver.AsFloat())));
+    }
+
+    /**
+     * Num#is_nan() => Bool
+     *
+     * Returns true if number is invalid IEEE floating point decimal.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_is_nan)
+    {
+        const Value& receiver = args[0];
+
+        frame->SetReturnValue(Value::NewBool(receiver.IsFloat() && std::isnan(receiver.AsFloat())));
+    }
+
+    /**
+     * Num#acos() => Float
+     *
+     * Calculates inverse cosine from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_acos)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::acos(f)));
+        }
+    }
+
+    /**
+     * Num#asin() => Float
+     *
+     * Calculates inverse sine from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_asin)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::asin(f)));
+        }
+    }
+
+    /**
+     * Num#atan() => Float
+     *
+     * Calculates inverse tan from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_atan)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::atan(f)));
+        }
+    }
+
+    /**
+     * Num#atan2(other) => Float
+     *
+     * Computes arc tangent of y/x using value of the number as y and value of
+     * number given as argument as x.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_atan2)
+    {
+        double y;
+        double x;
+
+        if (args[0].AsFloat(interpreter, y) && args[1].AsFloat(interpreter, x))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::atan2(y, x)));
+        }
+    }
+
+    /**
+     * Num#cos() => Float
+     *
+     * Calculates cosine from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_cos)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::cos(f)));
+        }
+    }
+
+    /**
+     * Num#exp() => Float
+     *
+     * Calculates exponential base from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_exp)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::exp(f)));
+        }
+    }
+
+    /**
+     * Num#log() => Float
+     *
+     * Calculates the natural (base e) logarithm of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_log)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::log(f)));
+        }
+    }
+
+    /**
+     * Num#pow(exp) => Float
+     *
+     * Calculates value of the number raised to power of exp.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_pow)
+    {
+        double base;
+        double exp;
+
+        if (args[0].AsFloat(interpreter, base) && args[1].AsFloat(interpreter, exp))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::pow(base, exp)));
+        }
+    }
+
+    /**
+     * Num#sin() => Float
+     *
+     * Calculates sine from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_sin)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::sin(f)));
+        }
+    }
+
+    /**
+     * Num#sqrt() => Float
+     *
+     * Calculates square root of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_sqrt)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::sqrt(f)));
+        }
+    }
+
+    /**
+     * Num#tan() => Float
+     *
+     * Calculates tangent from value of the number.
+     */
+    TEMPEARLY_NATIVE_METHOD(num_tan)
+    {
+        double f;
+
+        if (args[0].AsFloat(interpreter, f))
+        {
+            frame->SetReturnValue(Value::NewFloat(std::tan(f)));
+        }
+    }
+
+    /**
      * Int.rand(max = RAND_MAX) => Int
      *
      * Returns a random number.
@@ -38,6 +230,17 @@ namespace tempearly
         } else {
             frame->SetReturnValue(Value::NewInt(Random::NextU64()));
         }
+    }
+
+    /**
+     * Int#__hash__() => Int
+     *
+     * Calculates hash code for the integer number. (Which is the number
+     * itself.)
+     */
+    TEMPEARLY_NATIVE_METHOD(int_hash)
+    {
+        frame->SetReturnValue(args[0]);
     }
 
     /**
@@ -394,6 +597,32 @@ namespace tempearly
     }
 
     /**
+     * Float#__hash__() => Int
+     *
+     * Calculates hash code for the floating point number.
+     */
+    TEMPEARLY_NATIVE_METHOD(flo_hash)
+    {
+        double f = args[0].AsFloat();
+        i64 i;
+
+        if (std::isnan(f))
+        {
+            i = 0x7ff8000000000000LL;
+        } else {
+            union
+            {
+                i64 i;
+                double f;
+            } shaker;
+
+            shaker.f = f;
+            i = shaker.i;
+        }
+        frame->SetReturnValue(Value::NewInt(i ^ (static_cast<u64>(i >> 32))));
+    }
+
+    /**
      * Float#__str__() => String
      *
      * Returns textual presentation of the floating point number.
@@ -581,13 +810,24 @@ namespace tempearly
     void init_number(Interpreter* i)
     {
         i->cNum = i->AddClass("Num", i->cObject);
+        i->cNum->AddMethod(i, "is_inf", 0, num_is_inf);
+        i->cNum->AddMethod(i, "is_nan", 0, num_is_nan);
+        i->cNum->AddMethod(i, "acos", 0, num_acos);
+        i->cNum->AddMethod(i, "asin", 0, num_asin);
+        i->cNum->AddMethod(i, "atan", 0, num_atan);
+        i->cNum->AddMethod(i, "atan2", 1, num_atan2);
+        i->cNum->AddMethod(i, "cos", 0, num_cos);
+        i->cNum->AddMethod(i, "exp", 0, num_exp);
+        i->cNum->AddMethod(i, "log", 0, num_log);
+        i->cNum->AddMethod(i, "pow", 1, num_pow);
+        i->cNum->AddMethod(i, "sin", 0, num_sin);
+        i->cNum->AddMethod(i, "sqrt", 0, num_sqrt);
+        i->cNum->AddMethod(i, "tan", 0, num_tan);
 
         i->cInt = i->AddClass("Int", i->cNum);
-
         i->cInt->SetAllocator(Class::kNoAlloc);
-
         i->cInt->AddStaticMethod(i, "rand", -1, int_s_rand);
-
+        i->cInt->AddMethod(i, "__hash__", 0, int_hash);
         i->cInt->AddMethod(i, "__str__", -1, int_str);
         i->cInt->AddMethod(i, "__add__", 1, int_add);
         i->cInt->AddMethod(i, "__sub__", 1, int_sub);
@@ -608,11 +848,9 @@ namespace tempearly
         i->cInt->AddMethodAlias(i, "as_json", "__str__");
 
         i->cFloat = i->AddClass("Float", i->cNum);
-
         i->cFloat->SetAllocator(Class::kNoAlloc);
-
         i->cFloat->AddStaticMethod(i, "rand", -1, flo_s_rand);
-
+        i->cFloat->AddMethod(i, "__hash__", 0, flo_hash);
         i->cFloat->AddMethod(i, "__str__", -1, flo_str);
         i->cFloat->AddMethod(i, "__add__", 1, flo_add);
         i->cFloat->AddMethod(i, "__sub__", 1, flo_sub);
