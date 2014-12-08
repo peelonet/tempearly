@@ -50,6 +50,14 @@ namespace tempearly
             }
 
             /**
+             * Returns pointer to previous link in the list.
+             */
+            inline Handle<Link> GetPrevious() const
+            {
+                return m_prev;
+            }
+
+            /**
              * Used by garbage collector to mark the object as used.
              */
             void Mark();
@@ -59,6 +67,8 @@ namespace tempearly
             Value m_value;
             /** Pointer to next entry in the list. */
             Link* m_next;
+            /** Pointer to previous entry in the list. */
+            Link* m_prev;
             friend class ListObject;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Link);
         };
@@ -105,6 +115,12 @@ namespace tempearly
         }
 
         /**
+         * Returns an link from specified index or null handle if the index is
+         * out of bounds.
+         */
+        Handle<Link> At(std::size_t index) const;
+
+        /**
          * Inserts given value into the list.
          */
         void Append(const Value& value);
@@ -128,6 +144,29 @@ namespace tempearly
          * Inserts all elements from given vector into beginning of the list.
          */
         void Prepend(const Vector<Value>& vector);
+
+        /**
+         * Inserts an element at the given position. If position is out of
+         * bounds, the element will be appended at the end of the list.
+         */
+        void Insert(std::size_t index, const Value& value);
+
+        /**
+         * Removes an value from the specified index.
+         *
+         * \param index Index of the element to remove
+         */
+        void Erase(std::size_t index);
+
+        /**
+         * Removes an value from the specified index.
+         *
+         * \param index Index of the element to remove
+         * \param slot  Where value of the element is assigned to
+         * \return      A boolean flag indicating whether element with given
+         *              index was found or not
+         */
+        bool Erase(std::size_t index, Value& slot);
 
         /**
          * Removes all values from the list.
