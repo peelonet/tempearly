@@ -23,7 +23,7 @@ namespace tempearly
         delete[] m_bucket;
     }
 
-    Handle<SetObject::Entry> SetObject::Find(i64 hash) const
+    bool SetObject::Has(i64 hash) const
     {
         const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
 
@@ -31,11 +31,11 @@ namespace tempearly
         {
             if (e->m_hash == hash)
             {
-                return e;
+                return true;
             }
         }
 
-        return Handle<Entry>();
+        return false;
     }
 
     void SetObject::Add(i64 hash, const Value& value)
@@ -62,6 +62,110 @@ namespace tempearly
         e->m_child = m_bucket[index];
         m_bucket[index] = e;
         ++m_size;
+    }
+    
+    void SetObject::Add(const Handle<SetObject>& that)
+    {
+        if (this == that.Get())
+        {
+            return;
+        }
+        for (Entry* a = that->m_front; a; a = a->m_next)
+        {
+            const std::size_t index = static_cast<std::size_t>(a->m_hash % m_bucket_size);
+            bool found = false;
+
+            for (Handle<Entry> b = m_bucket[index]; b; b = b->m_child)
+            {
+                if (b->m_hash == a->m_hash)
+                {
+                    b->m_value = a->m_value;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                Handle<Entry> b = new Entry(a->m_hash, a->m_value);
+
+                if ((b->m_prev = m_back))
+                {
+                    m_back->m_next = b;
+                } else {
+                    m_front = b;
+                }
+                m_back = b;
+                b->m_child = m_bucket[index];
+                m_bucket[index] = b;
+                ++m_size;
+            }
+        }
+    }
+
+    bool SetObject::Remove(i64 hash)
+    {
+        const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
+        Entry* entry = m_bucket[index];
+
+        if (!entry)
+        {
+            return false;
+        }
+        if (entry->m_hash == hash)
+        {
+            m_bucket[index] = entry->m_child;
+            if (entry->m_next && entry->m_prev)
+            {
+                entry->m_next->m_prev = entry->m_prev;
+                entry->m_prev->m_next = entry->m_next;
+            }
+            else if (entry->m_next)
+            {
+                entry->m_next->m_prev = 0;
+                m_front = entry->m_next;
+            }
+            else if (entry->m_prev)
+            {
+                entry->m_prev->m_next = 0;
+                m_back = entry->m_prev;
+            } else {
+                m_front = m_back = 0;
+            }
+            --m_size;
+
+            return true;
+        }
+        for (; entry->m_child; entry = entry->m_child)
+        {
+            if (entry->m_child->m_hash == hash)
+            {
+                Entry* child = entry->m_child;
+
+                entry->m_child = entry->m_child->m_child;
+                if (child->m_next && child->m_prev)
+                {
+                    child->m_next->m_prev = child->m_prev;
+                    child->m_prev->m_next = child->m_next;
+                }
+                else if (child->m_next)
+                {
+                    child->m_next->m_prev = 0;
+                    m_front = child->m_next;
+                }
+                else if (child->m_prev)
+                {
+                    child->m_prev->m_next = 0;
+                    m_back = child->m_prev;
+                } else {
+                    m_front = m_back = 0;
+                }
+                --m_size;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void SetObject::Clear()
@@ -244,7 +348,7 @@ namespace tempearly
 
         if (args[1].GetHash(interpreter, hash))
         {
-            frame->SetReturnValue(Value::NewBool(args[0].As<SetObject>()->Find(hash)));
+            frame->SetReturnValue(Value::NewBool(args[0].As<SetObject>()->Has(hash)));
         }
     }
 
@@ -269,6 +373,68 @@ namespace tempearly
             set->Add(hash, object);
         }
         frame->SetReturnValue(args[0]);
+    }
+
+    /**
+     * Set#remove(object)
+     *
+     * Removes given object from the set. Throws KeyError if object is not in
+     * the set.
+     */
+    TEMPEARLY_NATIVE_METHOD(set_remove)
+    {
+        i64 hash;
+
+        if (!args[1].GetHash(interpreter, hash))
+        {
+            return;
+        }
+        else if (!args[0].As<SetObject>()->Remove(hash))
+        {
+            String repr;
+
+            if (args[1].ToString(interpreter, repr))
+            {
+                interpreter->Throw(interpreter->eKeyError, repr);
+            }
+        }
+    }
+
+    /**
+     * Set#discard(object) => Bool
+     *
+     * Removes given object from the set if it's present. Returns a boolean
+     * indicating whether the object was removed from the set or not.
+     */
+    TEMPEARLY_NATIVE_METHOD(set_discard)
+    {
+        i64 hash;
+
+        if (args[1].GetHash(interpreter, hash))
+        {
+            frame->SetReturnValue(Value::NewBool(args[0].As<SetObject>()->Remove(hash)));
+        }
+    }
+
+    /**
+     * Set#pop() => Object
+     *
+     * Removes and returns an arbitrary element from the set (usually the most
+     * recently added).
+     *
+     * Throws: KeyError - If set is empty.
+     */
+    TEMPEARLY_NATIVE_METHOD(set_pop)
+    {
+        Handle<SetObject> set = args[0].As<SetObject>();
+        Handle<SetObject::Entry> entry = set->GetBack();
+
+        if (entry && set->Remove(entry->GetHash()))
+        {
+            frame->SetReturnValue(entry->GetValue());
+        } else {
+            interpreter->Throw(interpreter->eKeyError, "Set is empty");
+        }
     }
 
     /**
@@ -304,7 +470,8 @@ namespace tempearly
         {
             return;
         }
-        result = new SetObject(interpreter->cSet, original);
+        result = new SetObject(interpreter->cSet);
+        result->Add(original);
         while (iterator.GetNext(interpreter, element))
         {
             if (!element.GetHash(interpreter, hash))
@@ -312,6 +479,80 @@ namespace tempearly
                 return;
             }
             result->Add(hash, element);
+        }
+        if (!interpreter->HasException())
+        {
+            frame->SetReturnValue(Value(result));
+        }
+    }
+
+    /**
+     * Set#__sub__(collection) => Set
+     *
+     * Returns a copy of the set with items from given collection excluded from
+     * it.
+     *
+     *     a = Set(1, 2, 3);
+     *     a -= [1];
+     *     a;               #=> {2, 3}
+     */
+    TEMPEARLY_NATIVE_METHOD(set_sub)
+    {
+        Handle<SetObject> original = args[0].As<SetObject>();
+        Handle<SetObject> result;
+        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value element;
+        i64 hash;
+
+        if (!iterator)
+        {
+            return;
+        }
+        result = new SetObject(interpreter->cSet);
+        result->Add(original);
+        while (iterator.GetNext(interpreter, element))
+        {
+            if (!element.GetHash(interpreter, hash))
+            {
+                return;
+            }
+            result->Remove(hash);
+        }
+        if (!interpreter->HasException())
+        {
+            frame->SetReturnValue(Value(result));
+        }
+    }
+
+    /**
+     * Set#__and__(collection) => Set
+     *
+     * Returns new set containing elements common to the set and given
+     * collection of objects.
+     */
+    TEMPEARLY_NATIVE_METHOD(set_and)
+    {
+        Handle<SetObject> original = args[0].As<SetObject>();
+        Handle<SetObject> result;
+        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value element;
+        i64 hash;
+
+        if (!iterator)
+        {
+            return;
+        }
+        result = new SetObject(interpreter->cSet);
+        while (iterator.GetNext(interpreter, element))
+        {
+            if (!element.GetHash(interpreter, hash))
+            {
+                return;
+            }
+            else if (original->Has(hash))
+            {
+                result->Add(hash, element);
+            }
         }
         if (!interpreter->HasException())
         {
@@ -345,11 +586,16 @@ namespace tempearly
 
         i->cSet->AddMethod(i, "has", 1, set_has);
         i->cSet->AddMethod(i, "add", -1, set_add);
+        i->cSet->AddMethod(i, "remove", 1, set_remove);
+        i->cSet->AddMethod(i, "discard", 1, set_discard);
+        i->cSet->AddMethod(i, "pop", 0, set_pop);
         i->cSet->AddMethod(i, "clear", 0, set_clear);
 
         // Operators
         i->cSet->AddMethod(i, "__add__", 1, set_add_oper);
-        i->cSet->AddMethod(i, "__lsh__", 1, set_add);
+        i->cSet->AddMethod(i, "__sub__", 1, set_sub);
+        i->cSet->AddMethod(i, "__and__", 1, set_and);
+        i->cSet->AddMethodAlias(i, "__lsh__", "add");
 
         // Conversion methods
         i->cSet->AddMethod(i, "__bool__", 0, set_bool);
