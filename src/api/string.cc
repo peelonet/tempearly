@@ -3,6 +3,7 @@
 #include "interpreter.h"
 #include "api/iterator.h"
 #include "api/list.h"
+#include "api/range.h"
 #include "core/bytestring.h"
 #include "core/random.h"
 #include "core/stringbuilder.h"
@@ -470,6 +471,255 @@ namespace tempearly
     }
 
     /**
+     * String#has(substring) => Bool
+     *
+     * Returns true if given substring exists somewhere in the string.
+     *
+     *     "foobar".has("foo")  #=> true
+     */
+    TEMPEARLY_NATIVE_METHOD(str_has)
+    {
+        const String& s = args[0].AsString();
+        String substring;
+
+        if (!args[1].AsString(interpreter, substring))
+        {
+            return;
+        }
+        if (substring.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewBool(true));
+        }
+        else if (s.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewBool(false));
+        }
+        else if (substring.GetLength() == 1)
+        {
+            frame->SetReturnValue(Value::NewBool(s.IndexOf(substring[0]) != String::npos));
+        } else {
+            const std::size_t length1 = s.GetLength();
+            const std::size_t length2 = substring.GetLength();
+
+            if (length2 > length1)
+            {
+                frame->SetReturnValue(Value::NewBool(false));
+            }
+            else if (length2 == length1)
+            {
+                frame->SetReturnValue(Value::NewBool(s == substring));
+            } else {
+                for (std::size_t i = 0; i < length1; ++i)
+                {
+                    bool found = true;
+
+                    if (i + length2 > length1)
+                    {
+                        break;
+                    }
+                    for (std::size_t j = 0; j < length2; ++j)
+                    {
+                        if (s[i + j] != substring[j])
+                        {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found)
+                    {
+                        frame->SetReturnValue(Value::NewBool(true));
+                        return;
+                    }
+                }
+                frame->SetReturnValue(Value::NewBool(false));
+            }
+        }
+    }
+
+    /**
+     * String#startswith(substring) => Bool
+     *
+     * Returns true if given substring exists in the beginning of the string.
+     *
+     *     "foobar".startswith("foo")   #=> true
+     *     "foobar".startswith("bar")   #=> false
+     */
+    TEMPEARLY_NATIVE_METHOD(str_startswith)
+    {
+        const String& s = args[0].AsString();
+        String substring;
+
+        if (!args[1].AsString(interpreter, substring))
+        {
+            return;
+        }
+        if (substring.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewBool(true));
+        }
+        else if (s.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewBool(false));
+        }
+        else if (substring.GetLength() == 1)
+        {
+            frame->SetReturnValue(Value::NewBool(s[0] == substring[0]));
+        } else {
+            const std::size_t length1 = s.GetLength();
+            const std::size_t length2 = substring.GetLength();
+
+            if (length2 > length1)
+            {
+                frame->SetReturnValue(Value::NewBool(false));
+            }
+            else if (length2 == length1)
+            {
+                frame->SetReturnValue(Value::NewBool(s == substring));
+            } else {
+                for (std::size_t i = 0; i < length2; ++i)
+                {
+                    if (s[i] != substring[i])
+                    {
+                        frame->SetReturnValue(Value::NewBool(false));
+                        return;
+                    }
+                }
+                frame->SetReturnValue(Value::NewBool(true));
+            }
+        }
+    }
+
+    /**
+     * String#endswith(substring) => Bool
+     *
+     * Returns true if given substring exists at the end of the string.
+     *
+     *     "foobar".endswith("bar")     #=> true
+     *     "foobar".endswith("foo")     #=> false
+     */
+    TEMPEARLY_NATIVE_METHOD(str_endswith)
+    {
+        const String& s = args[0].AsString();
+        String substring;
+
+        if (!args[1].AsString(interpreter, substring))
+        {
+            return;
+        }
+        if (substring.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewBool(true));
+        }
+        else if (s.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewBool(false));
+        }
+        else if (substring.GetLength() == 1)
+        {
+            frame->SetReturnValue(Value::NewBool(s.GetBack() == substring[0]));
+        } else {
+            const std::size_t length1 = s.GetLength();
+            const std::size_t length2 = substring.GetLength();
+
+            if (length2 > length1)
+            {
+                frame->SetReturnValue(Value::NewBool(false));
+            }
+            else if (length2 == length1)
+            {
+                frame->SetReturnValue(Value::NewBool(s == substring));
+            } else {
+                for (std::size_t i = 0; i < length2; ++i)
+                {
+                    if (s[length1 - length2 + i] != substring[i])
+                    {
+                        frame->SetReturnValue(Value::NewBool(false));
+                        return;
+                    }
+                }
+                frame->SetReturnValue(Value::NewBool(true));
+            }
+        }
+    }
+
+    /**
+     * String#index(substring) => Int
+     *
+     * Searches for given substring from the string and returns it's beginning
+     * offset. If substring is not found, ValueError is thrown instead.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_index)
+    {
+        const String& s = args[0].AsString();
+        String substring;
+
+        if (!args[1].AsString(interpreter, substring))
+        {
+            return;
+        }
+        if (substring.IsEmpty())
+        {
+            frame->SetReturnValue(Value::NewInt(0));
+        }
+        else if (s.IsEmpty())
+        {
+            interpreter->Throw(interpreter->eValueError, "Substring not found");
+        }
+        else if (substring.GetLength() == 1)
+        {
+            std::size_t index = s.IndexOf(substring[0]);
+
+            if (index == String::npos)
+            {
+                interpreter->Throw(interpreter->eValueError, "Substring not found");
+            } else {
+                frame->SetReturnValue(Value::NewInt(static_cast<i64>(index)));
+            }
+        } else {
+            const std::size_t length1 = s.GetLength();
+            const std::size_t length2 = substring.GetLength();
+
+            if (length2 > length1)
+            {
+                interpreter->Throw(interpreter->eValueError, "Substring not found");
+            }
+            else if (length2 == length1)
+            {
+                if (s == substring)
+                {
+                    frame->SetReturnValue(Value::NewInt(0));
+                } else {
+                    interpreter->Throw(interpreter->eValueError, "Substring not found");
+                }
+            } else {
+                for (std::size_t i = 0; i < length1; ++i)
+                {
+                    bool found = true;
+
+                    if (i + length2 > length1)
+                    {
+                        break;
+                    }
+                    for (std::size_t j = 0; j < length2; ++j)
+                    {
+                        if (s[i + j] != substring[j])
+                        {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found)
+                    {
+                        frame->SetReturnValue(Value::NewInt(i));
+                        return;
+                    }
+                }
+                interpreter->Throw(interpreter->eValueError, "Substring not found");
+            }
+        }
+    }
+
+    /**
      * String#__hash__() => Int
      *
      * Generates hash code from contents of the string.
@@ -496,8 +746,7 @@ namespace tempearly
             {
                 if (m_index < m_string.GetLength())
                 {
-                    return Result(Result::KIND_SUCCESS,
-                                  Value::NewString(m_string.SubString(m_index++, 1)));
+                    return Result(Result::KIND_SUCCESS, Value::NewString(m_string.SubString(m_index++, 1)));
                 } else {
                     return Result(Result::KIND_BREAK);
                 }
@@ -666,6 +915,62 @@ namespace tempearly
     }
 
     /**
+     * String#__getitem__(index) => String
+     *
+     * If a number is given as argument, rune from that specified index is
+     * returned as a substring. If the index is out of bounds, an IndexError
+     * is thrown.
+     *
+     * If range is given instead of a number, a substring from specified range
+     * is returned.
+     *
+     * Negative indexes count backwards, e.g. -1 is the last character in
+     * the string.
+     */
+    TEMPEARLY_NATIVE_METHOD(str_getitem)
+    {
+        const String& s = args[0].AsString();
+
+        if (args[1].IsRange())
+        {
+            Handle<RangeObject> range = args[1].As<RangeObject>();
+            i64 begin;
+            i64 end;
+
+            if (!range->GetBegin().AsInt(interpreter, begin) || !range->GetEnd().AsInt(interpreter, end))
+            {
+                return;
+            }
+            if (begin < 0)
+            {
+                begin += s.GetLength();
+            }
+            if (end < 0)
+            {
+                end += s.GetLength();
+            }
+            frame->SetReturnValue(Value::NewString(s.SubString(begin, end - begin)));
+        } else {
+            i64 index;
+
+            if (!args[1].AsInt(interpreter, index))
+            {
+                return;
+            }
+            else if (index < 0)
+            {
+                index += s.GetLength();
+            }
+            if (index < 0 || index >= s.GetLength())
+            {
+                interpreter->Throw(interpreter->eIndexError, "String index out of bounds");
+                return;
+            }
+            frame->SetReturnValue(Value::NewString(s.SubString(index, 1)));
+        }
+    }
+
+    /**
      * String#parse_json() => Object
      *
      * Attempts to parse contents of the string as JSON and returns value
@@ -716,6 +1021,12 @@ namespace tempearly
         cString->AddMethod(i, "trim", 0, str_trim);
         cString->AddMethod(i, "upper", 0, str_upper);
 
+        // Search methods.
+        cString->AddMethod(i, "has", 1, str_has);
+        cString->AddMethod(i, "startswith", 1, str_startswith);
+        cString->AddMethod(i, "endswith", 1, str_endswith);
+        cString->AddMethod(i, "index", 1, str_index);
+
         cString->AddMethod(i, "__hash__", 0, str_hash);
         cString->AddMethod(i, "__iter__", 0, str_iter);
 
@@ -728,6 +1039,8 @@ namespace tempearly
         cString->AddMethod(i, "__mul__", 1, str_mul);
         cString->AddMethod(i, "__eq__", 1, str_eq);
         cString->AddMethod(i, "__lt__", 1, str_lt);
+
+        cString->AddMethod(i, "__getitem__", 1, str_getitem);
 
         cString->AddMethod(i, "parse_json", 0, str_parse_json);
     }
