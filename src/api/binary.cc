@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "utils.h"
 #include "api/iterator.h"
 #include "api/range.h"
 #include "core/bytestring.h"
@@ -38,7 +37,7 @@ namespace tempearly
                 {
                     interpreter->Throw(interpreter->eValueError,
                                        "Value out of bounds: "
-                                       + Utils::ToString(number));
+                                       + String::FromI64(number));
                     return;
                 }
                 result.PushBack(static_cast<byte>(number));

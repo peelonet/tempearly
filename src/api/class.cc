@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "utils.h"
 #include "core/stringbuilder.h"
 
 namespace tempearly
@@ -146,9 +145,9 @@ namespace tempearly
                         interpreter->Throw(
                             interpreter->eTypeError,
                             "Method expected at least "
-                            + Utils::ToString(static_cast<u64>(-(m_arity) - 1))
+                            + String::FromI64(-m_arity - 1)
                             + " arguments, got "
-                            + Utils::ToString(static_cast<u64>(args.GetSize()))
+                            + String::FromU64(args.GetSize())
                         );
                         interpreter->PopFrame();
 
@@ -160,9 +159,9 @@ namespace tempearly
                     interpreter->Throw(
                         interpreter->eTypeError,
                         "Method expected "
-                        + Utils::ToString(static_cast<u64>(m_arity))
+                        + String::FromI64(m_arity)
                         + " arguments, got "
-                        + Utils::ToString(static_cast<u64>(args.GetSize()))
+                        + String::FromU64(args.GetSize())
                     );
                     interpreter->PopFrame();
 
@@ -241,9 +240,9 @@ namespace tempearly
                         interpreter->Throw(
                             interpreter->eTypeError,
                             "Method expected at least "
-                            + Utils::ToString(static_cast<u64>(-(m_arity) - 1))
+                            + String::FromI64(-m_arity - 1)
                             + " arguments, got "
-                            + Utils::ToString(static_cast<u64>(args.GetSize()))
+                            + String::FromU64(args.GetSize())
                         );
                         interpreter->PopFrame();
 
@@ -255,9 +254,9 @@ namespace tempearly
                     interpreter->Throw(
                         interpreter->eTypeError,
                         "Method expected "
-                        + Utils::ToString(static_cast<u64>(m_arity))
+                        + String::FromI64(m_arity)
                         + " arguments, got "
-                        + Utils::ToString(static_cast<u64>(args.GetSize()))
+                        + String::FromU64(args.GetSize())
                     );
                     interpreter->PopFrame();
 

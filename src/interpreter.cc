@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "utils.h"
 #include "api/exception.h"
 #include "api/iterator.h"
 #include "api/map.h"
@@ -201,9 +200,9 @@ namespace tempearly
                         StringBuilder sb;
 
                         sb << "Function expected at least "
-                           << Utils::ToString(static_cast<u64>(-(m_arity) - 1))
+                           << String::FromU64(-m_arity - 1)
                            << " arguments, got "
-                           << Utils::ToString(static_cast<u64>(args.GetSize()));
+                           << String::FromU64(args.GetSize());
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
                         interpreter->PopFrame();
 
@@ -215,9 +214,9 @@ namespace tempearly
                     StringBuilder sb;
 
                     sb << "Function expected "
-                       << Utils::ToString(static_cast<u64>(m_arity))
+                       << String::FromI64(m_arity)
                        << " arguments, got "
-                       << Utils::ToString(static_cast<u64>(args.GetSize()));
+                       << String::FromU64(args.GetSize());
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
                     interpreter->PopFrame();
 

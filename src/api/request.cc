@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "utils.h"
 #include "core/bytestring.h"
 #include "api/list.h"
 #include "api/set.h"
@@ -177,7 +176,7 @@ namespace tempearly
         {
             i64 number;
 
-            if (Utils::ParseInt(value, number, 10))
+            if (value.ParseInt(number, 10))
             {
                 frame->SetReturnValue(Value::NewInt(number));
                 return;
@@ -212,7 +211,7 @@ namespace tempearly
         {
             double number;
 
-            if (Utils::ParseFloat(value, number))
+            if (value.ParseDouble(number))
             {
                 frame->SetReturnValue(Value::NewFloat(number));
                 return;

@@ -1,7 +1,6 @@
 #include <cctype>
 
 #include "interpreter.h"
-#include "utils.h"
 #include "api/list.h"
 #include "api/map.h"
 #include "core/stringbuilder.h"
@@ -350,7 +349,7 @@ namespace tempearly
         {
             double number;
 
-            if (!Utils::ParseFloat(buffer.ToString(), number))
+            if (!buffer.ToString().ParseDouble(number))
             {
                 parser->SetErrorMessage("Float overflow/underflow");
 
@@ -360,7 +359,7 @@ namespace tempearly
         } else {
             i64 number;
 
-            if (!Utils::ParseInt(buffer.ToString(), number, 10))
+            if (!buffer.ToString().ParseInt(number, 10))
             {
                 parser->SetErrorMessage("Integer overflow/underflow");
 

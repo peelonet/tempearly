@@ -1,7 +1,6 @@
 #include <cmath>
 
 #include "interpreter.h"
-#include "utils.h"
 #include "api/class.h"
 #include "core/random.h"
 
@@ -200,6 +199,64 @@ namespace tempearly
     }
 
     /**
+     * Int.__call__(object [, radix = 10]) => Int
+     *
+     * Converts given number or string into integer. If a string is given as an
+     * argument, an optional radix may also be given, otherwise is determined
+     * from contents of the string.
+     *
+     * Throws: ValueError - If given string cannot be parsed into integer or
+     * given radix is below 2 or greater than 36.
+     */
+    TEMPEARLY_NATIVE_METHOD(int_s_call)
+    {
+        const Value& argument = args[0];
+
+        if (argument.IsInt())
+        {
+            frame->SetReturnValue(argument);
+        }
+        else if (argument.IsFloat())
+        {
+            frame->SetReturnValue(Value::NewInt(argument.AsInt()));
+        } else {
+            String string;
+            int radix = -1;
+            i64 slot;
+
+            if (!argument.AsString(interpreter, string))
+            {
+                return;
+            }
+            if (args.GetSize() > 1)
+            {
+                if (!args[1].AsInt(interpreter, slot))
+                {
+                    return;
+                }
+                else if (slot < 2 || slot > 36)
+                {
+                    interpreter->Throw(interpreter->eValueError, "Radix must be between 2 and 36");
+                    return;
+                }
+                radix = static_cast<int>(slot);
+            }
+            if (string.ParseInt(slot, radix))
+            {
+                frame->SetReturnValue(Value::NewInt(slot));
+            } else {
+                interpreter->Throw(
+                    interpreter->eValueError,
+                    "Value '"
+                    + string
+                    + "' cannot be parsed as integer with radix "
+                    + String::FromI64(radix)
+                );
+            }
+        }
+    }
+
+    /**
      * Int.rand(max = RAND_MAX) => Int
      *
      * Returns a random number.
@@ -266,7 +323,7 @@ namespace tempearly
                 return;
             }
         }
-        frame->SetReturnValue(Value::NewString(Utils::ToString(args[0].AsInt(), radix)));
+        frame->SetReturnValue(Value::NewString(String::FromI64(args[0].AsInt(), radix)));
     }
 
     /**
@@ -572,6 +629,46 @@ namespace tempearly
     }
 
     /**
+     * Float.__call__(object) => Float
+     *
+     * Converts given number or string into floating point decimal.
+     *
+     * Throws: ValueError - If given string cannot be parsed into a number.
+     */
+    TEMPEARLY_NATIVE_METHOD(flo_s_call)
+    {
+        const Value& argument = args[0];
+
+        if (argument.IsFloat())
+        {
+            frame->SetReturnValue(argument);
+        }
+        else if (argument.IsInt())
+        {
+            frame->SetReturnValue(Value::NewFloat(argument.AsFloat()));
+        } else {
+            String string;
+            double slot;
+
+            if (!argument.AsString(interpreter, string))
+            {
+                return;
+            }
+            if (string.ParseDouble(slot))
+            {
+                frame->SetReturnValue(Value::NewFloat(slot));
+            } else {
+                interpreter->Throw(
+                    interpreter->eValueError,
+                    "Value '"
+                    + string
+                    + "' cannot be parsed as float"
+                );
+            }
+        }
+    }
+
+    /**
      * Float.rand(max = 1) => Float
      *
      * Returns a random floating point number between 0 and max.
@@ -629,7 +726,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_str)
     {
-        frame->SetReturnValue(Value::NewString(Utils::ToString(args[0].AsFloat())));
+        frame->SetReturnValue(Value::NewString(String::FromDouble(args[0].AsFloat())));
     }
 
     /**
@@ -826,6 +923,7 @@ namespace tempearly
 
         i->cInt = i->AddClass("Int", i->cNum);
         i->cInt->SetAllocator(Class::kNoAlloc);
+        i->cInt->AddStaticMethod(i, "__call__", -2, int_s_call);
         i->cInt->AddStaticMethod(i, "rand", -1, int_s_rand);
         i->cInt->AddMethod(i, "__hash__", 0, int_hash);
         i->cInt->AddMethod(i, "__str__", -1, int_str);
@@ -849,6 +947,7 @@ namespace tempearly
 
         i->cFloat = i->AddClass("Float", i->cNum);
         i->cFloat->SetAllocator(Class::kNoAlloc);
+        i->cFloat->AddStaticMethod(i, "__call__", 1, flo_s_call);
         i->cFloat->AddStaticMethod(i, "rand", -1, flo_s_rand);
         i->cFloat->AddMethod(i, "__hash__", 0, flo_hash);
         i->cFloat->AddMethod(i, "__str__", -1, flo_str);
