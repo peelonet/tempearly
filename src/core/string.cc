@@ -1,11 +1,29 @@
 #include <cctype>
+#include <cfloat>
+#include <cmath>
 
 #include "core/bytestring.h"
 #include "core/stringbuilder.h"
 #include "core/vector.h"
 
+#if defined(TEMPEARLY_HAVE_CLIMITS)
+# include <climits>
+#elif defined(TEMPEARLY_HAVE_LIMITS_H)
+# include <limits.h>
+#endif
+
+#if !defined(INT64_MAX)
+# if defined(LLONG_MAX)
+#  define INT64_MAX LLONG_MAX
+# else
+#  define INT64_MAX 0x7fffffffffffffff
+# endif
+#endif
+
 namespace tempearly
 {
+    static const char digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
     const std::size_t String::npos = -1;
 
     String::String()
@@ -216,6 +234,78 @@ namespace tempearly
         }
 
         return result;
+    }
+
+    String String::FromU64(u64 number, int radix)
+    {
+        if (radix < 2 || radix > 36)
+        {
+            radix = 10;
+        }
+        if (number != 0)
+        {
+            StringBuilder result;
+
+            result.Reserve(20);
+            do
+            {
+                result.Prepend(digitmap[number % radix]);
+                number /= radix;
+            }
+            while (number);
+
+            return result.ToString();
+        }
+
+        return "0";
+    }
+
+    String String::FromI64(i64 number, int radix)
+    {
+        if (radix < 2 || radix > 36)
+        {
+            radix = 10;
+        }
+        if (number != 0)
+        {
+            StringBuilder result;
+            const bool negative = number < 0;
+            u64 mag = static_cast<u64>(negative ? -number : number);
+
+            result.Reserve(negative ? 21 : 20);
+            do
+            {
+                result.Prepend(digitmap[mag % radix]);
+                mag /= radix;
+            }
+            while (mag);
+            if (negative)
+            {
+                result.Prepend('-');
+            }
+
+            return result.ToString();
+        }
+
+        return "0";
+    }
+
+    String String::FromDouble(double number)
+    {
+        if (std::isinf(number))
+        {
+            return number < 0.0 ? "-Inf" : "Inf";
+        }
+        else if (std::isnan(number))
+        {
+            return "NaN";
+        } else {
+            char buffer[20];
+
+            std::snprintf(buffer, sizeof(buffer), "%g", number);
+
+            return buffer;
+        }
     }
 
     String& String::Assign(const String& that)
@@ -1393,6 +1483,205 @@ namespace tempearly
         }
 
         return *this;
+    }
+
+    bool String::ParseInt(i64& slot, int radix) const
+    {
+        const String trimmed = Trim();
+        std::size_t remaining = trimmed.GetLength();
+        const rune* ptr = trimmed.GetRunes();
+        u64 number = 0;
+        bool sign = true;
+        
+        // Get the sign.
+        if (remaining)
+        {
+            if (*ptr == '-')
+            {
+                sign = false;
+                ++ptr; --remaining;
+            }
+            else if (*ptr == '+')
+            {
+                ++ptr; --remaining;
+            }
+        }
+
+        // Try to decipher the prefix.
+        if (radix <= 0 && remaining > 1 && *ptr == '0')
+        {
+            ++ptr; --remaining;
+            switch (*ptr)
+            {
+                // Hexadecimal
+                case 'x': case 'X':
+                    radix = 16;
+                    ++ptr; --remaining;
+                    break;
+
+                // Binary
+                case 'b': case 'B':
+                    radix = 2;
+                    ++ptr; --remaining;
+                    break;
+
+                // Decimal
+                case 'd': case 'D':
+                    radix = 10;
+                    ++ptr; --remaining;
+                    break;
+
+                // Octal
+                case 'o': case 'O':
+                    ++ptr; --remaining;
+
+                // Default to octal
+                default:
+                    radix = 8;
+            }
+        }
+
+        if (radix < 2 || radix > 36)
+        {
+            radix = 10;
+        }
+
+        const u64 div = INT64_MAX / radix;
+        const u64 rem = INT64_MAX % radix;
+
+        while (remaining)
+        {
+            unsigned int digit;
+            char c = *ptr++;
+
+            --remaining;
+            if (c >= '0' && c < static_cast<char>('0' + radix))
+            {
+                digit = c - '0';
+            }
+            else if (radix > 10)
+            {
+                if (c >= 'a' && c < static_cast<char>('a' + radix - 10))
+                {
+                    digit = c - 'a' + 10;
+                }
+                else if (c >= 'A' && c < static_cast<char>('A' + radix - 10))
+                {
+                    digit = c - 'A' + 10;
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+            if (number > div || (number == div && digit > rem))
+            {
+                return false; // Integer underflow / overflow
+            }
+            number = (number * radix) + digit;
+        }
+        slot = sign ? number : -number;
+
+        return true;
+    }
+
+    bool String::ParseDouble(double& slot) const
+    {
+        const String trimmed = Trim();
+
+        if (trimmed.EqualsIgnoreCase("nan"))
+        {
+            slot = NAN;
+
+            return true;
+        }
+        else if (trimmed.EqualsIgnoreCase("inf"))
+        {
+            slot = INFINITY;
+        }
+        else if (trimmed.EqualsIgnoreCase("-inf"))
+        {
+            slot = -INFINITY;
+        } else {
+            std::size_t remaining = trimmed.GetLength();
+            const rune* ptr = trimmed.GetRunes();
+            double number = 0.0;
+            bool sign;
+            i64 exponent = 0;
+            bool has_digits = false;
+            bool has_dot = false;
+
+            // Get the sign.
+            sign = !(remaining && *ptr == '-');
+            if (!sign || (remaining && *ptr == '+'))
+            {
+                ++ptr; --remaining;
+            }
+
+            for (; remaining; ++ptr, --remaining)
+            {
+                if (std::isdigit(*ptr))
+                {
+                    has_digits = true;
+                    if (number > DBL_MAX * 0.1)
+                    {
+                        ++exponent;
+                    } else {
+                        number = (number * 10.0) + (*ptr - '0');
+                    }
+                    if (has_dot)
+                    {
+                        --exponent;
+                    }
+                }
+                else if (!has_dot && *ptr == '.')
+                {
+                    has_dot = true;
+                } else {
+                    break;
+                }
+            }
+
+            if (!has_digits)
+            {
+                slot = 0.0;
+
+                return true;
+            }
+
+            // Parse exponent (this is kinda shitty way to it though)
+            if (remaining && (*ptr == 'e' || *ptr == 'E'))
+            {
+                if (!String(++ptr, --remaining).ParseInt(exponent, 10))
+                {
+                    return false;
+                }
+            }
+            if (number == 0.0)
+            {
+                slot = 0.0;
+
+                return true;
+            }
+            if (exponent < 0)
+            {
+                if (number < DBL_MIN * std::pow(10.0, static_cast<double>(-exponent)))
+                {
+                    return false; // Float underflow
+                }
+            }
+            else if (exponent > 0)
+            {
+                if (number > DBL_MAX * std::pow(10.0, static_cast<double>(exponent)))
+                {
+                    return false; // Float overflow
+                }
+            }
+            number *= std::pow(10.0, static_cast<double>(exponent));
+            slot = number * sign;
+        }
+
+        return true;
     }
 
     String operator+(const char* a, const String& b)

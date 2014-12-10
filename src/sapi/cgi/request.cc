@@ -204,7 +204,7 @@ namespace tempearly
         {
             i64 number;
 
-            if (Utils::ParseInt(value, number, 10))
+            if (String(value).ParseInt(number, 10))
             {
                 slot = static_cast<T>(number);
             }

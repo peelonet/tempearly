@@ -1,4 +1,3 @@
-#include "utils.h"
 #include "core/datetime.h"
 #include "core/stringbuilder.h"
 
@@ -117,13 +116,13 @@ namespace tempearly
 
                 // Year as 4 digit decimal number
                 case 'Y':
-                    result << Utils::ToString(static_cast<i64>(m_date.GetYear()));
+                    result << String::FromI64(m_date.GetYear());
                     break;
 
                 // Last 2 digits of year
                 case 'y':
                 {
-                    const String year = Utils::ToString(static_cast<i64>(m_date.GetYear()));
+                    const String year = String::FromI64(m_date.GetYear());
 
                     if (year.GetLength() >= 2)
                     {
@@ -137,7 +136,7 @@ namespace tempearly
                 // First 2 digits of year
                 case 'C':
                 {
-                    const String year = Utils::ToString(static_cast<i64>(m_date.GetYear()));
+                    const String year = String::FromI64(m_date.GetYear());
 
                     if (year.GetLength() >= 2)
                     {
@@ -250,7 +249,7 @@ namespace tempearly
                     {
                         result << '0';
                     }
-                    result << Utils::ToString(month, 10);
+                    result << String::FromI64(month, 10);
                     break;
                 }
 
@@ -280,7 +279,7 @@ namespace tempearly
                             result << '0';
                         }
                     }
-                    result << Utils::ToString(day, 10);
+                    result << String::FromI64(day, 10);
                     break;
                 }
 
@@ -293,7 +292,7 @@ namespace tempearly
                     {
                         result << '0';
                     }
-                    result << Utils::ToString(day, 10);
+                    result << String::FromI64(day, 10);
                     break;
                 }
 
@@ -307,7 +306,7 @@ namespace tempearly
                     {
                         result << ' ';
                     }
-                    result << Utils::ToString(day, 10);
+                    result << String::FromI64(day, 10);
                     break;
                 }
 
@@ -399,7 +398,7 @@ namespace tempearly
 
                 // Weekday as decimal, Monday is 1 (1-7)
                 case 'u':
-                    result << Utils::ToString(static_cast<i64>(m_date.GetWeekday()));
+                    result << String::FromI64(static_cast<i64>(m_date.GetWeekday()));
                     break;
 
                 // Hour, minute, second
@@ -413,7 +412,7 @@ namespace tempearly
                     {
                         result << '0';
                     }
-                    result << Utils::ToString(hour, 10);
+                    result << String::FromI64(hour, 10);
                     break;
                 }
 
@@ -430,7 +429,7 @@ namespace tempearly
                     {
                         result << '0';
                     }
-                    result << Utils::ToString(hour, 10);
+                    result << String::FromI64(hour, 10);
                     break;
                 }
 
@@ -443,7 +442,7 @@ namespace tempearly
                     {
                         result << '0';
                     }
-                    result << Utils::ToString(minute, 10);
+                    result << String::FromI64(minute, 10);
                     break;
                 }
 
@@ -456,7 +455,7 @@ namespace tempearly
                     {
                         result << '0';
                     }
-                    result << Utils::ToString(second, 10);
+                    result << String::FromI64(second, 10);
                     break;
                 }
 

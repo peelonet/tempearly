@@ -1,7 +1,6 @@
 #include <cstring>
 #include <http_protocol.h>
 
-#include "utils.h"
 #include "core/bytestring.h"
 #include "sapi/apache/request.h"
 
@@ -73,7 +72,7 @@ namespace tempearly
         {
             i64 number;
 
-            if (Utils::ParseInt(value, number, 10))
+            if (String(value).ParseInt(number, 10))
             {
                 return static_cast<std::size_t>(number);
             }

@@ -1,4 +1,3 @@
-#include "utils.h"
 #include "core/bytestring.h"
 #include "net/socket.h"
 #include "sapi/httpd/request.h"
@@ -77,7 +76,7 @@ namespace tempearly
         {
             i64 slot;
 
-            if (Utils::ParseInt(value, slot, 10))
+            if (value.ParseInt(slot, 10))
             {
                 return static_cast<std::size_t>(slot);
             }

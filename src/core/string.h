@@ -72,6 +72,29 @@ namespace tempearly
         static String DecodeAscii(const byte* input, std::size_t length);
 
         /**
+         * Digitizes given unsigned 64 bit integer into string.
+         *
+         * \param number Number to convert
+         * \param radix  Radix of the conversion
+         */
+        static String FromU64(u64 number, int radix = 10);
+
+        /**
+         * Digitizes given signed 64 bit integer into string.
+         *
+         * \param number Number to convert
+         * \param radix  Radix of the conversion
+         */
+        static String FromI64(i64 number, int radix = 10);
+
+        /**
+         * Digitizes given double precision number into string.
+         *
+         * \param number Number to convert
+         */
+        static String FromDouble(double number);
+
+        /**
          * Copies contents of another string into this one.
          */
         String& Assign(const String& that);
@@ -355,6 +378,28 @@ namespace tempearly
          * used in JavaScript or JSON string literal.
          */
         String EscapeJavaScript() const;
+
+        /**
+         * Parses an 64-bit integer value from contents of the string.
+         *
+         * \param slot  Variable where the result is stored
+         * \param radix The radix to use, for example if you want to parse
+         *              a hexadecimal number, set this to 16. If you want
+         *              this method to determine the readix, leave it to -1
+         * \return      True if the conversion was successfull, false if
+         *              underflow or overflow error occurred
+         */
+        bool ParseInt(i64& slot, int radix = -1) const;
+
+        /**
+         * Parses an double precision decimal value from contents of the
+         * string.
+         *
+         * \param slot Variable where the result is stored
+         * \return     True if the conversion was successfull, false if
+         *             underflow or overflow error occurred
+         */
+        bool ParseDouble(double& slot) const;
 
     private:
         /** Offset where the string contents begin. */

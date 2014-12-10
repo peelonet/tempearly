@@ -1,7 +1,6 @@
 #include <cctype>
 
 #include "parameter.h"
-#include "utils.h"
 #include "script/parser.h"
 
 namespace tempearly
@@ -266,12 +265,11 @@ READ_NEXT_CHAR:
                     {
                         if ((c = ReadRune()) < 0)
                         {
-                            StringBuilder sb;
-
-                            sb << "Unterminated multi-line comment at "
-                               << Utils::ToString(static_cast<i64>(token.position.line))
-                               << "; Missing `*/'";
-                            SetErrorMessage(sb.ToString());
+                            SetErrorMessage(
+                                "Unterminated multi-line comment at "
+                                + String::FromI64(token.position.line)
+                                + "; Missing `*/'"
+                            );
                             token.kind = Token::ERROR;
 
                             return token;
@@ -447,9 +445,9 @@ READ_NEXT_CHAR:
                     {
                         StringBuilder sb;
 
-                        sb << "Unterminated string literal at "
-                           << Utils::ToString(static_cast<i64>(token.position.line))
-                           << "; missing `"
+                        sb << "Unterminated string literal at"
+                           << String::FromI64(token.position.line)
+                           << "; missing '"
                            << separator
                            << "'";
                         SetErrorMessage(sb.ToString());
@@ -1568,7 +1566,7 @@ SCAN_EXPONENT:
             {
                 i64 value;
 
-                if (!Utils::ParseInt(token.text, value))
+                if (!token.text.ParseInt(value))
                 {
                     parser->SetErrorMessage("Integer overflow");
 
@@ -1582,7 +1580,7 @@ SCAN_EXPONENT:
             {
                 double value;
 
-                if (!Utils::ParseFloat(token.text, value))
+                if (!token.text.ParseDouble(value))
                 {
                     parser->SetErrorMessage("Float overflow");
 

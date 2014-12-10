@@ -1,6 +1,5 @@
 #include <cstring>
 
-#include "utils.h"
 #include "core/bytestring.h"
 #include "net/socket.h"
 #include "sapi/httpd/server.h"
@@ -73,19 +72,16 @@ static bool parse_host_and_port(const String& input, String& host, int& port)
 {
     std::size_t index = input.IndexOf(':');
     String port_source;
+    i64 slot;
 
     if (index != String::npos)
     {
         host = input.SubString(0, index);
         port_source = input.SubString(index + 1);
-    }
-    else
-    {
+    } else {
         port_source = input;
     }
-
-    i64 slot;
-    if (!Utils::ParseInt(port_source, slot, 10))
+    if (!String(port_source).ParseInt(slot, 10))
     {
         return false;
     }

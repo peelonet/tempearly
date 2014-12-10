@@ -1,8 +1,8 @@
 #include <cctype>
 
-#include "utils.h"
 #include "core/bytestring.h"
 #include "core/stringbuilder.h"
+#include "core/vector.h"
 #include "net/url.h"
 
 namespace tempearly
@@ -195,7 +195,7 @@ namespace tempearly
             result << m_hostname;
             if (m_port >= 0)
             {
-                result << ':' << Utils::ToString(static_cast<i64>(m_port));
+                result << ':' << String::FromI64(m_port);
             }
             if (!m_path.IsEmpty() && m_path.GetFront() != '/')
             {
