@@ -807,6 +807,18 @@ namespace tempearly
         frame->SetReturnValue(Value::NewFloat(-args[0].AsFloat()));
     }
 
+    TEMPEARLY_NATIVE_METHOD(flo_as_json)
+    {
+        double number = args[0].AsFloat();
+
+        if (std::isinf(number) || std::isnan(number))
+        {
+            frame->SetReturnValue(Value::NewString("null"));
+        } else {
+            frame->SetReturnValue(Value::NewString(Utils::ToString(number)));
+        }
+    }
+
     void init_number(Interpreter* i)
     {
         i->cNum = i->AddClass("Num", i->cObject);
@@ -862,6 +874,6 @@ namespace tempearly
         i->cFloat->AddMethod(i, "__inc__", 0, flo_inc);
         i->cFloat->AddMethod(i, "__dec__", 0, flo_dec);
         i->cFloat->AddMethod(i, "__neg__", 0, flo_neg);
-        i->cFloat->AddMethodAlias(i, "as_json", "__str__");
+        i->cFloat->AddMethod(i, "as_json", 0, flo_as_json);
     }
 }
