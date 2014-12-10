@@ -431,7 +431,14 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_str)
     {
-        return Value::NewString(Utils::ToString(args[0].AsFloat()));
+        double number = args[0].AsFloat();
+
+        if (std::isinf(number) || number != number)
+        {
+            return Value::NewString("null");
+        }
+
+        return Value::NewString(Utils::ToString(number));
     }
 
     /**
