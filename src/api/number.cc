@@ -912,7 +912,7 @@ namespace tempearly
         {
             frame->SetReturnValue(Value::NewString("null"));
         } else {
-            frame->SetReturnValue(Value::NewString(Utils::ToString(number)));
+            frame->SetReturnValue(Value::NewString(String::FromDouble(number)));
         }
     }
 
