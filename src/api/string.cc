@@ -961,7 +961,7 @@ namespace tempearly
             {
                 index += s.GetLength();
             }
-            if (index < 0 || index >= s.GetLength())
+            if (index < 0 || index >= static_cast<i64>(s.GetLength()))
             {
                 interpreter->Throw(interpreter->eIndexError, "String index out of bounds");
                 return;
