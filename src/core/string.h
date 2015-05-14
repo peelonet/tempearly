@@ -306,6 +306,11 @@ namespace tempearly
         }
 
         /**
+         * Returns true if this strings starts with given substring.
+         */
+        bool StartsWith(const String& that) const;
+
+        /**
          * Clears all contents of the string.
          */
         void Clear();

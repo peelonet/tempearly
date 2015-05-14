@@ -95,7 +95,7 @@ namespace tempearly
         // TODO: process multipart requests
         if (GetMethod() == HttpMethod::POST
             && GetContentLength() > 0
-            && GetContentType() == "application/x-www-form-urlencoded")
+            && GetContentType().StartsWith("application/x-www-form-urlencoded"))
         {
             const ByteString body = GetBody();
 
