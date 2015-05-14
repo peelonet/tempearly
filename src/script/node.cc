@@ -244,10 +244,12 @@ namespace tempearly
 
     ForNode::ForNode(const Handle<Node>& variable,
                      const Handle<Node>& collection,
-                     const Handle<Node>& statement)
+                     const Handle<Node>& statement,
+                     const Handle<Node>& else_statement)
         : m_variable(variable.Get())
         , m_collection(collection.Get())
-        , m_statement(statement.Get()) {}
+        , m_statement(statement.Get())
+        , m_else_statement(else_statement) {}
 
     Result ForNode::Execute(const Handle<Interpreter>& interpreter) const
     {
@@ -259,31 +261,45 @@ namespace tempearly
         {
             return Result(Result::KIND_ERROR);
         }
-        while (iterator.GetNext(interpreter, element))
+        if (iterator.GetNext(interpreter, element))
         {
-            if (m_variable->AssignLocal(interpreter, element))
+            do
             {
-                Result result = m_statement->Execute(interpreter);
-
-                switch (result.GetKind())
+                if (m_variable->AssignLocal(interpreter, element))
                 {
-                    case Result::KIND_SUCCESS:
-                    case Result::KIND_CONTINUE:
-                        break;
+                    Result result = m_statement->Execute(interpreter);
 
-                    case Result::KIND_BREAK:
-                        return Result();
+                    switch (result.GetKind())
+                    {
+                        case Result::KIND_SUCCESS:
+                        case Result::KIND_CONTINUE:
+                            break;
 
-                    default:
-                        return result;
+                        case Result::KIND_BREAK:
+                            return Result();
+
+                        default:
+                            return result;
+                    }
+                } else {
+                    return Result(Result::KIND_ERROR);
                 }
-            } else {
+            }
+            while (iterator.GetNext(interpreter, element));
+            if (interpreter->HasException())
+            {
                 return Result(Result::KIND_ERROR);
+            } else {
+                return Result();
             }
         }
-        if (interpreter->HasException())
+        else if (interpreter->HasException())
         {
             return Result(Result::KIND_ERROR);
+        }
+        else if (m_else_statement)
+        {
+            return m_else_statement->Execute(interpreter);
         } else {
             return Result();
         }
@@ -303,6 +319,10 @@ namespace tempearly
         if (!m_statement->IsMarked())
         {
             m_statement->Mark();
+        }
+        if (m_else_statement && !m_else_statement->IsMarked())
+        {
+            m_else_statement->Mark();
         }
     }
 

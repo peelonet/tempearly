@@ -1095,6 +1095,7 @@ SCAN_EXPONENT:
         Handle<Node> variable;
         Handle<Node> collection;
         Handle<Node> statement;
+        Handle<Node> else_statement;
 
         if (!expect_token(parser, Token::KW_FOR) || !(variable = parse_expr(parser)))
         {
@@ -1109,15 +1110,27 @@ SCAN_EXPONENT:
         if (!expect_token(parser, Token::COLON)
             || !(collection = parse_expr(parser))
             || !expect_token(parser, Token::COLON)
-            || !(statement = parse_block(parser))
-            || !expect_token(parser, Token::KW_END)
-            || !expect_token(parser, Token::KW_FOR))
+            || !(statement = parse_block(parser)))
+        {
+            return Handle<Node>();
+        }
+        if (parser->ReadToken(Token::KW_ELSE))
+        {
+            if (!expect_token(parser, Token::COLON)
+                || !(else_statement = parse_block(parser))
+                || !expect_token(parser, Token::KW_END)
+                || !expect_token(parser, Token::KW_FOR))
+            {
+                return Handle<Node>();
+            }
+        }
+        else if (!expect_token(parser, Token::KW_END) || !expect_token(parser, Token::KW_FOR))
         {
             return Handle<Node>();
         }
         parser->ReadToken(Token::SEMICOLON); // Eat optional semicolon
 
-        return new ForNode(variable, collection, statement);
+        return new ForNode(variable, collection, statement, else_statement);
     }
 
     static Handle<CatchNode> parse_catch(const Handle<ScriptParser>& parser)

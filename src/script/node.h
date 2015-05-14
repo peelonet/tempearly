@@ -167,7 +167,8 @@ namespace tempearly
     public:
         explicit ForNode(const Handle<Node>& variable,
                          const Handle<Node>& collection,
-                         const Handle<Node>& statement);
+                         const Handle<Node>& statement,
+                         const Handle<Node>& else_statement = Handle<Node>());
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
@@ -177,6 +178,7 @@ namespace tempearly
         Node* m_variable;
         Node* m_collection;
         Node* m_statement;
+        Node* m_else_statement;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ForNode);
     };
 
