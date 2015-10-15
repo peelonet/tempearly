@@ -14,17 +14,14 @@ namespace tempearly
 
     Stream::Stream(std::size_t buffer_size)
         : m_buffer_size(buffer_size)
-        , m_buffer(m_buffer_size ? static_cast<byte*>(std::malloc(m_buffer_size)) : 0)
+        , m_buffer(Memory::Allocate<byte>(m_buffer_size))
         , m_offset(0)
         , m_remain(0)
         , m_line(1) {}
 
     Stream::~Stream()
     {
-        if (m_buffer)
-        {
-            std::free(static_cast<void*>(m_buffer));
-        }
+        Memory::Unallocate<byte>(m_buffer);
     }
 
     void Stream::Flush()

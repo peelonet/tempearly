@@ -16,7 +16,7 @@ namespace tempearly
         , m_path(path)
         , m_query_string(query_string)
         , m_headers(headers)
-        , m_body(0)
+        , m_body(nullptr)
     {
         if (body_size)
         {

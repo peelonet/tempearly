@@ -10,7 +10,7 @@ namespace tempearly
     Class::Class(const Handle<Class>& base)
         : m_base(base.Get())
         , m_allocator(m_base ? m_base->m_allocator : 0)
-        , m_attributes(0) {}
+        , m_attributes(nullptr) {}
 
     Class::~Class()
     {

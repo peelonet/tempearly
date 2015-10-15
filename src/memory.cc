@@ -32,7 +32,7 @@ namespace tempearly
 
             explicit Generation()
                 : counter(0)
-                , m_head(0) {}
+                , m_head(nullptr) {}
 
             ~Generation()
             {
@@ -73,8 +73,8 @@ namespace tempearly
 #endif
                 Slot* current = m_head;
                 Slot* next;
-                Slot* saved_head = 0;
-                Slot* saved_tail = 0;
+                Slot* saved_head = nullptr;
+                Slot* saved_tail = nullptr;
 
                 m_head = 0;
                 for (; current; current = next)
@@ -82,7 +82,7 @@ namespace tempearly
                     next = current->next;
                     if (current->object->IsMarked())
                     {
-                        current->next = 0;
+                        current->next = nullptr;
                         if (saved_tail)
                         {
                             saved_tail->next = current;
@@ -146,14 +146,14 @@ namespace tempearly
     CountedObject::CountedObject()
         : m_flags(0)
         , m_reference_count(0)
-        , m_handle_head(0)
-        , m_handle_tail(0) {}
+        , m_handle_head(nullptr)
+        , m_handle_tail(nullptr) {}
 
     CountedObject::~CountedObject()
     {
         for (Handle<CountedObject>* handle = m_handle_head; handle; handle = handle->m_next)
         {
-            handle->m_pointer = 0;
+            handle->m_pointer = nullptr;
         }
     }
 

@@ -32,12 +32,12 @@ namespace tempearly
     void init_void(Interpreter*);
 
     Interpreter::Interpreter()
-        : request(0)
-        , response(0)
-        , m_frame(0)
-        , m_global_variables(0)
-        , m_empty_iterator(0)
-        , m_imported_files(0) {}
+        : request(nullptr)
+        , response(nullptr)
+        , m_frame(nullptr)
+        , m_global_variables(nullptr)
+        , m_empty_iterator(nullptr)
+        , m_imported_files(nullptr) {}
 
     Interpreter::~Interpreter()
     {

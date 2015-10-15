@@ -7,13 +7,13 @@ namespace tempearly
 {
     Value::Value()
         : m_kind(KIND_ERROR)
-        , m_previous(0)
-        , m_next(0) {}
+        , m_previous(nullptr)
+        , m_next(nullptr) {}
 
     Value::Value(const Value& that)
         : m_kind(that.m_kind)
-        , m_previous(0)
-        , m_next(0)
+        , m_previous(nullptr)
+        , m_next(nullptr)
     {
         switch (m_kind)
         {
@@ -51,8 +51,8 @@ namespace tempearly
 
     Value::Value(const Handle<CoreObject>& object)
         : m_kind(KIND_NULL)
-        , m_previous(0)
-        , m_next(0)
+        , m_previous(nullptr)
+        , m_next(nullptr)
     {
         if (object)
         {

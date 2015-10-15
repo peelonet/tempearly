@@ -29,8 +29,8 @@ namespace tempearly
     String::String()
         : m_offset(0)
         , m_length(0)
-        , m_runes(0)
-        , m_counter(0)
+        , m_runes(nullptr)
+        , m_counter(nullptr)
         , m_hash_code(0) {}
 
     String::String(const String& that)
@@ -83,8 +83,8 @@ namespace tempearly
     String::String(const char* input)
         : m_offset(0)
         , m_length(0)
-        , m_runes(0)
-        , m_counter(0)
+        , m_runes(nullptr)
+        , m_counter(nullptr)
         , m_hash_code(0)
     {
         const char* p = input;
@@ -176,7 +176,7 @@ namespace tempearly
         : m_offset(0)
         , m_length(n)
         , m_runes(Memory::Allocate<rune>(m_length))
-        , m_counter(m_length ? Memory::Allocate<unsigned int>(1) : 0)
+        , m_counter(m_length ? Memory::Allocate<unsigned int>(1) : nullptr)
         , m_hash_code(0)
     {
         if (m_counter)
@@ -190,7 +190,7 @@ namespace tempearly
         : m_offset(0)
         , m_length(n)
         , m_runes(Memory::Allocate<rune>(m_length))
-        , m_counter(m_length ? Memory::Allocate<unsigned int>(1) : 0)
+        , m_counter(m_length ? Memory::Allocate<unsigned int>(1) : nullptr)
         , m_hash_code(0)
     {
         if (m_counter)
@@ -785,8 +785,8 @@ namespace tempearly
             Memory::Unallocate<unsigned int>(m_counter);
         }
         m_offset = m_length = m_hash_code = 0;
-        m_runes = 0;
-        m_counter = 0;
+        m_runes = nullptr;
+        m_counter = nullptr;
     }
 
     String String::Concat(const String& that) const

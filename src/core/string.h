@@ -143,7 +143,7 @@ namespace tempearly
          */
         inline const rune* GetRunes() const
         {
-            return m_runes ? m_runes + m_offset : 0;
+            return m_runes ? m_runes + m_offset : nullptr;
         }
 
         /**

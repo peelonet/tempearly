@@ -7,20 +7,20 @@ namespace tempearly
     SetObject::SetObject(const Handle<Class>& cls, std::size_t bucket_size)
         : Object(cls)
         , m_bucket_size(bucket_size)
-        , m_bucket(new Entry*[m_bucket_size])
+        , m_bucket(Memory::Allocate<Entry*>(m_bucket_size))
         , m_size(0)
-        , m_front(0)
-        , m_back(0)
+        , m_front(nullptr)
+        , m_back(nullptr)
     {
         for (std::size_t i = 0; i < m_bucket_size; ++i)
         {
-            m_bucket[i] = 0;
+            m_bucket[i] = nullptr;
         }
     }
 
     SetObject::~SetObject()
     {
-        delete[] m_bucket;
+        Memory::Unallocate<Entry*>(m_bucket);
     }
 
     bool SetObject::Has(i64 hash) const
@@ -121,15 +121,15 @@ namespace tempearly
             }
             else if (entry->m_next)
             {
-                entry->m_next->m_prev = 0;
+                entry->m_next->m_prev = nullptr;
                 m_front = entry->m_next;
             }
             else if (entry->m_prev)
             {
-                entry->m_prev->m_next = 0;
+                entry->m_prev->m_next = nullptr;
                 m_back = entry->m_prev;
             } else {
-                m_front = m_back = 0;
+                m_front = m_back = nullptr;
             }
             --m_size;
 
@@ -149,15 +149,15 @@ namespace tempearly
                 }
                 else if (child->m_next)
                 {
-                    child->m_next->m_prev = 0;
+                    child->m_next->m_prev = nullptr;
                     m_front = child->m_next;
                 }
                 else if (child->m_prev)
                 {
-                    child->m_prev->m_next = 0;
+                    child->m_prev->m_next = nullptr;
                     m_back = child->m_prev;
                 } else {
-                    m_front = m_back = 0;
+                    m_front = m_back = nullptr;
                 }
                 --m_size;
 
@@ -172,9 +172,9 @@ namespace tempearly
     {
         for (std::size_t i = 0; i < m_bucket_size; ++i)
         {
-            m_bucket[i] = 0;
+            m_bucket[i] = nullptr;
         }
-        m_front = m_back = 0;
+        m_front = m_back = nullptr;
         m_size = 0;
     }
 
@@ -190,9 +190,9 @@ namespace tempearly
     SetObject::Entry::Entry(i64 hash, const Value& value)
         : m_hash(hash)
         , m_value(value)
-        , m_next(0)
-        , m_prev(0)
-        , m_child(0) {}
+        , m_next(nullptr)
+        , m_prev(nullptr)
+        , m_child(nullptr) {}
 
     void SetObject::Entry::Mark()
     {

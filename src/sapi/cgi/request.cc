@@ -23,7 +23,7 @@ namespace tempearly
         : m_server_port(-1)
         , m_content_length(0)
         , m_using_https(false)
-        , m_body(0)
+        , m_body(nullptr)
     {
         ReadEnvironmentVariables();
         ReadBody();
