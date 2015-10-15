@@ -7,7 +7,7 @@ namespace tempearly
 {
     Object::Object(const Handle<Class>& cls)
         : m_class(cls.Get())
-        , m_attributes(0) {}
+        , m_attributes(nullptr) {}
 
     Object::~Object()
     {

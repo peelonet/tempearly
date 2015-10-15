@@ -34,7 +34,7 @@ namespace tempearly
                 }
             }
 
-            return 0;
+            return nullptr;
         }
 
         /**
@@ -98,17 +98,17 @@ namespace tempearly
          * Constructs NULL handle.
          */
         Handle()
-            : m_pointer(0)
-            , m_previous(0)
-            , m_next(0) {}
+            : m_pointer(nullptr)
+            , m_previous(nullptr)
+            , m_next(nullptr) {}
 
         /**
          * Copy constructor.
          */
         Handle(const Handle<T>& that)
             : m_pointer(that.m_pointer)
-            , m_previous(0)
-            , m_next(0)
+            , m_previous(nullptr)
+            , m_next(nullptr)
         {
             if (m_pointer)
             {
@@ -122,8 +122,8 @@ namespace tempearly
         template< class U >
         Handle(const Handle<U>& that)
             : m_pointer(that.Get())
-            , m_previous(0)
-            , m_next(0)
+            , m_previous(nullptr)
+            , m_next(nullptr)
         {
             if (m_pointer)
             {
@@ -137,8 +137,8 @@ namespace tempearly
         template< class U >
         Handle(U* pointer)
             : m_pointer(pointer)
-            , m_previous(0)
-            , m_next(0)
+            , m_previous(nullptr)
+            , m_next(nullptr)
         {
             if (m_pointer)
             {
@@ -424,16 +424,16 @@ namespace tempearly
             else if (handle->m_next)
             {
                 m_handle_head = handle->m_next;
-                m_handle_head->m_previous = 0;
+                m_handle_head->m_previous = nullptr;
             }
             else if (handle->m_previous)
             {
                 m_handle_tail = handle->m_previous;
-                m_handle_tail->m_next = 0;
+                m_handle_tail->m_next = nullptr;
             } else {
-                m_handle_head = m_handle_tail = 0;
+                m_handle_head = m_handle_tail = nullptr;
             }
-            handle->m_previous = handle->m_next = 0;
+            handle->m_previous = handle->m_next = nullptr;
         }
 
         static void* operator new(std::size_t);

@@ -4,15 +4,15 @@
 namespace tempearly
 {
     CoreObject::CoreObject()
-        : m_value_head(0)
-        , m_value_tail(0) {}
+        : m_value_head(nullptr)
+        , m_value_tail(nullptr) {}
 
     CoreObject::~CoreObject()
     {
         for (Value* value = m_value_head; value; value = value->m_next)
         {
             value->m_kind = Value::KIND_NULL;
-            value->m_previous = value->m_next = 0;
+            value->m_previous = value->m_next = nullptr;
         }
     }
 
@@ -50,15 +50,15 @@ namespace tempearly
         else if (value->m_next)
         {
             m_value_head = value->m_next;
-            m_value_head->m_previous = 0;
+            m_value_head->m_previous = nullptr;
         }
         else if (value->m_previous)
         {
             m_value_tail = value->m_previous;
-            m_value_tail->m_next = 0;
+            m_value_tail->m_next = nullptr;
         } else {
-            m_value_head = m_value_tail = 0;
+            m_value_head = m_value_tail = nullptr;
         }
-        value->m_previous = value->m_next = 0;
+        value->m_previous = value->m_next = nullptr;
     }
 }

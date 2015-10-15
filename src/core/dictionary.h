@@ -74,9 +74,9 @@ namespace tempearly
                 : m_hash_code(hash_code)
                 , m_name(name)
                 , m_value(value)
-                , m_next(0)
-                , m_previous(0)
-                , m_child(0) {}
+                , m_next(nullptr)
+                , m_previous(nullptr)
+                , m_child(nullptr) {}
 
             /** Cached hash code of the entry. */
             std::size_t m_hash_code;
@@ -99,12 +99,12 @@ namespace tempearly
          */
         Dictionary()
             : m_bucket(Memory::Allocate<Entry*>(kBucketSize))
-            , m_front(0)
-            , m_back(0)
+            , m_front(nullptr)
+            , m_back(nullptr)
         {
             for (std::size_t i = 0; i < kBucketSize; ++i)
             {
-                m_bucket[i] = 0;
+                m_bucket[i] = nullptr;
             }
         }
 
@@ -114,19 +114,19 @@ namespace tempearly
          */
         Dictionary(const Dictionary<T>& that)
             : m_bucket(Memory::Allocate<Entry*>(kBucketSize))
-            , m_front(0)
-            , m_back(0)
+            , m_front(nullptr)
+            , m_back(nullptr)
         {
             for (std::size_t i = 0; i < kBucketSize; ++i)
             {
-                m_bucket[i] = 0;
+                m_bucket[i] = nullptr;
             }
             for (const Entry* entry1 = that.m_front; entry1; entry1 = entry1->m_next)
             {
                 Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
                 const std::size_t index = entry1->m_hash_code % kBucketSize;
 
-                entry2->m_next = 0;
+                entry2->m_next = nullptr;
                 if ((entry2->m_previous = m_back))
                 {
                     m_back->m_next = entry2;
@@ -146,12 +146,12 @@ namespace tempearly
         template< class U >
         Dictionary(const Dictionary<U>& that)
             : m_bucket(Memory::Allocate<Entry*>(kBucketSize))
-            , m_front(0)
-            , m_back(0)
+            , m_front(nullptr)
+            , m_back(nullptr)
         {
             for (std::size_t i = 0; i < kBucketSize; ++i)
             {
-                m_bucket[i] = 0;
+                m_bucket[i] = nullptr;
             }
             for (const typename Dictionary<U>::Entry* entry1 = that.GetFront();
                  entry1;
@@ -160,7 +160,7 @@ namespace tempearly
                 Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
                 const std::size_t index = entry1->m_hash_code % kBucketSize;
 
-                entry2->m_next = 0;
+                entry2->m_next = nullptr;
                 if ((entry2->m_previous = m_back))
                 {
                     m_back->m_next = entry2;
@@ -201,7 +201,7 @@ namespace tempearly
                 Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
                 const std::size_t index = entry1->m_hash_code % kBucketSize;
 
-                entry2->m_next = 0;
+                entry2->m_next = nullptr;
                 if ((entry2->m_previous = m_back))
                 {
                     m_back->m_next = entry2;
@@ -230,7 +230,7 @@ namespace tempearly
                 Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
                 const std::size_t index = entry1->m_hash_code % kBucketSize;
 
-                entry2->m_next = 0;
+                entry2->m_next = nullptr;
                 if ((entry2->m_previous = m_back))
                 {
                     m_back->m_next = entry2;
@@ -325,7 +325,7 @@ namespace tempearly
                 }
             }
 
-            return 0;
+            return nullptr;
         }
 
         /**
@@ -347,7 +347,7 @@ namespace tempearly
                 }
             }
 
-            return 0;
+            return nullptr;
         }
 
         /**
@@ -372,7 +372,7 @@ namespace tempearly
                 }
             }
             entry = new Entry(hash, id, value);
-            entry->m_next = 0;
+            entry->m_next = nullptr;
             if ((entry->m_previous = m_back))
             {
                 m_back->m_next = entry;
@@ -394,7 +394,7 @@ namespace tempearly
 
             for (std::size_t i = 0; i < kBucketSize; ++i)
             {
-                m_bucket[i] = 0;
+                m_bucket[i] = nullptr;
             }
             while (current)
             {
@@ -402,7 +402,7 @@ namespace tempearly
                 delete current;
                 current = next;
             }
-            m_front = m_back = 0;
+            m_front = m_back = nullptr;
         }
 
         /**
@@ -430,15 +430,15 @@ namespace tempearly
                 }
                 else if (entry->m_next)
                 {
-                    entry->m_next->m_previous = 0;
+                    entry->m_next->m_previous = nullptr;
                     m_front = entry->m_next;
                 }
                 else if (entry->m_previous)
                 {
-                    entry->m_previous->m_next = 0;
+                    entry->m_previous->m_next = nullptr;
                     m_back = entry->m_previous;
                 } else {
-                    m_front = m_back = 0;
+                    m_front = m_back = nullptr;
                 }
                 delete entry;
                 return;
@@ -457,15 +457,15 @@ namespace tempearly
                     }
                     else if (child->m_next)
                     {
-                        child->m_next->m_previous = 0;
+                        child->m_next->m_previous = nullptr;
                         m_front = child->m_next;
                     }
                     else if (child->m_previous)
                     {
-                        child->m_previous->m_next = 0;
+                        child->m_previous->m_next = nullptr;
                         m_back = child->m_previous;
                     } else {
-                        m_front = m_back = 0;
+                        m_front = m_back = nullptr;
                     }
                     delete child;
                     return;

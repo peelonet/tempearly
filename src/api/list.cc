@@ -8,8 +8,8 @@ namespace tempearly
     ListObject::ListObject(const Handle<Class>& cls)
         : Object(cls)
         , m_size(0)
-        , m_front(0)
-        , m_back(0) {}
+        , m_front(nullptr)
+        , m_back(nullptr) {}
 
     Handle<ListObject::Link> ListObject::At(std::size_t index) const
     {
@@ -162,15 +162,15 @@ namespace tempearly
         }
         else if (link->m_next)
         {
-            link->m_next->m_prev = 0;
+            link->m_next->m_prev = nullptr;
             m_front = link->m_next;
         }
         else if (link->m_prev)
         {
-            link->m_prev->m_next = 0;
+            link->m_prev->m_next = nullptr;
             m_back = link->m_prev;
         } else {
-            m_front = m_back = 0;
+            m_front = m_back = nullptr;
         }
         --m_size;
     }
@@ -190,15 +190,15 @@ namespace tempearly
         }
         else if (link->m_next)
         {
-            link->m_next->m_prev = 0;
+            link->m_next->m_prev = nullptr;
             m_front = link->m_next;
         }
         else if (link->m_prev)
         {
-            link->m_prev->m_next = 0;
+            link->m_prev->m_next = nullptr;
             m_back = link->m_prev;
         } else {
-            m_front = m_back = 0;
+            m_front = m_back = nullptr;
         }
         --m_size;
         slot = link->m_value;
@@ -208,7 +208,7 @@ namespace tempearly
 
     void ListObject::Clear()
     {
-        m_front = m_back = 0;
+        m_front = m_back = nullptr;
         m_size = 0;
     }
 
@@ -223,8 +223,8 @@ namespace tempearly
 
     ListObject::Link::Link(const Value& value)
         : m_value(value)
-        , m_next(0)
-        , m_prev(0) {}
+        , m_next(nullptr)
+        , m_prev(nullptr) {}
 
     void ListObject::Link::Mark()
     {

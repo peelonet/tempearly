@@ -60,7 +60,7 @@ namespace tempearly
         if (m_socket)
         {
             m_socket->Close();
-            m_socket = 0;
+            m_socket = nullptr;
         }
     }
 
@@ -389,7 +389,7 @@ namespace tempearly
             }
             else if (!parse_request_header(request, client, begin, end - begin))
             {
-                return 0;
+                return nullptr;
             }
         }
     }

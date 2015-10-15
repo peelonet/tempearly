@@ -9,7 +9,7 @@ namespace tempearly
         : m_previous(previous.Get())
         , m_enclosing_frame(enclosing_frame.Get())
         , m_function(function.Get())
-        , m_local_variables(0) {}
+        , m_local_variables(nullptr) {}
 
     Frame::~Frame()
     {

@@ -20,7 +20,7 @@ namespace tempearly
         if (m_stream)
         {
             m_stream->Close();
-            m_stream = 0;
+            m_stream = nullptr;
         }
     }
 
@@ -65,7 +65,7 @@ namespace tempearly
             if (result != Stream::SUCCESS && result != Stream::DECODING_ERROR)
             {
                 m_stream->Close();
-                m_stream = 0;
+                m_stream = nullptr;
 
                 return -1;
             }

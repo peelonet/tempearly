@@ -15,7 +15,7 @@ namespace tempearly
     ApacheRequest::ApacheRequest(request_rec* request)
         : m_request(request)
         , m_method(parse_method(request))
-        , m_body(0) {}
+        , m_body(nullptr) {}
 
     ApacheRequest::~ApacheRequest()
     {

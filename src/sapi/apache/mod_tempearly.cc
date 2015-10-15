@@ -63,11 +63,11 @@ extern "C"
     module AP_MODULE_DECLARE_DATA tempearly_module =
     {
         STANDARD20_MODULE_STUFF,
-        0,
-        0,
-        0,
-        0,
-        0,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
         tempearly_register_hooks
     };
 }

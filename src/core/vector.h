@@ -18,7 +18,7 @@ namespace tempearly
         Vector()
             : m_capacity(0)
             , m_size(0)
-            , m_data(0) {}
+            , m_data(nullptr) {}
 
         /**
          * Copy constructor. Contents of the existing vector are copied in the
