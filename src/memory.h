@@ -132,6 +132,18 @@ namespace tempearly
         }
 
         /**
+         * Move constructor.
+         */
+        Handle(Handle<T>&& that)
+            : m_pointer(that.m_pointer)
+            , m_previous(that.m_previous)
+            , m_next(that.m_next)
+        {
+            that.m_pointer = nullptr;
+            that.m_previous = that.m_next = nullptr;
+        }
+
+        /**
          * Constructs handle from pointer to an object.
          */
         template< class U >
@@ -222,6 +234,20 @@ namespace tempearly
                     m_pointer->RegisterHandle(this);
                 }
             }
+
+            return *this;
+        }
+
+        /**
+         * Moves data from another handle into this one.
+         */
+        Handle& operator=(Handle<T>&& that)
+        {
+            m_pointer = that.m_pointer;
+            m_previous = that.m_previous;
+            m_next = that.m_next;
+            that.m_pointer = nullptr;
+            that.m_previous = that.m_next = nullptr;
 
             return *this;
         }
