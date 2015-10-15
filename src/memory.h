@@ -169,7 +169,6 @@ namespace tempearly
                 if (m_pointer)
                 {
                     m_pointer->UnregisterHandle(this);
-                    m_previous = m_next = 0;
                 }
                 if ((m_pointer = pointer))
                 {
@@ -434,6 +433,7 @@ namespace tempearly
             } else {
                 m_handle_head = m_handle_tail = 0;
             }
+            handle->m_previous = handle->m_next = 0;
         }
 
         static void* operator new(std::size_t);

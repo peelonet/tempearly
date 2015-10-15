@@ -445,6 +445,10 @@ namespace tempearly
         {
             delete m_data.s;
         }
+        else if (m_kind == KIND_BINARY)
+        {
+            delete m_data.b;
+        }
         else if (m_kind == KIND_OBJECT)
         {
             if (m_data.o)
