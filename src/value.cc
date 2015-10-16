@@ -49,6 +49,16 @@ namespace tempearly
         }
     }
 
+    Value::Value(Value&& that)
+        : m_kind(that.m_kind)
+        , m_data(that.m_data)
+        , m_previous(that.m_previous)
+        , m_next(that.m_next)
+    {
+        that.m_kind = KIND_ERROR;
+        that.m_previous = that.m_next = nullptr;
+    }
+
     Value::Value(const Handle<CoreObject>& object)
         : m_kind(KIND_NULL)
         , m_previous(nullptr)
@@ -178,6 +188,19 @@ namespace tempearly
             default:
                 break;
         }
+
+        return *this;
+    }
+
+    Value& Value::operator=(Value&& that)
+    {
+        Clear();
+        m_kind = that.m_kind;
+        m_data = that.m_data;
+        m_previous = that.m_previous;
+        m_next = that.m_next;
+        that.m_kind = KIND_ERROR;
+        that.m_previous = that.m_next = nullptr;
 
         return *this;
     }

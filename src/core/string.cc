@@ -46,6 +46,18 @@ namespace tempearly
         }
     }
 
+    String::String(String&& that)
+        : m_offset(that.m_offset)
+        , m_length(that.m_length)
+        , m_runes(that.m_runes)
+        , m_counter(that.m_counter)
+        , m_hash_code(that.m_hash_code)
+    {
+        that.m_offset = that.m_length = that.m_hash_code = 0;
+        that.m_runes = nullptr;
+        that.m_counter = nullptr;
+    }
+
     static inline std::size_t utf8_size(unsigned char input)
     {
         if ((input & 0x80) == 0x00)
@@ -421,6 +433,25 @@ namespace tempearly
                 }
             }
         }
+
+        return *this;
+    }
+
+    String& String::operator=(String&& that)
+    {
+        if (m_counter && --m_counter[0] == 0)
+        {
+            Memory::Unallocate<rune>(m_runes);
+            Memory::Unallocate<unsigned int>(m_counter);
+        }
+        m_offset = that.m_offset;
+        m_length = that.m_length;
+        m_runes = that.m_runes;
+        m_counter = that.m_counter;
+        m_hash_code = that.m_hash_code;
+        that.m_offset = that.m_length = that.m_hash_code = 0;
+        that.m_runes = nullptr;
+        that.m_counter = nullptr;
 
         return *this;
     }

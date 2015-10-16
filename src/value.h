@@ -41,6 +41,11 @@ namespace tempearly
         Value(const Value& that);
 
         /**
+         * Move constructor. Data from another value are moved into this one.
+         */
+        Value(Value&& that);
+
+        /**
          * Constructs value from object.
          *
          * \param object Handle to the object
@@ -86,6 +91,11 @@ namespace tempearly
          * Assignment operator.
          */
         Value& operator=(const Value& that);
+
+        /**
+         * Move operator.
+         */
+        Value& operator=(Value&& that);
 
         /**
          * Assignment operator.

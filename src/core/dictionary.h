@@ -174,6 +174,19 @@ namespace tempearly
         }
 
         /**
+         * Move constructor. Data from another dictionary is moved into this
+         * one and the original becomes unusable after that.
+         */
+        Dictionary(Dictionary<T>&& that)
+            : m_bucket(that.m_bucket)
+            , m_front(that.m_front)
+            , m_back(that.m_back)
+        {
+            that.m_bucket = nullptr;
+            that.m_front = that.m_back = nullptr;
+        }
+
+        /**
          * Destructor.
          */
         virtual ~Dictionary()
@@ -260,6 +273,30 @@ namespace tempearly
         inline Dictionary& operator=(const Dictionary<U>& that)
         {
             return Assign(that);
+        }
+
+        /**
+         * Move operator.
+         */
+        Dictionary& operator=(Dictionary<T>&& that)
+        {
+            Entry* current = m_front;
+            Entry* next;
+
+            while (current)
+            {
+                next = current->m_next;
+                delete current;
+                current = next;
+            }
+            Memory::Unallocate<Entry*>(m_bucket);
+            m_bucket = that.m_bucket;
+            m_front = that.m_front;
+            m_back = that.m_back;
+            that.m_bucket = nullptr;
+            that.m_front = that.m_back = nullptr;
+
+            return *this;
         }
 
         /**

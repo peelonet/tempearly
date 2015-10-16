@@ -31,6 +31,11 @@ namespace tempearly
         String(const String& that);
 
         /**
+         * Moves data from another string into this one.
+         */
+        String(String&& that);
+
+        /**
          * Constructs string from C string literal. The input is expected to be
          * in UTF-8.
          */
@@ -120,6 +125,11 @@ namespace tempearly
         {
             return Assign(input);
         }
+
+        /**
+         * Move operator.
+         */
+        String& operator=(String&& that);
 
         /**
          * Returns true if the string is empty.

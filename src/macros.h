@@ -3,7 +3,9 @@
 
 #define TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(TypeName) \
     TypeName(const TypeName &) = delete; \
-    void operator=(const TypeName &) = delete
+    TypeName(TypeName &&) = delete; \
+    void operator=(const TypeName &) = delete; \
+    void operator=(TypeName &&) = delete
 
 #define TEMPEARLY_DISALLOW_IMPLICIT_CONSTRUCTORS(TypeName) \
     TypeName() = delete; \

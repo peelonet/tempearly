@@ -56,6 +56,19 @@ namespace tempearly
         }
 
         /**
+         * Move constructor. Data is being moved from another vector into this
+         * one.
+         */
+        Vector(Vector<T>&& that)
+            : m_capacity(that.m_capacity)
+            , m_size(that.m_size)
+            , m_data(that.m_data)
+        {
+            that.m_capacity = that.m_size = 0;
+            that.m_data = nullptr;
+        }
+
+        /**
          * Constructs an vector which contains <i>n</i> copies of the given
          * element.
          */
@@ -153,6 +166,25 @@ namespace tempearly
         Vector& operator=(const Vector<U>& that)
         {
             return Assign(that);
+        }
+
+        /**
+         * Move operator.
+         */
+        Vector& operator=(Vector<T>&& that)
+        {
+            for (std::size_t i = 0; i < m_size; ++i)
+            {
+                m_data[i].~T();
+            }
+            Memory::Unallocate<T>(m_data);
+            m_capacity = that.m_capacity;
+            m_size = that.m_size;
+            m_data = that.m_data;
+            that.m_capacity = that.m_size = 0;
+            that.m_data = nullptr;
+
+            return *this;
         }
 
         /**
