@@ -17,18 +17,17 @@ namespace tempearly
     public:
         enum Kind
         {
-            KIND_ERROR  = 0,
-            KIND_NULL   = 1,
-            KIND_BOOL   = 2,
-            KIND_INT    = 3,
-            KIND_FLOAT  = 4,
-            KIND_STRING = 5,
-            KIND_BINARY = 6,
-            KIND_OBJECT = 7
+            KIND_NULL   = 0,
+            KIND_BOOL   = 1,
+            KIND_INT    = 2,
+            KIND_FLOAT  = 3,
+            KIND_STRING = 4,
+            KIND_BINARY = 5,
+            KIND_OBJECT = 6
         };
 
         /**
-         * Constructs error value.
+         * Constructs null value.
          */
         Value();
 
@@ -56,11 +55,6 @@ namespace tempearly
          * Destructor.
          */
         virtual ~Value();
-
-        /**
-         * Returns null value.
-         */
-        static const Value& NullValue();
 
         /**
          * Constructs boolean value.
@@ -218,13 +212,23 @@ namespace tempearly
 
         bool SetAttribute(const String& id, const Value& value) const;
 
-        Value Call(const Handle<Interpreter>& interpreter,
-                   const String& id,
-                   const Vector<Value>& args = Vector<Value>()) const;
+        bool CallMethod(const Handle<Interpreter>& interpreter,
+                        Value& slot,
+                        const String& method_name,
+                        const Vector<Value>& args = Vector<Value>()) const;
 
-        Value Call(const Handle<Interpreter>& interpreter,
-                   const String& id,
-                   const Value& arg) const;
+        bool CallMethod(const Handle<Interpreter>& interpreter,
+                        Value& slot,
+                        const String& method_name,
+                        const Value& arg) const;
+
+        bool CallMethod(const Handle<Interpreter>& interpreter,
+                        const String& method_name,
+                        const Vector<Value>& args = Vector<Value>()) const;
+
+        bool CallMethod(const Handle<Interpreter>& interpreter,
+                        const String& method_name,
+                        const Value& arg) const;
 
         /**
          * Performs equality test between two values. This is done by invoking
@@ -351,16 +355,6 @@ namespace tempearly
             {
                 m_data.o->UnsetFlag(flag);
             }
-        }
-
-        inline operator bool() const
-        {
-            return m_kind != KIND_ERROR;
-        }
-
-        inline bool operator!() const
-        {
-            return m_kind == KIND_ERROR;
         }
 
     private:

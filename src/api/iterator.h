@@ -23,8 +23,23 @@ namespace tempearly
          * Peeks the next value from iteration without removing it.
          *
          * \param interpreter Script interpreter
+         * \param slot        Where the next value will be assigned into
+         * \return            True if there are more values to be iterated,
+         *                    false otherwise or if there was an exception
+         *                    being thrown
          */
-        Value Peek(const Handle<Interpreter>& interpreter);
+        bool Peek(const Handle<Interpreter>& interpreter);
+
+        /**
+         * Peeks the next value from iteration without removing it.
+         *
+         * \param interpreter Script interpreter
+         * \param slot        Where the next value will be assigned into
+         * \return            True if there are more values to be iterated,
+         *                    false otherwise, or if there was an exception
+         *                    being thrown
+         */
+        bool Peek(const Handle<Interpreter>& interpreter, Value& slot);
 
         /**
          * Returns next value from iteration.

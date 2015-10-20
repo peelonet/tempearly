@@ -86,7 +86,7 @@ namespace tempearly
          */
         inline bool HasException() const
         {
-            return !!m_exception;
+            return !m_exception.IsNull();
         }
 
         /**

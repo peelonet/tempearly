@@ -173,12 +173,7 @@ namespace tempearly
                 {
                     return false;
                 }
-                else if (frame->HasReturnValue())
-                {
-                    slot = frame->GetReturnValue();
-                } else {
-                    slot = Value::NullValue();
-                }
+                slot = frame->GetReturnValue();
 
                 return true;
             }
@@ -268,12 +263,7 @@ namespace tempearly
                 {
                     return false;
                 }
-                else if (frame->HasReturnValue())
-                {
-                    slot = frame->GetReturnValue();
-                } else {
-                    slot = Value::NullValue();
-                }
+                slot = frame->GetReturnValue();
 
                 return true;
             }
@@ -335,7 +325,7 @@ namespace tempearly
                     return false;
                 }
 
-                return slot = args[0].Call(interpreter, m_alias, args.SubVector(1));
+                return args[0].CallMethod(interpreter, slot, m_alias, args.SubVector(1));
             }
 
         private:
@@ -424,9 +414,10 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(class_call)
     {
-        Value instance = args[0].Call(interpreter, "alloc");
+        Value instance;
 
-        if (instance && instance.Call(interpreter, "__init__", args.SubVector(1)))
+        if (args[0].CallMethod(interpreter, instance, "alloc")
+            && instance.CallMethod(interpreter, "__init__", args.SubVector(1)))
         {
             frame->SetReturnValue(instance);
         }

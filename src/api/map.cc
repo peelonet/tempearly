@@ -331,8 +331,10 @@ namespace tempearly
         else if (args.GetSize() > 2)
         {
             frame->SetReturnValue(args[2]);
-        } else {
-            frame->SetReturnValue(args[0].Call(interpreter, "__missing__", args[1]));
+        }
+        else if (args[0].CallMethod(interpreter, value, "__missing__", args[1]))
+        {
+            frame->SetReturnValue(value);
         }
     }
 
@@ -542,11 +544,10 @@ namespace tempearly
         {
             Value value;
 
-            if (args[0].As<MapObject>()->Find(hash, value))
+            if (args[0].As<MapObject>()->Find(hash, value)
+                || args[0].CallMethod(interpreter, value, "__missing__", args[1]))
             {
                 frame->SetReturnValue(value);
-            } else {
-                frame->SetReturnValue(args[0].Call(interpreter, "__missing__", args[1]));
             }
         }
     }
@@ -627,7 +628,7 @@ namespace tempearly
                 String value;
 
                 if (!entry->GetKey().ToString(interpreter, key)
-                    || !(result = entry->GetValue().Call(interpreter, "as_json"))
+                    || !entry->GetValue().CallMethod(interpreter, result, "as_json")
                     || !result.AsString(interpreter, value))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);

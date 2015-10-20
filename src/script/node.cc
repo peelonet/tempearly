@@ -9,18 +9,15 @@ namespace tempearly
 {
     Node::Node() {}
 
-    Value Node::Evaluate(const Handle<Interpreter>& interpreter) const
+    bool Node::Evaluate(const Handle<Interpreter>& interpreter, Value& slot) const
     {
         Result result = Execute(interpreter);
 
         if (result.Is(Result::KIND_SUCCESS))
         {
-            if (result.HasValue())
-            {
-                return result.GetValue();
-            } else {
-                return Value::NullValue();
-            }
+            slot = result.GetValue();
+
+            return true;
         }
         else if (result.Is(Result::KIND_BREAK))
         {
@@ -38,7 +35,7 @@ namespace tempearly
                                "Unexpected `return'");
         }
 
-        return Value();
+        return false;
     }
 
     bool Node::Assign(const Handle<Interpreter>& interpreter,
@@ -79,9 +76,9 @@ namespace tempearly
 
     Result ExpressionNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value = m_expression->Evaluate(interpreter);
+        Value value;
 
-        if (value)
+        if (m_expression->Evaluate(interpreter, value))
         {
             String string;
 
@@ -151,10 +148,11 @@ namespace tempearly
 
     Result IfNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition = m_condition->Evaluate(interpreter);
+        Value condition;
         bool b;
 
-        if (!condition || !condition.ToBool(interpreter, b))
+        if (!m_condition->Evaluate(interpreter, condition)
+            || !condition.ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -194,10 +192,11 @@ namespace tempearly
 
     Result WhileNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition = m_condition->Evaluate(interpreter);
+        Value condition;
         bool b;
 
-        if (!condition || !condition.ToBool(interpreter, b))
+        if (!m_condition->Evaluate(interpreter, condition)
+            || !condition.ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -219,7 +218,7 @@ namespace tempearly
                 default:
                     return result;
             }
-            if (!(condition = m_condition->Evaluate(interpreter))
+            if (!m_condition->Evaluate(interpreter, condition)
                 || !condition.ToBool(interpreter, b))
             {
                 return Result(Result::KIND_ERROR);
@@ -253,11 +252,12 @@ namespace tempearly
 
     Result ForNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value collection = m_collection->Evaluate(interpreter);
+        Value collection;
         Value iterator;
         Value element;
 
-        if (!collection || !(iterator = collection.Call(interpreter, "__iter__")))
+        if (!m_collection->Evaluate(interpreter, collection)
+            || !collection.CallMethod(interpreter, iterator, "__iter__"))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -466,9 +466,9 @@ namespace tempearly
     {
         if (m_value)
         {
-            Value value = m_value->Evaluate(interpreter);
+            Value value;
 
-            if (value)
+            if (m_value->Evaluate(interpreter, value))
             {
                 return Result(Result::KIND_RETURN, value);
             } else {
@@ -497,7 +497,7 @@ namespace tempearly
 
         if (m_exception)
         {
-            if (!(exception = m_exception->Evaluate(interpreter)))
+            if (!m_exception->Evaluate(interpreter, exception))
             {
                 return Result(Result::KIND_ERROR);
             }
@@ -511,7 +511,8 @@ namespace tempearly
                 return Result(Result::KIND_ERROR);
             }
         } else {
-            if (!(exception = interpreter->GetCaughtException()))
+            exception = interpreter->GetCaughtException();
+            if (exception.IsNull())
             {
                 interpreter->Throw(interpreter->eStateError, "No previously caught exception");
 
@@ -553,10 +554,11 @@ namespace tempearly
 
     Result AndNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition = m_left->Evaluate(interpreter);
+        Value condition;
         bool b;
 
-        if (!condition || !condition.ToBool(interpreter, b))
+        if (!m_left->Evaluate(interpreter, condition)
+            || !condition.ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -587,10 +589,11 @@ namespace tempearly
 
     Result OrNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition = m_left->Evaluate(interpreter);
+        Value condition;
         bool b;
 
-        if (!condition || !condition.ToBool(interpreter, b))
+        if (!m_left->Evaluate(interpreter, condition)
+            || !condition.ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -620,10 +623,11 @@ namespace tempearly
 
     Result NotNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition = m_condition->Evaluate(interpreter);
+        Value condition;
         bool b;
 
-        if (!condition || !condition.ToBool(interpreter, b))
+        if (!m_condition->Evaluate(interpreter, condition)
+            || !condition.ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         } else {
@@ -654,9 +658,9 @@ namespace tempearly
 
     Result AttributeNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value = m_receiver->Evaluate(interpreter);
+        Value value;
 
-        if (!value)
+        if (!m_receiver->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -675,9 +679,9 @@ namespace tempearly
     bool AttributeNode::Assign(const Handle<Interpreter>& interpreter,
                                const Value& value) const
     {
-        Value receiver = m_receiver->Evaluate(interpreter);
+        Value receiver;
 
-        if (!receiver)
+        if (!m_receiver->Evaluate(interpreter, receiver))
         {
             return false;
         }
@@ -709,9 +713,9 @@ namespace tempearly
 
     Result CallNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value = m_receiver->Evaluate(interpreter);
+        Value value;
 
-        if (!value)
+        if (!m_receiver->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -724,15 +728,15 @@ namespace tempearly
             args.Reserve(m_args.GetSize());
             for (std::size_t i = 0; i < m_args.GetSize(); ++i)
             {
-                Value argument = m_args[i]->Evaluate(interpreter);
+                Value argument;
 
-                if (!argument)
+                if (!m_args[i]->Evaluate(interpreter, argument))
                 {
                     return Result(Result::KIND_ERROR);
                 }
                 args.PushBack(argument);
             }
-            if ((value = value.Call(interpreter, m_id, args)))
+            if (value.CallMethod(interpreter, value, m_id, args))
             {
                 return value;
             } else {
@@ -763,14 +767,14 @@ namespace tempearly
 
     Result PrefixNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value = m_variable->Evaluate(interpreter);
+        Value value;
 
-        if (!value)
+        if (!m_variable->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
-        value = value.Call(interpreter, m_kind == INCREMENT ? "__inc__" : "__dec__");
-        if (!value || !m_variable->Assign(interpreter, value))
+        if (!value.CallMethod(interpreter, value, m_kind == INCREMENT ? "__inc__" : "__dec__")
+            || !m_variable->Assign(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -793,15 +797,15 @@ namespace tempearly
 
     Result PostfixNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value = m_variable->Evaluate(interpreter);
+        Value value;
         Value result;
 
-        if (!value)
+        if (!m_variable->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
-        result = value.Call(interpreter, m_kind == INCREMENT ? "__inc__" : "__dec__");
-        if (!result || !m_variable->Assign(interpreter, result))
+        if (!value.CallMethod(interpreter, result, m_kind == INCREMENT ? "__inc__" : "__dec__")
+            || !m_variable->Assign(interpreter, result))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -834,9 +838,9 @@ namespace tempearly
         Value index;
         Value result;
 
-        if (!(container = m_container->Evaluate(interpreter))
-            || !(index = m_index->Evaluate(interpreter))
-            || !(result = container.Call(interpreter, "__getitem__", index)))
+        if (!m_container->Evaluate(interpreter, container)
+            || !m_index->Evaluate(interpreter, index)
+            || !container.CallMethod(interpreter, result, "__getitem__", index))
         {
             return Result(Result::KIND_ERROR);
         } else {
@@ -851,8 +855,8 @@ namespace tempearly
         Value index;
         Vector<Value> args;
 
-        if (!(container = m_container->Evaluate(interpreter))
-            || !(index = m_index->Evaluate(interpreter)))
+        if (!m_container->Evaluate(interpreter, container)
+            || !m_index->Evaluate(interpreter, index))
         {
             return false;
         }
@@ -860,7 +864,7 @@ namespace tempearly
         args.PushBack(index);
         args.PushBack(value);
 
-        return container.Call(interpreter, "__setitem__", args);
+        return container.CallMethod(interpreter, "__setitem__", args);
     }
 
     void SubscriptNode::Mark()
@@ -883,9 +887,10 @@ namespace tempearly
 
     Result AssignNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value = m_value->Evaluate(interpreter);
+        Value value;
 
-        if (value && m_variable->Assign(interpreter, value))
+        if (m_value->Evaluate(interpreter, value)
+            && m_variable->Assign(interpreter, value))
         {
             return value;
         } else {
@@ -1006,9 +1011,9 @@ namespace tempearly
         
         for (std::size_t i = 0; i < m_elements.GetSize(); ++i)
         {
-            Value value = m_elements[i]->Evaluate(interpreter);
+            Value value;
 
-            if (value)
+            if (m_elements[i]->Evaluate(interpreter, value))
             {
                 list->Append(value);
             } else {
@@ -1021,11 +1026,11 @@ namespace tempearly
 
     bool ListNode::Assign(const Handle<Interpreter>& interpreter, const Value& value) const
     {
-        Value iterator = value.Call(interpreter, "__iter__");
+        Value iterator;
         Value element;
         std::size_t index = 0;
 
-        if (!iterator)
+        if (!value.CallMethod(interpreter, iterator, "__iter__"))
         {
             return false;
         }
@@ -1073,8 +1078,8 @@ namespace tempearly
         {
             const Pair<Node*>& entry = m_entries[i];
 
-            if (!(key = entry.GetKey()->Evaluate(interpreter))
-                || !(value = entry.GetValue()->Evaluate(interpreter))
+            if (!entry.GetKey()->Evaluate(interpreter, key)
+                || !entry.GetValue()->Evaluate(interpreter, value)
                 || !key.GetHash(interpreter, hash))
             {
                 return Result(Result::KIND_ERROR);
@@ -1115,8 +1120,8 @@ namespace tempearly
         Value begin;
         Value end;
         
-        if (!(begin = m_begin->Evaluate(interpreter))
-            || !(end = m_end->Evaluate(interpreter)))
+        if (!m_begin->Evaluate(interpreter, begin)
+            || !m_end->Evaluate(interpreter, end))
         {
             return Result(Result::KIND_ERROR);
         }

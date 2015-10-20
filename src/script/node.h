@@ -32,10 +32,12 @@ namespace tempearly
          * Evaluates node as expression.
          *
          * \param interpreter Script interpreter
-         * \return            Value returned by the expression, or error value
-         *                    if an exception was thrown
+         * \param slot        Where value returned by the expression will be
+         *                    stored
+         * \return            True if evaluation was successfull, false if an
+         *                    exception was thrown
          */
-        Value Evaluate(const Handle<Interpreter>& interpreter) const;
+        bool Evaluate(const Handle<Interpreter>& interpreter, Value& slot) const;
 
         /**
          * Uses node as variable and assigns an value into it.

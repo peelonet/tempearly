@@ -159,7 +159,8 @@ namespace tempearly
                 Value result;
                 String value;
 
-                if (!(result = entry->GetValue().Call(interpreter, "as_json")) || !result.AsString(interpreter, value))
+                if (!entry->GetValue().CallMethod(interpreter, result, "as_json")
+                    || !result.AsString(interpreter, value))
                 {
                     self.UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;

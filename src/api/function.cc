@@ -29,7 +29,7 @@ namespace tempearly
                 {
                     interpreter->PopFrame();
 
-                    return Value();
+                    return false;
                 }
                 for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
                 {
@@ -42,12 +42,7 @@ namespace tempearly
 
                         case Result::KIND_RETURN:
                             interpreter->PopFrame();
-                            if (result.HasValue())
-                            {
-                                slot = result.GetValue();
-                            } else {
-                                slot = Value::NullValue();
-                            }
+                            slot = result.GetValue();
                             return true;
 
                         case Result::KIND_BREAK:
@@ -66,7 +61,7 @@ namespace tempearly
                     }
                 }
                 interpreter->PopFrame();
-                slot = Value::NullValue();
+                slot.Clear();
 
                 return true;
             }

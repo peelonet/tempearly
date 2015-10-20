@@ -47,9 +47,9 @@ namespace tempearly
     {
         const Value& receiver = args[0];
         Vector<Value> one(1, Value::NewInt(1));
-        Value result = receiver.Call(interpreter, "read", one);
+        Value result;
 
-        if (!result)
+        if (!receiver.CallMethod(interpreter, result, "read", one))
         {
             return;
         }
@@ -61,7 +61,7 @@ namespace tempearly
             while (!bytes.IsEmpty() && bytes.GetBack() != '\n')
             {
                 buffer.PushBack(bytes.GetBytes(), bytes.GetLength());
-                if (!(result = receiver.Call(interpreter, "read", one)))
+                if (!receiver.CallMethod(interpreter, result, "read", one))
                 {
                     return;
                 }
@@ -85,7 +85,7 @@ namespace tempearly
             while (!runes.IsEmpty() && runes.GetBack() != '\n')
             {
                 buffer.Append(runes);
-                if (!(result = receiver.Call(interpreter, "read", one)))
+                if (!receiver.CallMethod(interpreter, result, "read", one))
                 {
                     return;
                 }
@@ -136,7 +136,7 @@ namespace tempearly
             {
                 return;
             }
-            else if (!args[0].Call(interpreter, "write", Vector<Value>(1, Value::NewString(string))))
+            else if (!args[0].CallMethod(interpreter, "write", Vector<Value>(1, Value::NewString(string))))
             {
                 return;
             }
@@ -154,11 +154,11 @@ namespace tempearly
 
             Result Generate(const Handle<Interpreter>& interpreter)
             {
-                if (m_stream)
+                if (!m_stream.IsNull())
                 {
-                    Value line = m_stream.Call(interpreter, "readline");
+                    Value line;
 
-                    if (!line)
+                    if (!m_stream.CallMethod(interpreter, line, "readline"))
                     {
                         return Result(Result::KIND_ERROR);
                     }

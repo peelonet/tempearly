@@ -77,9 +77,9 @@ namespace tempearly
             }
             else if (parameter->m_default_value)
             {
-                Value value = parameter->m_default_value->Evaluate(interpreter);
+                Value value;
 
-                if (!value)
+                if (!parameter->m_default_value->Evaluate(interpreter, value))
                 {
                     return false;
                 }

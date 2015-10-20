@@ -227,12 +227,8 @@ namespace tempearly
                 if (interpreter->HasException())
                 {
                     return false;
-                }
-                else if (frame->HasReturnValue())
-                {
-                    slot = frame->GetReturnValue();
                 } else {
-                    slot = Value::NullValue();
+                    slot = frame->GetReturnValue();
                 }
                 
                 return true;

@@ -1568,7 +1568,7 @@ SCAN_EXPONENT:
                 break;
 
             case Token::KW_NULL:
-                node = new ValueNode(Value::NullValue());
+                node = new ValueNode(Value());
                 break;
 
             case Token::STRING:

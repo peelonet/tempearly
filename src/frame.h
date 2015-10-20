@@ -108,15 +108,7 @@ namespace tempearly
         bool ReplaceLocalVariable(const String& id, const Value& value);
 
         /**
-         * Returns true if this frame has a return value.
-         */
-        inline bool HasReturnValue() const
-        {
-            return m_return_value;
-        }
-
-        /**
-         * Returns value returned by the function invocation or error value if
+         * Returns value returned by the function invocation or null value if
          * no value was returned.
          */
         inline const Value& GetReturnValue() const

@@ -80,15 +80,7 @@ namespace tempearly
         }
 
         /**
-         * Returns true if the result contains an value.
-         */
-        inline bool HasValue() const
-        {
-            return !!m_value;
-        }
-
-        /**
-         * Returns an optional value returned by the result, or error value if
+         * Returns an optional value returned by the result, or null value if
          * no value was returned.
          */
         inline const Value& GetValue() const

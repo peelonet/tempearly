@@ -6,35 +6,64 @@ namespace tempearly
     IteratorObject::IteratorObject(const Handle<Class>& cls)
         : Object(cls) {}
 
-    Value IteratorObject::Peek(const Handle<Interpreter>& interpreter)
+    bool IteratorObject::Peek(const Handle<Interpreter>& interpreter)
     {
         if (m_pushback.IsEmpty())
         {
-            Result result = Generate(interpreter);
+            const Result result = Generate(interpreter);
 
             switch (result.GetKind())
             {
                 case Result::KIND_SUCCESS:
-                    if (result.HasValue())
-                    {
-                        m_pushback.PushBack(result.GetValue());
-                    } else {
-                        m_pushback.PushBack(Value::NullValue());
-                    }
-                    break;
+                    m_pushback.PushBack(result.GetValue());
+                    return true;
 
                 case Result::KIND_BREAK:
                     if (!interpreter->HasException())
                     {
-                        interpreter->Throw(interpreter->eStopIteration, "Iteration reached end");
+                        interpreter->Throw(
+                            interpreter->eStopIteration,
+                            "Iteration reached end"
+                        );
                     }
 
                 default:
-                    return Value();
+                    return false;
             }
         }
 
-        return m_pushback.GetBack();
+        return true;
+    }
+
+    bool IteratorObject::Peek(const Handle<Interpreter>& interpreter, Value& slot)
+    {
+        if (m_pushback.IsEmpty())
+        {
+            const Result result = Generate(interpreter);
+
+            switch (result.GetKind())
+            {
+                case Result::KIND_SUCCESS:
+                    m_pushback.PushBack(result.GetValue());
+                    slot = result.GetValue();
+                    return true;
+
+                case Result::KIND_BREAK:
+                    if (!interpreter->HasException())
+                    {
+                        interpreter->Throw(
+                            interpreter->eStopIteration,
+                            "Iteration reached end"
+                        );
+                    }
+
+                default:
+                    return false;
+            }
+        }
+        slot = m_pushback.GetBack();
+
+        return true;
     }
 
     Value IteratorObject::Next(const Handle<Interpreter>& interpreter)
@@ -46,12 +75,7 @@ namespace tempearly
             switch (result.GetKind())
             {
                 case Result::KIND_SUCCESS:
-                    if (result.HasValue())
-                    {
-                        return result.GetValue();
-                    } else {
-                        return Value::NullValue();
-                    }
+                    return result.GetValue();
 
                 case Result::KIND_BREAK:
                     if (!interpreter->HasException())
@@ -74,10 +98,7 @@ namespace tempearly
 
     void IteratorObject::Feed(const Value& value)
     {
-        if (value)
-        {
-            m_pushback.PushBack(value);
-        }
+        m_pushback.PushBack(value);
     }
 
     void IteratorObject::Mark()
@@ -144,7 +165,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iter_peek)
     {
-        frame->SetReturnValue(args[0].As<IteratorObject>()->Peek(interpreter));
+        Value result;
+
+        if (args[0].As<IteratorObject>()->Peek(interpreter, result))
+        {
+            frame->SetReturnValue(result);
+        }
     }
 
     /**
