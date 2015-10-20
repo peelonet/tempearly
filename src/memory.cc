@@ -1,161 +1,234 @@
 #include "memory.h"
 
-#if !defined(TEMPEARLY_GC_THRESHOLD0)
-# define TEMPEARLY_GC_THRESHOLD0 700
-#endif
-#if !defined(TEMPEARLY_GC_THRESHOLD1)
-# define TEMPEARLY_GC_THRESHOLD1 10
-#endif
-#if !defined(TEMPEARLY_GC_THRESHOLD2)
-# define TEMPEARLY_GC_THRESHOLD2 10
+#if !defined(TEMPEARLY_GC_THRESHOLD)
+# define TEMPEARLY_GC_THRESHOLD 700
 #endif
 
 namespace tempearly
 {
     namespace
     {
-        struct Slot
+        struct Record
         {
-            /** Size of the object. */
+            /** Size of the record. */
             std::size_t size;
             /** Pointer to the object. */
-            CountedObject* object;
-            /** Pointer to next slot in list. */
-            Slot* next;
+            CountedObject* pointer;
+            /** Pointer to next record in the list. */
+            Record* next;
+            /** Pointer to previous record in the list. */
+            Record* prev;
         };
 
-        class Generation
+        class Block
         {
         public:
-            /** Number of examinations performed in this generation. */
-            unsigned int counter;
+            /** Size of single memory block. */
+            static const std::size_t kBlockSize = 4096 * 32;
 
-            explicit Generation()
-                : counter(0)
-                , m_head(nullptr) {}
+            explicit Block(Block* next);
 
-            ~Generation()
+            ~Block();
+
+            /**
+             * Returns pointer to next block in the sequence.
+             */
+            inline Block* GetNext()
             {
-                Slot* current;
-                Slot* next;
-
-                for (current = m_head; current; current = next)
-                {
-                    next = current->next;
-                    current->object->~CountedObject();
-                    std::free(static_cast<void*>(current));
-                }
+                return m_next;
             }
 
-            void* Allocate(std::size_t size)
-            {
-                byte* data = static_cast<byte*>(std::malloc(sizeof(Slot) + size));
-                Slot* slot;
+            /**
+             * Attempts to allocate <i>size</i> amount of bytes memory from
+             * this block. Returns null if this block does not have enough
+             * free space available.
+             */
+            void* Allocate(std::size_t size);
 
-                if (!data)
-                {
-                    throw std::bad_alloc();
-                }
-                slot = reinterpret_cast<Slot*>(data);
-                slot->size = size;
-                slot->object = reinterpret_cast<CountedObject*>(data + sizeof(Slot));
-                slot->next = m_head;
-                m_head = slot;
+            void Mark();
 
-                return static_cast<void*>(slot->object);
-            }
-
-            void Examine(Generation& that)
-            {
-#if defined(TEMPEARLY_GC_DEBUG)
-                int destroyed_count = 0;
-                int saved_count = 0;
-#endif
-                Slot* current = m_head;
-                Slot* next;
-                Slot* saved_head = nullptr;
-                Slot* saved_tail = nullptr;
-
-                m_head = 0;
-                for (; current; current = next)
-                {
-                    next = current->next;
-                    if (current->object->IsMarked())
-                    {
-                        current->next = nullptr;
-                        if (saved_tail)
-                        {
-                            saved_tail->next = current;
-                        } else {
-                            saved_head = current;
-                        }
-                        saved_tail = current;
-#if defined(TEMPEARLY_GC_DEBUG)
-                        ++saved_count;
-#endif
-                    } else {
-                        current->object->~CountedObject();
-                        std::free(static_cast<void*>(current));
-#if defined(TEMPEARLY_GC_DEBUG)
-                        ++destroyed_count;
-#endif
-                    }
-                }
-                if (saved_tail)
-                {
-                    saved_tail->next = that.m_head;
-                    that.m_head = saved_head;
-                }
-#if defined(TEMPEARLY_GC_DEBUG)
-                std::fprintf(stderr, "GC: Examination: %d saved, %d destroyed\n", saved_count, destroyed_count);
-#endif
-            }
-
-            void Mark()
-            {
-                for (Slot* slot = m_head; slot; slot = slot->next)
-                {
-                    CountedObject* object = slot->object;
-
-                    if (!object->IsMarked() && object->GetReferenceCount() > 0)
-                    {
-                        object->Mark();
-                    }
-                }
-            }
-
-            void Unmark()
-            {
-                for (Slot* slot = m_head; slot; slot = slot->next)
-                {
-                    slot->object->UnsetFlag(CountedObject::FLAG_MARKED);
-                }
-            }
+            void Collect();
 
         private:
-            /** Pointer to first object in the generation. */
-            Slot* m_head;
-            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Generation);
+            /** Pointer to next memory block in sequence. */
+            Block* m_next;
+            /** Pointer to the memory contained by the block. */
+            byte* m_data;
+            /** Amount of memory still available in this block. */
+            std::size_t m_remaining;
+            /** Pointer to first used record. */
+            Record* m_used_head;
+            /** Pointer to last used record. */
+            Record* m_used_tail;
+            /** Pointer to first free record. */
+            Record* m_free_head;
+            /** Pointer to last free record. */
+            Record* m_free_tail;
+            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Block);
         };
+
+        Block::Block(Block* next)
+            : m_next(next)
+            , m_data(static_cast<byte*>(std::malloc(kBlockSize)))
+            , m_remaining(kBlockSize)
+            , m_used_head(nullptr)
+            , m_used_tail(nullptr)
+            , m_free_head(nullptr)
+            , m_free_tail(nullptr) {}
+
+        Block::~Block()
+        {
+            for (Record* record = m_used_head; record; record = record->next)
+            {
+                delete record->pointer;
+            }
+            std::free(static_cast<void*>(m_data));
+        }
+
+        void* Block::Allocate(std::size_t size)
+        {
+            Record* record;
+
+            for (record = m_free_head; record; record = record->next)
+            {
+                if (record->size < size)
+                {
+                    continue;
+                }
+                else if (record->next && record->prev)
+                {
+                    record->next->prev = record->prev;
+                    record->prev->next = record->next;
+                }
+                else if (record->next)
+                {
+                    record->next->prev = nullptr;
+                    m_free_head = record->next;
+                }
+                else if (record->prev)
+                {
+                    record->prev->next = nullptr;
+                    m_free_tail = record->prev;
+                } else {
+                    m_free_head = m_free_tail = nullptr;
+                }
+                record->prev = nullptr;
+                if ((record->next = m_used_head))
+                {
+                    record->next->prev = record;
+                } else {
+                    m_used_tail = record;
+                }
+                m_used_head = record;
+
+                return static_cast<void*>(record->pointer);
+            }
+            if (m_remaining < sizeof(Record) + size)
+            {
+                return nullptr;
+            }
+            record = reinterpret_cast<Record*>(m_data);
+            record->size = size;
+            record->pointer = reinterpret_cast<CountedObject*>(m_data + sizeof(Record));
+            m_data += sizeof(Record) + size;
+            m_remaining -= sizeof(Record) + size;
+            record->prev = nullptr;
+            if ((record->next = m_used_head))
+            {
+                record->next->prev = record;
+            } else {
+                m_used_tail = record;
+            }
+            m_used_head = record;
+
+            return static_cast<void*>(record->pointer);
+        }
+
+        void Block::Mark()
+        {
+            for (Record* record = m_used_head; record; record = record->next)
+            {
+                CountedObject* object = record->pointer;
+
+                if (!object->IsMarked() && object->GetReferenceCount())
+                {
+                    object->Mark();
+                }
+            }
+            if (m_next)
+            {
+                m_next->Mark();
+            }
+        }
+
+        void Block::Collect()
+        {
+#if defined(TEMPEARLY_GC_DEBUG)
+            int destroyed_count = 0;
+            int saved_count = 0;
+#endif
+            Record* record = m_used_head;
+            Record* next;
+
+            m_used_head = m_used_tail = nullptr;
+            for (; record; record = next)
+            {
+                CountedObject* object = record->pointer;
+
+                next = record->next;
+                record->prev = nullptr;
+                if (object->IsMarked())
+                {
+#if defined(TEMPEARLY_GC_DEBUG)
+                    ++saved_count;
+#endif
+                    object->UnsetFlag(CountedObject::FLAG_MARKED);
+                    if ((record->next = m_used_head))
+                    {
+                        record->next->prev = record;
+                    } else {
+                        m_used_tail = record;
+                    }
+                    m_used_head = record;
+                } else {
+#if defined(TEMPEARLY_GC_DEBUG)
+                    ++destroyed_count;
+#endif
+                    delete object;
+                    if ((record->next = m_free_head))
+                    {
+                        record->next->prev = record;
+                    } else {
+                        m_free_tail = record;
+                    }
+                    m_free_head = record;
+                }
+            }
+#if defined(TEMPEARLY_GC_DEBUG)
+            std::fprintf(
+                stderr,
+                "GC: %d objects trashed, %d remain\n",
+                destroyed_count,
+                saved_count
+            );
+#endif
+            if (m_next)
+            {
+                m_next->Collect();
+            }
+        }
     }
 
-    static Generation generation0;
-    static Generation generation1;
-    static Generation generation2;
+    /** Number of allocations performed since last collect. */
+    static std::size_t gc_counter = 0;
+    /** Pointer to latest allocated block of memory. */
+    static Block* gc_block_head = nullptr;
 
     CountedObject::CountedObject()
         : m_flags(0)
-        , m_reference_count(0)
-        , m_handle_head(nullptr)
-        , m_handle_tail(nullptr) {}
+        , m_reference_count(0) {}
 
-    CountedObject::~CountedObject()
-    {
-        for (Handle<CountedObject>* handle = m_handle_head; handle; handle = handle->m_next)
-        {
-            handle->m_pointer = nullptr;
-        }
-    }
+    CountedObject::~CountedObject() {}
 
     void CountedObject::Mark()
     {
@@ -164,39 +237,32 @@ namespace tempearly
 
     void* CountedObject::operator new(std::size_t size)
     {
-        if (++generation0.counter >= TEMPEARLY_GC_THRESHOLD0)
+        void* pointer;
+
+        if (++gc_counter >= TEMPEARLY_GC_THRESHOLD)
         {
 #if defined(TEMPEARLY_GC_DEBUG)
-            std::fprintf(stderr, "GC: Generation 0 reached threshold.\n");
+            std::fprintf(stderr, "GC: Threshold has been reached.\n");
 #endif
-            generation0.counter = 0;
-            generation2.Mark();
-            generation1.Mark();
-            generation0.Mark();
-            generation0.Examine(generation1);
-            if (++generation1.counter >= TEMPEARLY_GC_THRESHOLD1)
+            gc_counter = 0;
+            gc_block_head->Mark();
+            gc_block_head->Collect();
+        }
+        for (Block* block = gc_block_head; block; block = block->GetNext())
+        {
+            if ((pointer = block->Allocate(size)))
             {
-#if defined(TEMPEARLY_GC_DEBUG)
-                std::fprintf(stderr, "GC: Generation 1 reached threshold.\n");
-#endif
-                generation1.counter = 0;
-                generation1.Examine(generation2);
-                if (++generation2.counter >= TEMPEARLY_GC_THRESHOLD2)
-                {
-#if defined(TEMPEARLY_GC_DEBUG)
-                    std::fprintf(stderr, "GC: Generation 2 reached threshold.\n");
-#endif
-                    generation2.counter = 0;
-                    generation2.Examine(generation2);
-                }
-            } else {
-                generation1.Unmark();
+                return pointer;
             }
-            generation2.Unmark();
+        }
+        gc_block_head = new Block(gc_block_head);
+        if (!(pointer = gc_block_head->Allocate(size)))
+        {
+            throw std::bad_alloc();
         }
 
-        return generation0.Allocate(size);
+        return pointer;
     }
 
-    void CountedObject::operator delete(void* pointer) {}
+    void CountedObject::operator delete(void*) {}
 }

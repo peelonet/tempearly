@@ -98,21 +98,17 @@ namespace tempearly
          * Constructs NULL handle.
          */
         Handle()
-            : m_pointer(nullptr)
-            , m_previous(nullptr)
-            , m_next(nullptr) {}
+            : m_pointer(nullptr) {}
 
         /**
          * Copy constructor.
          */
         Handle(const Handle<T>& that)
             : m_pointer(that.m_pointer)
-            , m_previous(nullptr)
-            , m_next(nullptr)
         {
             if (m_pointer)
             {
-                m_pointer->RegisterHandle(this);
+                m_pointer->IncReferenceCount();
             }
         }
 
@@ -122,12 +118,10 @@ namespace tempearly
         template< class U >
         Handle(const Handle<U>& that)
             : m_pointer(that.Get())
-            , m_previous(nullptr)
-            , m_next(nullptr)
         {
             if (m_pointer)
             {
-                m_pointer->RegisterHandle(this);
+                m_pointer->IncReferenceCount();
             }
         }
 
@@ -136,11 +130,8 @@ namespace tempearly
          */
         Handle(Handle<T>&& that)
             : m_pointer(that.m_pointer)
-            , m_previous(that.m_previous)
-            , m_next(that.m_next)
         {
             that.m_pointer = nullptr;
-            that.m_previous = that.m_next = nullptr;
         }
 
         /**
@@ -149,12 +140,10 @@ namespace tempearly
         template< class U >
         Handle(U* pointer)
             : m_pointer(pointer)
-            , m_previous(nullptr)
-            , m_next(nullptr)
         {
             if (m_pointer)
             {
-                m_pointer->RegisterHandle(this);
+                m_pointer->IncReferenceCount();
             }
         }
 
@@ -166,7 +155,7 @@ namespace tempearly
         {
             if (m_pointer)
             {
-                m_pointer->UnregisterHandle(this);
+                m_pointer->DecReferenceCount();
             }
         }
 
@@ -180,11 +169,11 @@ namespace tempearly
             {
                 if (m_pointer)
                 {
-                    m_pointer->UnregisterHandle(this);
+                    m_pointer->DecReferenceCount();
                 }
                 if ((m_pointer = pointer))
                 {
-                    m_pointer->RegisterHandle(this);
+                    m_pointer->IncReferenceCount();
                 }
             }
 
@@ -202,11 +191,11 @@ namespace tempearly
             {
                 if (m_pointer)
                 {
-                    m_pointer->UnregisterHandle(this);
+                    m_pointer->DecReferenceCount();
                 }
                 if ((m_pointer = that.m_pointer))
                 {
-                    m_pointer->RegisterHandle(this);
+                    m_pointer->IncReferenceCount();
                 }
             }
 
@@ -227,11 +216,11 @@ namespace tempearly
             {
                 if (m_pointer)
                 {
-                    m_pointer->UnregisterHandle(this);
+                    m_pointer->DecReferenceCount();
                 }
                 if ((m_pointer = pointer))
                 {
-                    m_pointer->RegisterHandle(this);
+                    m_pointer->IncReferenceCount();
                 }
             }
 
@@ -244,10 +233,7 @@ namespace tempearly
         Handle& operator=(Handle<T>&& that)
         {
             m_pointer = that.m_pointer;
-            m_previous = that.m_previous;
-            m_next = that.m_next;
             that.m_pointer = nullptr;
-            that.m_previous = that.m_next = nullptr;
 
             return *this;
         }
@@ -331,11 +317,6 @@ namespace tempearly
     private:
         /** Pointer to the managed object. */
         T* m_pointer;
-        /** Pointer to previous handle which references same object. */
-        Handle<CountedObject>* m_previous;
-        /** Pointer to next handle which references same object. */
-        Handle<CountedObject>* m_next;
-        friend class CountedObject;
     };
 
     class CountedObject
@@ -417,51 +398,6 @@ namespace tempearly
             --m_reference_count;
         }
 
-        template< class T >
-        void RegisterHandle(Handle<T>* handle)
-        {
-            if (!handle)
-            {
-                return;
-            }
-            ++m_reference_count;
-            if ((handle->m_previous = m_handle_tail))
-            {
-                m_handle_tail->m_next = reinterpret_cast<Handle<CountedObject>*>(handle);
-            } else {
-                m_handle_head = reinterpret_cast<Handle<CountedObject>*>(handle);
-            }
-            m_handle_tail = reinterpret_cast<Handle<CountedObject>*>(handle);
-        }
-
-        template< class T >
-        void UnregisterHandle(Handle<T>* handle)
-        {
-            if (!handle)
-            {
-                return;
-            }
-            --m_reference_count;
-            if (handle->m_previous && handle->m_next)
-            {
-                handle->m_previous->m_next = handle->m_next;
-                handle->m_next->m_previous = handle->m_previous;
-            }
-            else if (handle->m_next)
-            {
-                m_handle_head = handle->m_next;
-                m_handle_head->m_previous = nullptr;
-            }
-            else if (handle->m_previous)
-            {
-                m_handle_tail = handle->m_previous;
-                m_handle_tail->m_next = nullptr;
-            } else {
-                m_handle_head = m_handle_tail = nullptr;
-            }
-            handle->m_previous = handle->m_next = nullptr;
-        }
-
         static void* operator new(std::size_t);
         static void operator delete(void*);
 
@@ -470,10 +406,6 @@ namespace tempearly
         unsigned int m_flags;
         /** Reference counter. */
         unsigned int m_reference_count;
-        /** Pointer to first handle which references this object. */
-        Handle<CountedObject>* m_handle_head;
-        /** Pointer to last handle which references this object. */
-        Handle<CountedObject>* m_handle_tail;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CountedObject);
     };
 }
