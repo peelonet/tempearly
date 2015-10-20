@@ -24,7 +24,7 @@ namespace tempearly
 
             bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                interpreter->PushFrame(m_enclosing_frame, this);
+                interpreter->PushFrame(m_enclosing_frame, this, args);
                 if (!Parameter::Apply(interpreter, m_parameters, args))
                 {
                     interpreter->PopFrame();

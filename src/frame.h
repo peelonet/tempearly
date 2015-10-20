@@ -21,10 +21,12 @@ namespace tempearly
          * \param enclosing_frame Handle to enclosing frame
          * \param function        Handle to function being executed by this
          *                        frame
+         * \param arguments       Arguments given for the function invocation
          */
         explicit Frame(const Handle<Frame>& previous,
                        const Handle<Frame>& enclosing_frame,
-                       const Handle<FunctionObject>& function);
+                       const Handle<FunctionObject>& function,
+                       const Vector<Value>& arguments);
 
         ~Frame();
 
@@ -52,6 +54,14 @@ namespace tempearly
         inline Handle<FunctionObject> GetFunction() const
         {
             return m_function;
+        }
+
+        /**
+         * Returns list of arguments given for the function invocation.
+         */
+        inline const Vector<Value>& GetArguments() const
+        {
+            return m_arguments;
         }
 
         /**
@@ -133,6 +143,8 @@ namespace tempearly
         Frame* m_enclosing_frame;
         /** Pointer to function being executed by this frame. */
         FunctionObject* m_function;
+        /** Arguments given for the function invocation. */
+        const Vector<Value> m_arguments;
         /** Container for local variables. */
         Dictionary<Value>* m_local_variables;
         /** Value returned by the function. */

@@ -190,7 +190,7 @@ namespace tempearly
 
             bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this, args);
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
@@ -254,9 +254,11 @@ namespace tempearly
         }
     }
 
-    Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing, const Handle<FunctionObject>& function)
+    Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing,
+                                         const Handle<FunctionObject>& function,
+                                         const Vector<Value>& arguments)
     {
-        Handle<Frame> frame = new Frame(m_frame, enclosing, function);
+        Handle<Frame> frame = new Frame(m_frame, enclosing, function, arguments);
 
         m_frame = frame.Get();
 

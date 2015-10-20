@@ -43,10 +43,12 @@ namespace tempearly
          *
          * \param enclosing Optional handle of enclosing frame
          * \param function  Optional handle of function being executed
+         * \param arguments Optional arguments given for the function
          * \return          Newly created stack frame
          */
         Handle<Frame> PushFrame(const Handle<Frame>& enclosing = Handle<Frame>(),
-                                const Handle<FunctionObject>& function = Handle<FunctionObject>());
+                                const Handle<FunctionObject>& function = Handle<FunctionObject>(),
+                                const Vector<Value>& arguments = Vector<Value>());
 
         /**
          * Pops the most recent stack frame from frame chain.

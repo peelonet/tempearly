@@ -113,7 +113,7 @@ namespace tempearly
 
             bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this, args);
 
                 // Arguments must not be empty.
                 if (args.IsEmpty())
@@ -225,7 +225,7 @@ namespace tempearly
 
             bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
             {
-                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
+                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this, args);
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
