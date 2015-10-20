@@ -92,6 +92,12 @@ namespace tempearly
         }
 
         /**
+         * Returns true if this interpreter has an uncaught exception of given
+         * type.
+         */
+        bool HasException(const Handle<Class>& cls);
+
+        /**
          * Returns currently uncaught exception or NULL handle if there isn't
          * any.
          */

@@ -16,7 +16,10 @@ namespace tempearly
         /**
          * Default constructor.
          */
-        explicit FunctionObject(const Handle<Interpreter>& interpreter);
+        explicit FunctionObject(
+            const Handle<Interpreter>& interpreter,
+            const Handle<Frame>& enclosing_frame = Handle<Frame>()
+        );
 
         /**
          * Default destructor.
@@ -30,24 +33,73 @@ namespace tempearly
          * \param parameters  Parameters for the function
          * \param nodes       Function body
          */
-        static Handle<FunctionObject> NewScripted(const Handle<Interpreter>& interpreter,
-                                                  const Vector<Handle<Parameter> >& parameters,
-                                                  const Vector<Handle<Node> >& nodes);
+        static Handle<FunctionObject> NewScripted(
+            const Handle<Interpreter>& interpreter,
+            const Vector<Handle<Parameter> >& parameters,
+            const Vector<Handle<Node> >& nodes
+        );
+
+        /**
+         * Constructs unbound method suitable to be added as an attribute of a
+         * class.
+         *
+         * \param interpreter Script interpreter
+         * \param cls         Class which declared the method
+         * \param arity
+         * \param callback
+         */
+        static Handle<FunctionObject> NewUnboundMethod(
+            const Handle<Interpreter>& interpreter,
+            const Handle<Class>& cls,
+            int arity,
+            Callback callback
+        );
 
         /**
          * Invokes the function.
          *
          * \param interpreter Script interpreter
-         * \param args        Arguments given for the function
          * \param slot        Where result of the function execution will be
          *                    assigned to
+         * \param args        Arguments given for the function
          * \return            A boolean flag indicating whether execution of
          *                    the function was successfull or not, or whether
          *                    an exception was thrown
          */
-        virtual bool Invoke(const Handle<Interpreter>& interpreter,
-                            const Vector<Value>& args,
-                            Value& slot) = 0;
+        bool Invoke(
+            const Handle<Interpreter>& interpreter,
+            Value& slot,
+            const Vector<Value>& args
+        );
+
+        /**
+         * Invokes the function. Return value of the function will be ignored.
+         *
+         * \param interpreter Script interpreter
+         * \param args        Arguments given for the function
+         * \return            A boolean flag indicating whether execution of
+         *                    the function was successfull or not, or whether
+         *                    an exception was thrown
+         */
+        bool Invoke(
+            const Handle<Interpreter>& interpreter,
+            const Vector<Value>& args
+        );
+
+        /**
+         * Invokes the function with already constructed stack frame.
+         *
+         * \param interpreter Script interpreter
+         * \param frame       Stack frame containing details about the function
+         *                    invocation such as arguments
+         * \return            A boolean flag indicating whether execution of
+         *                    the function was successfull or not, or whether
+         *                    an exception was thrown
+         */
+        virtual bool Invoke(
+            const Handle<Interpreter>& interpreter,
+            const Handle<Frame>& frame
+        ) = 0;
 
         /**
          * Creates curry function which uses this function as it's base.
@@ -64,7 +116,10 @@ namespace tempearly
             return true;
         }
 
+        virtual void Mark();
+
     private:
+        Frame* m_enclosing_frame;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FunctionObject);
     };
 }

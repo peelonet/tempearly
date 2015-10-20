@@ -187,14 +187,14 @@ namespace tempearly
             return m_kind == KIND_OBJECT && m_data.o->IsSet();
         }
 
-        inline bool IsStaticMethod() const
-        {
-            return m_kind == KIND_OBJECT && m_data.o->IsStaticMethod();
-        }
-
         inline bool IsString() const
         {
             return m_kind == KIND_STRING;
+        }
+
+        inline bool IsUnboundMethod() const
+        {
+            return m_kind == KIND_OBJECT && m_data.o->IsUnboundMethod();
         }
 
         Handle<Class> GetClass(const Handle<Interpreter>& interpreter) const;
@@ -204,13 +204,11 @@ namespace tempearly
          */
         Dictionary<Value> GetAllAttributes() const;
 
-        bool HasAttribute(const String& id) const;
-
         bool GetAttribute(const Handle<Interpreter>& interpreter,
-                          const String& id,
-                          Value& value) const;
+                          const String& name,
+                          Value& slot) const;
 
-        bool SetAttribute(const String& id, const Value& value) const;
+        bool SetAttribute(const String& name, const Value& value) const;
 
         bool CallMethod(const Handle<Interpreter>& interpreter,
                         Value& slot,

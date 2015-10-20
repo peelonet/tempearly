@@ -251,48 +251,45 @@ namespace tempearly
         }
     }
 
-    bool Value::HasAttribute(const String& id) const
-    {
-        return m_kind == KIND_OBJECT && m_data.o->HasAttribute(id);
-    }
-
     bool Value::GetAttribute(const Handle<Interpreter>& interpreter,
-                             const String& id,
-                             Value& value) const
+                             const String& name,
+                             Value& slot) const
     {
-        if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(id, value))
+        if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(name, slot))
         {
             return true;
-        } else {
-            Handle<Class> cls = GetClass(interpreter);
-
-            if (cls->GetAttribute(id, value))
-            {
-                if (value.IsFunction())
-                {
-                    value = value.As<FunctionObject>()->Curry(interpreter, Vector<Value>(1, *this));
-                }
-
-                return true;
-            }
-            if (m_kind == KIND_OBJECT && m_data.o->GetAttribute("__getattr__", value) && value.IsFunction())
-            {
-                return value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, NewString(id)), value);
-            }
-            else if (cls->GetAttribute("__getattr__", value) && value.IsFunction())
-            {
-                Vector<Value> args;
-
-                args.Reserve(2);
-                args.PushBack(*this);
-                args.PushBack(NewString(id));
-
-                return value.As<FunctionObject>()->Invoke(interpreter, args, value);
-            }
-            interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
-
-            return false;
         }
+
+        const Handle<Class> cls = GetClass(interpreter);
+
+        if (cls->GetAttribute(name, slot))
+        {
+            if (slot.IsUnboundMethod())
+            {
+                slot = slot.As<FunctionObject>()->Curry(
+                    interpreter,
+                    Vector<Value>(1, *this)
+                );
+            }
+
+            return true;
+        }
+        else if (cls->GetAttribute("__getattr__", slot) && slot.IsFunction())
+        {
+            Vector<Value> args;
+
+            args.Reserve(2);
+            args.PushBack(*this);
+            args.PushBack(NewString(name));
+
+            return slot.As<FunctionObject>()->Invoke(interpreter, slot, args);
+        }
+        interpreter->Throw(
+            interpreter->eAttributeError,
+            "Missing attribute: " + name
+        );
+
+        return false;
     }
 
     bool Value::SetAttribute(const String& id, const Value& value) const
@@ -312,40 +309,48 @@ namespace tempearly
                            const String& method_name,
                            const Vector<Value>& args) const
     {
-        Value attribute;
+        Value function;
 
-        if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(method_name, attribute))
+        if (!GetAttribute(interpreter, method_name, function))
         {
-            if (attribute.IsFunction())
-            {
-                return attribute.As<FunctionObject>()->Invoke(interpreter, args, slot);
-            }
-
-            return attribute.CallMethod(interpreter, slot, "__call__", args);
-        } else {
-            Handle<Class> cls = GetClass(interpreter);
-
-            if (cls->GetAttribute(method_name, attribute))
-            {
-                if (attribute.IsStaticMethod())
-                {
-                    return attribute.As<FunctionObject>()->Invoke(interpreter, args, slot);
-                } else {
-                    Vector<Value> new_args(args);
-
-                    new_args.PushFront(*this);
-                    if (attribute.IsFunction())
-                    {
-                        return attribute.As<FunctionObject>()->Invoke(interpreter, new_args, slot);
-                    }
-
-                    return attribute.CallMethod(interpreter, slot, "__call__", new_args);
-                }
-            }
-            interpreter->Throw(
-                interpreter->eAttributeError,
-                "Missing attribute: " + method_name
+            return false;
+        }
+        else if (function.IsUnboundMethod())
+        {
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                slot,
+                Vector<Value>(1, *this) + args
             );
+        }
+        else if (function.IsFunction())
+        {
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                slot,
+                args
+            );
+        }
+        else if (function.GetAttribute(interpreter, "__call__", function))
+        {
+            if (!function.IsFunction())
+            {
+                return true;
+            }
+
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                slot,
+                args
+            );
+        } else {
+            if (!interpreter->HasException(interpreter->eAttributeError))
+            {
+                interpreter->Throw(
+                    interpreter->eTypeError,
+                    "Instance is not callable"
+                );
+            }
 
             return false;
         }
@@ -356,25 +361,61 @@ namespace tempearly
                            const String& method_name,
                            const Value& arg) const
     {
-        return CallMethod(interpreter, slot, method_name, Vector<Value>(1, arg));
+        return CallMethod(
+            interpreter,
+            slot,
+            method_name,
+            Vector<Value>(1, arg)
+        );
     }
 
     bool Value::CallMethod(const Handle<Interpreter>& interpreter,
                            const String& method_name,
                            const Vector<Value>& args) const
     {
-        Value slot;
+        Value function;
 
-        return CallMethod(interpreter, slot, method_name, args);
+        if (!GetAttribute(interpreter, method_name, function))
+        {
+            return false;
+        }
+        else if (function.IsUnboundMethod())
+        {
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                Vector<Value>(1, *this) + args
+            );
+        }
+        else if (function.IsFunction())
+        {
+            return function.As<FunctionObject>()->Invoke(interpreter, args);
+        }
+        else if (function.GetAttribute(interpreter, "__call__", function))
+        {
+            if (!function.IsFunction())
+            {
+                return true;
+            }
+
+            return function.As<FunctionObject>()->Invoke(interpreter, args);
+        } else {
+            if (!interpreter->HasException(interpreter->eAttributeError))
+            {
+                interpreter->Throw(
+                    interpreter->eTypeError,
+                    "Instance is not callable"
+                );
+            }
+
+            return false;
+        }
     }
 
     bool Value::CallMethod(const Handle<Interpreter>& interpreter,
                            const String& method_name,
                            const Value& arg) const
     {
-        Value slot;
-
-        return CallMethod(interpreter, slot, method_name, Vector<Value>(1, arg));
+        return CallMethod(interpreter, method_name, Vector<Value>(1, arg));
     }
 
     bool Value::Equals(const Handle<Interpreter>& interpreter,
@@ -413,9 +454,7 @@ namespace tempearly
     {
         if (!CallMethod(interpreter, slot, "next"))
         {
-            const Value& exception = interpreter->GetException();
-
-            if (exception.IsInstance(interpreter, interpreter->eStopIteration))
+            if (interpreter->HasException(interpreter->eStopIteration))
             {
                 interpreter->ClearException();
             }

@@ -27,11 +27,6 @@ namespace tempearly
         }
     }
 
-    bool Object::HasAttribute(const String& id) const
-    {
-        return m_attributes && m_attributes->Find(id);
-    }
-
     bool Object::GetAttribute(const String& id, Value& value) const
     {
         if (m_attributes)

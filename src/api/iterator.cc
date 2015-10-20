@@ -195,7 +195,7 @@ namespace tempearly
         {
             frame->SetReturnValue(Value::NewBool(true));
         }
-        else if (interpreter->GetException().IsInstance(interpreter, interpreter->eStopIteration))
+        else if (interpreter->HasException(interpreter->eStopIteration))
         {
             interpreter->ClearException();
             frame->SetReturnValue(Value::NewBool(false));
