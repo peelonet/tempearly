@@ -5,10 +5,12 @@ namespace tempearly
 {
     Frame::Frame(const Handle<Frame>& previous,
                  const Handle<Frame>& enclosing_frame,
-                 const Handle<FunctionObject>& function)
+                 const Handle<FunctionObject>& function,
+                 const Vector<Value>& arguments)
         : m_previous(previous.Get())
         , m_enclosing_frame(enclosing_frame.Get())
         , m_function(function.Get())
+        , m_arguments(arguments)
         , m_local_variables(nullptr) {}
 
     Frame::~Frame()
@@ -98,6 +100,14 @@ namespace tempearly
         if (m_enclosing_frame && !m_enclosing_frame->IsMarked())
         {
             m_enclosing_frame->Mark();
+        }
+        if (m_function && !m_function->IsMarked())
+        {
+            m_function->Mark();
+        }
+        for (std::size_t i = 0; i < m_arguments.GetSize(); ++i)
+        {
+            m_arguments[i].Mark();
         }
         if (m_local_variables)
         {

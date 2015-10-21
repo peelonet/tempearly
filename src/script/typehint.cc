@@ -17,9 +17,9 @@ namespace tempearly
 
             bool Accepts(const Handle<Interpreter>& interpreter, const Value& value, bool& slot) const
             {
-                Value cls = m_node->Evaluate(interpreter);
+                Value cls;
 
-                if (!cls)
+                if (!m_node->Evaluate(interpreter, cls))
                 {
                     return false;
                 }

@@ -515,10 +515,10 @@ namespace tempearly
     {
         Handle<ListObject> original = args[0].As<ListObject>();
         Handle<ListObject> result;
-        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value iterator;
         Value element;
 
-        if (!iterator)
+        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }

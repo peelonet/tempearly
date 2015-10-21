@@ -6,7 +6,7 @@
 namespace tempearly
 {
     Value::Value()
-        : m_kind(KIND_ERROR)
+        : m_kind(KIND_NULL)
         , m_previous(nullptr)
         , m_next(nullptr) {}
 
@@ -55,7 +55,7 @@ namespace tempearly
         , m_previous(that.m_previous)
         , m_next(that.m_next)
     {
-        that.m_kind = KIND_ERROR;
+        that.m_kind = KIND_NULL;
         that.m_previous = that.m_next = nullptr;
     }
 
@@ -89,18 +89,6 @@ namespace tempearly
                 m_data.o->UnregisterValue(this);
             }
         }
-    }
-
-    const Value& Value::NullValue()
-    {
-        static Value value;
-
-        if (value.m_kind == Value::KIND_ERROR)
-        {
-            value.m_kind = Value::KIND_NULL;
-        }
-
-        return value;
     }
 
     Value Value::NewBool(bool b)
@@ -199,7 +187,7 @@ namespace tempearly
         m_data = that.m_data;
         m_previous = that.m_previous;
         m_next = that.m_next;
-        that.m_kind = KIND_ERROR;
+        that.m_kind = KIND_NULL;
         that.m_previous = that.m_next = nullptr;
 
         return *this;
@@ -228,9 +216,6 @@ namespace tempearly
     {
         switch (m_kind)
         {
-            case KIND_ERROR:
-                return interpreter->cObject;
-
             case KIND_NULL:
                 return interpreter->cVoid;
 
@@ -266,48 +251,45 @@ namespace tempearly
         }
     }
 
-    bool Value::HasAttribute(const String& id) const
-    {
-        return m_kind == KIND_OBJECT && m_data.o->HasAttribute(id);
-    }
-
     bool Value::GetAttribute(const Handle<Interpreter>& interpreter,
-                             const String& id,
-                             Value& value) const
+                             const String& name,
+                             Value& slot) const
     {
-        if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(id, value))
+        if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(name, slot))
         {
             return true;
-        } else {
-            Handle<Class> cls = GetClass(interpreter);
-
-            if (cls->GetAttribute(id, value))
-            {
-                if (value.IsFunction())
-                {
-                    value = value.As<FunctionObject>()->Curry(interpreter, Vector<Value>(1, *this));
-                }
-
-                return true;
-            }
-            if (m_kind == KIND_OBJECT && m_data.o->GetAttribute("__getattr__", value) && value.IsFunction())
-            {
-                return value.As<FunctionObject>()->Invoke(interpreter, Vector<Value>(1, NewString(id)), value);
-            }
-            else if (cls->GetAttribute("__getattr__", value) && value.IsFunction())
-            {
-                Vector<Value> args;
-
-                args.Reserve(2);
-                args.PushBack(*this);
-                args.PushBack(NewString(id));
-
-                return value.As<FunctionObject>()->Invoke(interpreter, args, value);
-            }
-            interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
-
-            return false;
         }
+
+        const Handle<Class> cls = GetClass(interpreter);
+
+        if (cls->GetAttribute(name, slot))
+        {
+            if (slot.IsUnboundMethod())
+            {
+                slot = slot.As<FunctionObject>()->Curry(
+                    interpreter,
+                    Vector<Value>(1, *this)
+                );
+            }
+
+            return true;
+        }
+        else if (cls->GetAttribute("__getattr__", slot) && slot.IsFunction())
+        {
+            Vector<Value> args;
+
+            args.Reserve(2);
+            args.PushBack(*this);
+            args.PushBack(NewString(name));
+
+            return slot.As<FunctionObject>()->Invoke(interpreter, slot, args);
+        }
+        interpreter->Throw(
+            interpreter->eAttributeError,
+            "Missing attribute: " + name
+        );
+
+        return false;
     }
 
     bool Value::SetAttribute(const String& id, const Value& value) const
@@ -322,124 +304,162 @@ namespace tempearly
         return false;
     }
 
-    Value Value::Call(const Handle<Interpreter>& interpreter,
-                      const String& id,
-                      const Vector<Value>& args) const
+    bool Value::CallMethod(const Handle<Interpreter>& interpreter,
+                           Value& slot,
+                           const String& method_name,
+                           const Vector<Value>& args) const
     {
-        Value value;
+        Value function;
 
-        if (m_kind == KIND_OBJECT && m_data.o->GetAttribute(id, value))
-        {
-            if (value.IsFunction())
-            {
-                if (value.As<FunctionObject>()->Invoke(interpreter, args, value))
-                {
-                    return value;
-                } else {
-                    return Value();
-                }
-            } else {
-                return value.Call(interpreter, "__call__", args);
-            }
-        } else {
-            Handle<Class> cls = GetClass(interpreter);
-
-            if (cls->GetAttribute(id, value))
-            {
-                if (value.IsStaticMethod())
-                {
-                    if (value.As<FunctionObject>()->Invoke(interpreter, args, value))
-                    {
-                        return value;
-                    } else {
-                        return Value();
-                    }
-                } else {
-                    Vector<Value> new_args(args);
-
-                    new_args.PushFront(*this);
-                    if (value.IsFunction())
-                    {
-                        if (value.As<FunctionObject>()->Invoke(interpreter, new_args, value))
-                        {
-                            return value;
-                        } else {
-                            return Value();
-                        }
-                    } else {
-                        return value.Call(interpreter, "__call__", new_args);
-                    }
-                }
-            }
-            interpreter->Throw(interpreter->eAttributeError, "Missing attribute: " + id);
-
-            return Value();
-        }
-    }
-
-    Value Value::Call(const Handle<Interpreter>& interpreter,
-                      const String& id,
-                      const Value& arg) const
-    {
-        return Call(interpreter, id, Vector<Value>(1, arg));
-    }
-
-    bool Value::Equals(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const
-    {
-        Value result = Call(interpreter, "__eq__", that);
-
-        if (!result)
+        if (!GetAttribute(interpreter, method_name, function))
         {
             return false;
         }
-        else if (result.IsBool())
+        else if (function.IsUnboundMethod())
         {
-            slot = result.AsBool();
-        } else {
-            slot = false;
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                slot,
+                Vector<Value>(1, *this) + args
+            );
         }
+        else if (function.IsFunction())
+        {
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                slot,
+                args
+            );
+        }
+        else if (function.GetAttribute(interpreter, "__call__", function))
+        {
+            if (!function.IsFunction())
+            {
+                return true;
+            }
 
-        return true;
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                slot,
+                args
+            );
+        } else {
+            if (!interpreter->HasException(interpreter->eAttributeError))
+            {
+                interpreter->Throw(
+                    interpreter->eTypeError,
+                    "Instance is not callable"
+                );
+            }
+
+            return false;
+        }
     }
 
-    bool Value::IsLessThan(const Handle<Interpreter>& interpreter, const Value& that, bool& slot) const
+    bool Value::CallMethod(const Handle<Interpreter>& interpreter,
+                           Value& slot,
+                           const String& method_name,
+                           const Value& arg) const
     {
-        Value result = Call(interpreter, "__lt__", that);
+        return CallMethod(
+            interpreter,
+            slot,
+            method_name,
+            Vector<Value>(1, arg)
+        );
+    }
 
-        if (!result)
+    bool Value::CallMethod(const Handle<Interpreter>& interpreter,
+                           const String& method_name,
+                           const Vector<Value>& args) const
+    {
+        Value function;
+
+        if (!GetAttribute(interpreter, method_name, function))
         {
             return false;
         }
-        else if (result.IsBool())
+        else if (function.IsUnboundMethod())
         {
-            slot = result.AsBool();
+            return function.As<FunctionObject>()->Invoke(
+                interpreter,
+                Vector<Value>(1, *this) + args
+            );
+        }
+        else if (function.IsFunction())
+        {
+            return function.As<FunctionObject>()->Invoke(interpreter, args);
+        }
+        else if (function.GetAttribute(interpreter, "__call__", function))
+        {
+            if (!function.IsFunction())
+            {
+                return true;
+            }
+
+            return function.As<FunctionObject>()->Invoke(interpreter, args);
         } else {
-            slot = false;
+            if (!interpreter->HasException(interpreter->eAttributeError))
+            {
+                interpreter->Throw(
+                    interpreter->eTypeError,
+                    "Instance is not callable"
+                );
+            }
+
+            return false;
+        }
+    }
+
+    bool Value::CallMethod(const Handle<Interpreter>& interpreter,
+                           const String& method_name,
+                           const Value& arg) const
+    {
+        return CallMethod(interpreter, method_name, Vector<Value>(1, arg));
+    }
+
+    bool Value::Equals(const Handle<Interpreter>& interpreter,
+                       const Value& that,
+                       bool& slot) const
+    {
+        Value result;
+
+        if (CallMethod(interpreter, result, "__eq__", that))
+        {
+            slot = result.IsBool() ? result.AsBool() : false;
+
+            return true;
         }
 
-        return true;
+        return false;
+    }
+
+    bool Value::IsLessThan(const Handle<Interpreter>& interpreter,
+                           const Value& that,
+                           bool& slot) const
+    {
+        Value result;
+
+        if (CallMethod(interpreter, result, "__lt__", that))
+        {
+            slot = result.IsBool() ? result.AsBool() : false;
+
+            return true;
+        }
+
+        return false;
     }
 
     bool Value::GetNext(const Handle<Interpreter>& interpreter, Value& slot) const
     {
-        Value result = Call(interpreter, "next");
-
-        if (interpreter->HasException())
+        if (!CallMethod(interpreter, slot, "next"))
         {
-            const Value& exception = interpreter->GetException();
-
-            if (exception.IsInstance(interpreter, interpreter->eStopIteration))
+            if (interpreter->HasException(interpreter->eStopIteration))
             {
                 interpreter->ClearException();
             }
 
             return false;
-        }
-        else if (result)
-        {
-            slot = result;
-        } else {
-            slot = NullValue();
         }
 
         return true;
@@ -447,17 +467,22 @@ namespace tempearly
 
     bool Value::GetHash(const Handle<Interpreter>& interpreter, i64& slot) const
     {
-        Value result = Call(interpreter, "__hash__");
+        Value result;
 
-        if (result.m_kind == KIND_INT)
+        if (CallMethod(interpreter, result, "__hash__"))
         {
-            slot = result.m_data.i;
+            if (result.m_kind == KIND_INT)
+            {
+                slot = result.m_data.i;
 
-            return true;
+                return true;
+            }
+            interpreter->Throw(
+                interpreter->eTypeError,
+                "Cannot generate hash code for "
+                + GetClass(interpreter)->GetName()
+            );
         }
-        interpreter->Throw(interpreter->eTypeError,
-                           "Cannot generate hash code for "
-                           + GetClass(interpreter)->GetName());
 
         return false;
     }
@@ -479,7 +504,7 @@ namespace tempearly
                 m_data.o->UnregisterValue(this);
             }
         }
-        m_kind = KIND_ERROR;
+        m_kind = KIND_NULL;
     }
 
     void Value::Mark() const
@@ -633,7 +658,6 @@ namespace tempearly
     {
         switch (m_kind)
         {
-            case KIND_ERROR:
             case KIND_NULL:
                 value = false;
                 break;
@@ -644,9 +668,13 @@ namespace tempearly
 
             default:
             {
-                Value result = Call(interpreter, "__bool__");
+                Value result;
 
-                if (result.m_kind == KIND_BOOL)
+                if (!CallMethod(interpreter, result, "__bool__"))
+                {
+                    return false;
+                }
+                else if (result.m_kind == KIND_BOOL)
                 {
                     value = result.m_data.i != 0;
                 } else {
@@ -668,7 +696,6 @@ namespace tempearly
     {
         switch (m_kind)
         {
-            case KIND_ERROR:
             case KIND_NULL:
                 string.Clear();
                 break;
@@ -679,9 +706,13 @@ namespace tempearly
 
             default:
             {
-                Value result = Call(interpreter, "__str__");
+                Value result;
 
-                if (result.m_kind == KIND_STRING)
+                if (!CallMethod(interpreter, result, "__str__"))
+                {
+                    return false;
+                }
+                else if (result.m_kind == KIND_STRING)
                 {
                     string = *result.m_data.s;
                 } else {

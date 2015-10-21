@@ -57,16 +57,6 @@ namespace tempearly
         }
     }
 
-    bool Class::HasAttribute(const String& id) const
-    {
-        if (m_attributes && m_attributes->Find(id))
-        {
-            return true;
-        } else {
-            return m_base && m_base->HasAttribute(id);
-        }
-    }
-
     bool Class::GetAttribute(const String& id, Value& value) const
     {
         if (m_attributes)
@@ -97,121 +87,23 @@ namespace tempearly
         m_attributes->Insert(id, value);
     }
 
-    namespace
-    {
-        class Method : public FunctionObject
-        {
-        public:
-            explicit Method(const Handle<Interpreter>& interpreter,
-                            const Handle<Class>& declaring_class,
-                            int arity,
-                            Callback callback)
-                : FunctionObject(interpreter)
-                , m_declaring_class(declaring_class.Get())
-                , m_arity(arity)
-                , m_callback(callback) {}
-
-            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
-            {
-                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
-
-                // Arguments must not be empty.
-                if (args.IsEmpty())
-                {
-                    interpreter->Throw(interpreter->eTypeError, "Missing method receiver");
-                    interpreter->PopFrame();
-
-                    return false;
-                }
-                // Test that the first argument is correct type.
-                else if (!args[0].IsInstance(interpreter, m_declaring_class))
-                {
-                    interpreter->Throw(
-                        interpreter->eTypeError,
-                        "Method requires a '"
-                        + m_declaring_class->GetName()
-                        + "' object but received a '"
-                        + args[0].GetClass(interpreter)->GetName()
-                    );
-                    interpreter->PopFrame();
-
-                    return false;
-                }
-                // Test that we have correct amount of arguments.
-                else if (m_arity < 0)
-                {
-                    if (args.GetSize() < static_cast<unsigned>(-(m_arity + 1) + 1))
-                    {
-                        interpreter->Throw(
-                            interpreter->eTypeError,
-                            "Method expected at least "
-                            + String::FromI64(-m_arity - 1)
-                            + " arguments, got "
-                            + String::FromU64(args.GetSize())
-                        );
-                        interpreter->PopFrame();
-
-                        return false;
-                    }
-                }
-                else if (args.GetSize() != static_cast<unsigned>(m_arity) + 1)
-                {
-                    interpreter->Throw(
-                        interpreter->eTypeError,
-                        "Method expected "
-                        + String::FromI64(m_arity)
-                        + " arguments, got "
-                        + String::FromU64(args.GetSize())
-                    );
-                    interpreter->PopFrame();
-
-                    return false;
-                }
-                m_callback(interpreter, frame, args);
-                interpreter->PopFrame();
-                if (interpreter->HasException())
-                {
-                    return false;
-                }
-                else if (frame->HasReturnValue())
-                {
-                    slot = frame->GetReturnValue();
-                } else {
-                    slot = Value::NullValue();
-                }
-
-                return true;
-            }
-
-            void Mark()
-            {
-                FunctionObject::Mark();
-                if (!m_declaring_class->IsMarked())
-                {
-                    m_declaring_class->Mark();
-                }
-            }
-
-        private:
-            Class* m_declaring_class;
-            const int m_arity;
-            const Callback m_callback;
-            TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Method);
-        };
-    }
-
     void Class::AddMethod(const Handle<Interpreter>& interpreter,
                           const String& name,
                           int arity,
                           MethodCallback callback)
     {
-        Value method = Value(new Method(interpreter, this, arity, callback));
+        Handle<FunctionObject> method = FunctionObject::NewUnboundMethod(
+            interpreter,
+            this,
+            arity,
+            callback
+        );
 
         if (!m_attributes)
         {
             m_attributes = new AttributeMap();
         }
-        m_attributes->Insert(name, method);
+        m_attributes->Insert(name, Value(method));
     }
 
     namespace
@@ -228,9 +120,10 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
+            bool Invoke(const Handle<Interpreter>& interpreter,
+                        const Handle<Frame>& frame)
             {
-                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
+                const Vector<Value>& args = frame->GetArguments();
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
@@ -244,7 +137,6 @@ namespace tempearly
                             + " arguments, got "
                             + String::FromU64(args.GetSize())
                         );
-                        interpreter->PopFrame();
 
                         return false;
                     }
@@ -258,29 +150,12 @@ namespace tempearly
                         + " arguments, got "
                         + String::FromU64(args.GetSize())
                     );
-                    interpreter->PopFrame();
 
                     return false;
                 }
                 m_callback(interpreter, frame, args);
-                interpreter->PopFrame();
-                if (interpreter->HasException())
-                {
-                    return false;
-                }
-                else if (frame->HasReturnValue())
-                {
-                    slot = frame->GetReturnValue();
-                } else {
-                    slot = Value::NullValue();
-                }
 
-                return true;
-            }
-
-            bool IsStaticMethod() const
-            {
-                return true;
+                return !interpreter->HasException();
             }
 
             void Mark()
@@ -323,19 +198,37 @@ namespace tempearly
                 : FunctionObject(interpreter)
                 , m_alias(alias) {}
 
-            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
+            bool Invoke(const Handle<Interpreter>& interpreter,
+                        const Handle<Frame>& frame)
             {
+                const Vector<Value>& args = frame->GetArguments();
+                Value result;
+
                 // Arguments must not be empty.
                 if (args.IsEmpty())
                 {
-                    interpreter->PushFrame(Handle<Frame>(), this);
-                    interpreter->Throw(interpreter->eTypeError, "Missing method receiver");
-                    interpreter->PopFrame();
+                    interpreter->Throw(
+                        interpreter->eTypeError,
+                        "Missing method receiver"
+                    );
 
                     return false;
                 }
+                if (!args[0].CallMethod(interpreter,
+                                        result,
+                                        m_alias,
+                                        args.SubVector(1)))
+                {
+                    return false;
+                }
+                frame->SetReturnValue(result);
 
-                return slot = args[0].Call(interpreter, m_alias, args.SubVector(1));
+                return true;
+            }
+
+            bool IsUnboundMethod() const
+            {
+                return true;
             }
 
         private:
@@ -424,9 +317,10 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(class_call)
     {
-        Value instance = args[0].Call(interpreter, "alloc");
+        Value instance;
 
-        if (instance && instance.Call(interpreter, "__init__", args.SubVector(1)))
+        if (args[0].CallMethod(interpreter, instance, "alloc")
+            && instance.CallMethod(interpreter, "__init__", args.SubVector(1)))
         {
             frame->SetReturnValue(instance);
         }

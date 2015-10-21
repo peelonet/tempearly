@@ -188,9 +188,10 @@ namespace tempearly
                 , m_arity(arity)
                 , m_callback(callback) {}
 
-            bool Invoke(const Handle<Interpreter>& interpreter, const Vector<Value>& args, Value& slot)
+            bool Invoke(const Handle<Interpreter>& interpreter,
+                        const Handle<Frame>& frame)
             {
-                Handle<Frame> frame = interpreter->PushFrame(Handle<Frame>(), this);
+                const Vector<Value>& args = frame->GetArguments();
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
@@ -204,7 +205,6 @@ namespace tempearly
                            << " arguments, got "
                            << String::FromU64(args.GetSize());
                         interpreter->Throw(interpreter->eTypeError, sb.ToString());
-                        interpreter->PopFrame();
 
                         return false;
                     }
@@ -218,24 +218,12 @@ namespace tempearly
                        << " arguments, got "
                        << String::FromU64(args.GetSize());
                     interpreter->Throw(interpreter->eTypeError, sb.ToString());
-                    interpreter->PopFrame();
 
                     return false;
                 }
                 m_callback(interpreter, frame, args);
-                interpreter->PopFrame();
-                if (interpreter->HasException())
-                {
-                    return false;
-                }
-                else if (frame->HasReturnValue())
-                {
-                    slot = frame->GetReturnValue();
-                } else {
-                    slot = Value::NullValue();
-                }
-                
-                return true;
+
+                return !interpreter->HasException();
             }
 
         private:
@@ -258,9 +246,11 @@ namespace tempearly
         }
     }
 
-    Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing, const Handle<FunctionObject>& function)
+    Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing,
+                                         const Handle<FunctionObject>& function,
+                                         const Vector<Value>& arguments)
     {
-        Handle<Frame> frame = new Frame(m_frame, enclosing, function);
+        Handle<Frame> frame = new Frame(m_frame, enclosing, function, arguments);
 
         m_frame = frame.Get();
 
@@ -304,6 +294,11 @@ namespace tempearly
             m_global_variables = new Dictionary<Value>();
         }
         m_global_variables->Insert(id, value);
+    }
+
+    bool Interpreter::HasException(const Handle<Class>& cls)
+    {
+        return m_exception.IsInstance(this, cls);
     }
 
     void Interpreter::Throw(const Handle<Class>& cls, const String& message)

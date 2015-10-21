@@ -27,11 +27,6 @@ namespace tempearly
         }
     }
 
-    bool Object::HasAttribute(const String& id) const
-    {
-        return m_attributes && m_attributes->Find(id);
-    }
-
     bool Object::GetAttribute(const String& id, Value& value) const
     {
         if (m_attributes)
@@ -159,7 +154,8 @@ namespace tempearly
                 Value result;
                 String value;
 
-                if (!(result = entry->GetValue().Call(interpreter, "as_json")) || !result.AsString(interpreter, value))
+                if (!entry->GetValue().CallMethod(interpreter, result, "as_json")
+                    || !result.AsString(interpreter, value))
                 {
                     self.UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;

@@ -60,7 +60,7 @@ namespace tempearly
             case 'n':
                 if (parser->ReadRune('u') && parser->ReadRune('l') && parser->ReadRune('l'))
                 {
-                    slot = Value::NullValue();
+                    slot.Clear();
 
                     return true;
                 } else {

@@ -646,9 +646,14 @@ namespace tempearly
             return;
         }
         stream_object = new FileStreamObject(interpreter, stream, binary);
-        if (function)
+        if (!function.IsNull())
         {
-            frame->SetReturnValue(function.Call(interpreter, "__call__", Vector<Value>(1, Value(stream_object))));
+            Value result;
+
+            if (function.CallMethod(interpreter, result, "__call__", Value(stream_object)))
+            {
+                frame->SetReturnValue(result);
+            }
             stream_object->Close();
         } else {
             frame->SetReturnValue(Value(stream_object));

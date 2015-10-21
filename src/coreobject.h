@@ -26,8 +26,6 @@ namespace tempearly
          */
         virtual Dictionary<Value> GetAllAttributes() const = 0;
 
-        virtual bool HasAttribute(const String& id) const = 0;
-
         virtual bool GetAttribute(const String& id, Value& value) const = 0;
 
         virtual void SetAttribute(const String& id, const Value& value) = 0;
@@ -77,7 +75,7 @@ namespace tempearly
             return false;
         }
 
-        virtual bool IsStaticMethod() const
+        virtual bool IsUnboundMethod() const
         {
             return false;
         }

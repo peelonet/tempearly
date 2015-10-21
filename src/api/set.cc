@@ -462,11 +462,11 @@ namespace tempearly
     {
         Handle<SetObject> original = args[0].As<SetObject>();
         Handle<SetObject> result;
-        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value iterator;
         Value element;
         i64 hash;
 
-        if (!iterator)
+        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
@@ -500,11 +500,11 @@ namespace tempearly
     {
         Handle<SetObject> original = args[0].As<SetObject>();
         Handle<SetObject> result;
-        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value iterator;
         Value element;
         i64 hash;
 
-        if (!iterator)
+        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
@@ -534,11 +534,11 @@ namespace tempearly
     {
         Handle<SetObject> original = args[0].As<SetObject>();
         Handle<SetObject> result;
-        Value iterator = args[1].Call(interpreter, "__iter__");
+        Value iterator;
         Value element;
         i64 hash;
 
-        if (!iterator)
+        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }

@@ -115,6 +115,7 @@ namespace tempearly
                                    const Value& end,
                                    bool exclusive)
                 : IteratorObject(interpreter->cIterator)
+                , m_done(false)
                 , m_current(begin)
                 , m_end(end)
                 , m_exclusive(exclusive) {}
@@ -124,21 +125,21 @@ namespace tempearly
                 Value cmp;
                 bool b;
 
-                if (!m_current)
+                if (m_done)
                 {
                     return Result(Result::KIND_BREAK);
                 }
-                else if (!(cmp = m_current.Call(interpreter, "__lt__", m_end))
-                            || !cmp.AsBool(interpreter, b))
+                else if (m_current.CallMethod(interpreter, cmp, "__lt__", m_end)
+                        || !cmp.AsBool(interpreter, b))
                 {
                     return Result(Result::KIND_ERROR);
                 }
                 else if (b)
                 {
                     Value current = m_current;
-                    Value next = m_current.Call(interpreter, "__inc__");
+                    Value next;
 
-                    if (!next)
+                    if (!m_current.CallMethod(interpreter, next, "__inc__"))
                     {
                         return Result(Result::KIND_ERROR);
                     }
@@ -146,7 +147,7 @@ namespace tempearly
 
                     return Result(Result::KIND_SUCCESS, current);
                 }
-                m_current.Clear();
+                m_done = true;
                 if (m_exclusive)
                 {
                     return Result(Result::KIND_BREAK);
@@ -163,6 +164,7 @@ namespace tempearly
             }
 
         private:
+            bool m_done;
             Value m_current;
             const Value m_end;
             const bool m_exclusive;
