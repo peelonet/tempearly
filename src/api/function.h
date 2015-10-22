@@ -1,17 +1,21 @@
 #ifndef TEMPEARLY_API_FUNCTION_H_GUARD
 #define TEMPEARLY_API_FUNCTION_H_GUARD
 
-#include "api/object.h"
+#include "customobject.h"
 
 namespace tempearly
 {
     /**
      * Abstract base class for function objects.
      */
-    class FunctionObject : public Object
+    class FunctionObject : public CustomObject
     {
     public:
-        typedef void (*Callback)(const Handle<Interpreter>&, const Handle<Frame>&, const Vector<Value>&);
+        typedef void (*Callback)(
+            const Handle<Interpreter>&,
+            const Handle<Frame>&,
+            const Vector<Handle<Object>>&
+        );
 
         /**
          * Default constructor.
@@ -68,8 +72,8 @@ namespace tempearly
          */
         bool Invoke(
             const Handle<Interpreter>& interpreter,
-            Value& slot,
-            const Vector<Value>& args
+            Handle<Object>& slot,
+            const Vector<Handle<Object>>& args
         );
 
         /**
@@ -83,7 +87,7 @@ namespace tempearly
          */
         bool Invoke(
             const Handle<Interpreter>& interpreter,
-            const Vector<Value>& args
+            const Vector<Handle<Object>>& args
         );
 
         /**
@@ -109,7 +113,10 @@ namespace tempearly
          * \return            New function which curries this one with given
          *                    arguments
          */
-        Value Curry(const Handle<Interpreter>& interpreter, const Vector<Value>& args);
+        Handle<FunctionObject> Curry(
+            const Handle<Interpreter>& interpreter,
+            const Vector<Handle<Object>>& args
+        );
 
         bool IsFunction() const
         {

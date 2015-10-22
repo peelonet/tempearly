@@ -5,7 +5,7 @@
 namespace tempearly
 {
     SetObject::SetObject(const Handle<Class>& cls, std::size_t bucket_size)
-        : Object(cls)
+        : CustomObject(cls)
         , m_bucket_size(bucket_size)
         , m_bucket(Memory::Allocate<Entry*>(m_bucket_size))
         , m_size(0)
@@ -38,7 +38,7 @@ namespace tempearly
         return false;
     }
 
-    void SetObject::Add(i64 hash, const Value& value)
+    void SetObject::Add(i64 hash, const Handle<Object>& value)
     {
         const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
         Handle<Entry> e;
@@ -64,7 +64,7 @@ namespace tempearly
         ++m_size;
     }
     
-    void SetObject::Add(const Handle<SetObject>& that)
+    void SetObject::AddAll(const Handle<SetObject>& that)
     {
         if (this == that.Get())
         {
@@ -187,7 +187,7 @@ namespace tempearly
         }
     }
 
-    SetObject::Entry::Entry(i64 hash, const Value& value)
+    SetObject::Entry::Entry(i64 hash, const Handle<Object>& value)
         : m_hash(hash)
         , m_value(value)
         , m_next(nullptr)
@@ -197,7 +197,10 @@ namespace tempearly
     void SetObject::Entry::Mark()
     {
         CountedObject::Mark();
-        m_value.Mark();
+        if (!m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
         if (m_next && !m_next->IsMarked())
         {
             m_next->Mark();
@@ -212,8 +215,8 @@ namespace tempearly
         }
     }
 
-    static Handle<CoreObject> set_alloc(const Handle<Interpreter>& interpreter,
-                                        const Handle<Class>& cls)
+    static Handle<Object> set_alloc(const Handle<Interpreter>& interpreter,
+                                    const Handle<Class>& cls)
     {
         return new SetObject(cls);
     }
@@ -233,10 +236,10 @@ namespace tempearly
         }
         for (std::size_t i = 1; i < args.GetSize(); ++i)
         {
-            const Value& object = args[i];
+            const Handle<Object>& object = args[i];
             i64 hash;
 
-            if (!object.GetHash(interpreter, hash))
+            if (!object->GetHash(interpreter, hash))
             {
                 return;
             }
@@ -251,7 +254,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(set_size)
     {
-        frame->SetReturnValue(Value::NewInt(args[0].As<SetObject>()->GetSize()));
+        frame->SetReturnValue(Object::NewInt(args[0].As<SetObject>()->GetSize()));
     }
 
     namespace
@@ -259,7 +262,8 @@ namespace tempearly
         class SetIterator : public IteratorObject
         {
         public:
-            explicit SetIterator(const Handle<Class>& cls, const Handle<SetObject>& set)
+            explicit SetIterator(const Handle<Class>& cls,
+                                 const Handle<SetObject>& set)
                 : IteratorObject(cls)
                 , m_entry(set->GetFront()) {}
 
@@ -267,11 +271,11 @@ namespace tempearly
             {
                 if (m_entry)
                 {
-                    const Value& value = m_entry->GetValue();
+                    const Handle<Object> value = m_entry->GetValue();
 
                     m_entry = m_entry->GetNext();
 
-                    return Result(Result::KIND_SUCCESS, value);
+                    return value;
                 }
 
                 return Result(Result::KIND_BREAK);
@@ -308,7 +312,7 @@ namespace tempearly
         } else {
             iterator = new SetIterator(interpreter->cIterator, set);
         }
-        frame->SetReturnValue(Value(iterator));
+        frame->SetReturnValue(iterator);
     }
 
     /**
@@ -333,7 +337,7 @@ namespace tempearly
             }
             set->UnsetFlag(Object::FLAG_INSPECTING);
         }
-        frame->SetReturnValue(Value::NewInt(hash));
+        frame->SetReturnValue(Object::NewInt(hash));
     }
 
     /**
@@ -346,9 +350,9 @@ namespace tempearly
     {
         i64 hash;
 
-        if (args[1].GetHash(interpreter, hash))
+        if (args[1]->GetHash(interpreter, hash))
         {
-            frame->SetReturnValue(Value::NewBool(args[0].As<SetObject>()->Has(hash)));
+            frame->SetReturnValue(Object::NewBool(args[0].As<SetObject>()->Has(hash)));
         }
     }
 
@@ -363,10 +367,10 @@ namespace tempearly
 
         for (std::size_t i = 1; i < args.GetSize(); ++i)
         {
-            const Value& object = args[i];
+            const Handle<Object>& object = args[i];
             i64 hash;
 
-            if (!object.GetHash(interpreter, hash))
+            if (!object->GetHash(interpreter, hash))
             {
                 return;
             }
@@ -385,7 +389,7 @@ namespace tempearly
     {
         i64 hash;
 
-        if (!args[1].GetHash(interpreter, hash))
+        if (!args[1]->GetHash(interpreter, hash))
         {
             return;
         }
@@ -393,7 +397,7 @@ namespace tempearly
         {
             String repr;
 
-            if (args[1].ToString(interpreter, repr))
+            if (args[1]->ToString(interpreter, repr))
             {
                 interpreter->Throw(interpreter->eKeyError, repr);
             }
@@ -410,9 +414,9 @@ namespace tempearly
     {
         i64 hash;
 
-        if (args[1].GetHash(interpreter, hash))
+        if (args[1]->GetHash(interpreter, hash))
         {
-            frame->SetReturnValue(Value::NewBool(args[0].As<SetObject>()->Remove(hash)));
+            frame->SetReturnValue(Object::NewBool(args[0].As<SetObject>()->Remove(hash)));
         }
     }
 
@@ -462,19 +466,19 @@ namespace tempearly
     {
         Handle<SetObject> original = args[0].As<SetObject>();
         Handle<SetObject> result;
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
         i64 hash;
 
-        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[1]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
         result = new SetObject(interpreter->cSet);
-        result->Add(original);
-        while (iterator.GetNext(interpreter, element))
+        result->AddAll(original);
+        while (iterator->GetNext(interpreter, element))
         {
-            if (!element.GetHash(interpreter, hash))
+            if (!element->GetHash(interpreter, hash))
             {
                 return;
             }
@@ -482,7 +486,7 @@ namespace tempearly
         }
         if (!interpreter->HasException())
         {
-            frame->SetReturnValue(Value(result));
+            frame->SetReturnValue(result);
         }
     }
 
@@ -500,19 +504,19 @@ namespace tempearly
     {
         Handle<SetObject> original = args[0].As<SetObject>();
         Handle<SetObject> result;
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
         i64 hash;
 
-        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[1]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
         result = new SetObject(interpreter->cSet);
-        result->Add(original);
-        while (iterator.GetNext(interpreter, element))
+        result->AddAll(original);
+        while (iterator->GetNext(interpreter, element))
         {
-            if (!element.GetHash(interpreter, hash))
+            if (!element->GetHash(interpreter, hash))
             {
                 return;
             }
@@ -520,7 +524,7 @@ namespace tempearly
         }
         if (!interpreter->HasException())
         {
-            frame->SetReturnValue(Value(result));
+            frame->SetReturnValue(result);
         }
     }
 
@@ -534,18 +538,18 @@ namespace tempearly
     {
         Handle<SetObject> original = args[0].As<SetObject>();
         Handle<SetObject> result;
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
         i64 hash;
 
-        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[1]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
         result = new SetObject(interpreter->cSet);
-        while (iterator.GetNext(interpreter, element))
+        while (iterator->GetNext(interpreter, element))
         {
-            if (!element.GetHash(interpreter, hash))
+            if (!element->GetHash(interpreter, hash))
             {
                 return;
             }
@@ -556,7 +560,7 @@ namespace tempearly
         }
         if (!interpreter->HasException())
         {
-            frame->SetReturnValue(Value(result));
+            frame->SetReturnValue(result);
         }
     }
 
@@ -568,7 +572,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(set_bool)
     {
-        frame->SetReturnValue(Value::NewBool(!args[0].As<SetObject>()->IsEmpty()));
+        frame->SetReturnValue(Object::NewBool(!args[0].As<SetObject>()->IsEmpty()));
     }
 
     void init_set(Interpreter* i)

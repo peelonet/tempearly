@@ -6,7 +6,7 @@ namespace tempearly
 {
     FunctionObject::FunctionObject(const Handle<Interpreter>& interpreter,
                                    const Handle<Frame>& enclosing_frame)
-        : Object(interpreter->cFunction)
+        : CustomObject(interpreter->cFunction)
         , m_enclosing_frame(enclosing_frame) {}
 
     FunctionObject::~FunctionObject() {}
@@ -117,7 +117,7 @@ namespace tempearly
             bool Invoke(const Handle<Interpreter>& interpreter,
                         const Handle<Frame>& frame)
             {
-                const Vector<Value>& args = frame->GetArguments();
+                const Vector<Handle<Object>> args = frame->GetArguments();
 
                 // Arguments must not be empty.
                 if (args.IsEmpty())
@@ -130,14 +130,14 @@ namespace tempearly
                     return false;
                 }
                 // Test that the first argument is correct type.
-                else if (!args[0].IsInstance(interpreter, m_declaring_class))
+                else if (!args[0]->IsInstance(interpreter, m_declaring_class))
                 {
                     interpreter->Throw(
                         interpreter->eTypeError,
                         "Method requires a '"
                         + m_declaring_class->GetName()
                         + "' object but received a '"
-                        + args[0].GetClass(interpreter)->GetName()
+                        + args[0]->GetClass(interpreter)->GetName()
                     );
 
                     return false;
@@ -208,8 +208,8 @@ namespace tempearly
     }
 
     bool FunctionObject::Invoke(const Handle<Interpreter>& interpreter,
-                                Value& slot,
-                                const Vector<Value>& args)
+                                Handle<Object>& slot,
+                                const Vector<Handle<Object>>& args)
     {
         const Handle<Frame> frame = interpreter->PushFrame(
             m_enclosing_frame,
@@ -221,14 +221,19 @@ namespace tempearly
         interpreter->PopFrame();
         if (result)
         {
-            slot = frame->GetReturnValue();
+            if (frame->HasReturnValue())
+            {
+                slot = frame->GetReturnValue();
+            } else {
+                slot = Object::NewNull();
+            }
         }
 
         return result;
     }
 
     bool FunctionObject::Invoke(const Handle<Interpreter>& interpreter,
-                                const Vector<Value>& args)
+                                const Vector<Handle<Object>>& args)
     {
         const Handle<Frame> frame = interpreter->PushFrame(
             m_enclosing_frame,
@@ -249,7 +254,7 @@ namespace tempearly
         public:
             explicit CurryFunction(const Handle<Interpreter>& interpreter,
                                    FunctionObject* base,
-                                   const Vector<Value>& args)
+                                   const Vector<Handle<Object>>& args)
                 : FunctionObject(interpreter)
                 , m_base(base)
                 , m_args(args) {}
@@ -257,7 +262,7 @@ namespace tempearly
             bool Invoke(const Handle<Interpreter>& interpreter,
                         const Handle<Frame>& frame)
             {
-                Value result;
+                Handle<Object> result;
 
                 if (!m_base->Invoke(interpreter,
                                     result,
@@ -279,20 +284,24 @@ namespace tempearly
                 }
                 for (std::size_t i = 0; i < m_args.GetSize(); ++i)
                 {
-                    m_args[i].Mark();
+                    if (!m_args[i]->IsMarked())
+                    {
+                        m_args[i]->Mark();
+                    }
                 }
             }
 
         private:
             FunctionObject* m_base;
-            const Vector<Value> m_args;
+            const Vector<Object*> m_args;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(CurryFunction);
         };
     }
 
-    Value FunctionObject::Curry(const Handle<Interpreter>& interpreter, const Vector<Value>& args)
+    Handle<FunctionObject> FunctionObject::Curry(const Handle<Interpreter>& interpreter,
+                                                 const Vector<Handle<Object>>& args)
     {
-        return Value(new CurryFunction(interpreter, this, args));
+        return new CurryFunction(interpreter, this, args);
     }
 
     void FunctionObject::Mark()
@@ -311,7 +320,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(func_call)
     {
-        Value result;
+        Handle<Object> result;
 
         if (args[0].As<FunctionObject>()->Invoke(interpreter,
                                                  result,

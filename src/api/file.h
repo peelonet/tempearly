@@ -1,12 +1,12 @@
 #ifndef TEMPEARLY_API_FILE_H_GUARD
 #define TEMPEARLY_API_FILE_H_GUARD
 
-#include "object.h"
+#include "customobject.h"
 #include "core/filename.h"
 
 namespace tempearly
 {
-    class FileObject : public Object
+    class FileObject : public CustomObject
     {
     public:
         explicit FileObject(const Handle<Interpreter>& interpreter, const Filename& path);

@@ -5,13 +5,10 @@
 
 namespace tempearly
 {
-    class Socket;
-
     class HttpServerRequest : public Request
     {
     public:
-        explicit HttpServerRequest(const Handle<Socket>& socket,
-                                   HttpMethod::Kind method,
+        explicit HttpServerRequest(HttpMethod::Kind method,
                                    const String& path,
                                    const ByteString& query_string,
                                    const Dictionary<String>& headers,
@@ -40,10 +37,7 @@ namespace tempearly
 
         bool GetHeader(const String& id, String& slot) const;
 
-        void Mark();
-
     private:
-        Socket* m_socket;
         const HttpMethod::Kind m_method;
         const String m_path;
         const ByteString m_query_string;

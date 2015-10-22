@@ -22,6 +22,14 @@ namespace tempearly
         {
         public:
             /**
+             * Returns the cached hash code of the entry.
+             */
+            inline std::size_t GetHashCode() const
+            {
+                return m_hash_code;
+            }
+
+            /**
              * Returns identifier/name of the entry.
              */
             inline const String& GetName() const
@@ -56,9 +64,25 @@ namespace tempearly
             /**
              * Returns pointer to the next entry.
              */
+            inline Entry* GetNext()
+            {
+                return m_next;
+            }
+
+            /**
+             * Returns pointer to the next entry.
+             */
             inline const Entry* GetNext() const
             {
                 return m_next;
+            }
+
+            /**
+             * Returns pointer to the previous entry.
+             */
+            inline Entry* GetPrevious()
+            {
+                return m_previous;
             }
 
             /**
@@ -155,10 +179,14 @@ namespace tempearly
             }
             for (const typename Dictionary<U>::Entry* entry1 = that.GetFront();
                  entry1;
-                 entry1 = entry1->m_next)
+                 entry1 = entry1->GetNext())
             {
-                Entry* entry2 = new Entry(entry1->m_hash_code, entry1->m_name, entry1->m_value);
-                const std::size_t index = entry1->m_hash_code % kBucketSize;
+                Entry* entry2 = new Entry(
+                    entry1->GetHashCode(),
+                    entry1->GetName(),
+                    entry1->GetValue()
+                );
+                const std::size_t index = entry1->GetHashCode() % kBucketSize;
 
                 entry2->m_next = nullptr;
                 if ((entry2->m_previous = m_back))

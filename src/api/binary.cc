@@ -19,17 +19,17 @@ namespace tempearly
         result.Reserve(args.GetSize());
         for (std::size_t i = 0; i < args.GetSize(); ++i)
         {
-            const Value& value = args[i];
+            const Handle<Object>& value = args[i];
 
-            if (value.IsBinary())
+            if (value->IsBinary())
             {
-                const ByteString& b = value.AsBinary();
+                const ByteString b = value->AsBinary();
 
                 result.PushBack(b.GetBytes(), b.GetLength());
             } else {
                 i64 number;
 
-                if (!value.AsInt(interpreter, number))
+                if (!value->AsInt(interpreter, number))
                 {
                     return;
                 }
@@ -43,7 +43,7 @@ namespace tempearly
                 result.PushBack(static_cast<byte>(number));
             }
         }
-        frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
+        frame->SetReturnValue(Object::NewBinary(ByteString(result.GetData(), result.GetSize())));
     }
 
     /**
@@ -58,7 +58,7 @@ namespace tempearly
         i64 length;
         Vector<byte> result;
 
-        if (!args[0].AsInt(interpreter, length))
+        if (!args[0]->AsInt(interpreter, length))
         {
             return;
         }
@@ -77,7 +77,7 @@ namespace tempearly
         {
             result.PushBack(Random::NextU8());
         }
-        frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
+        frame->SetReturnValue(Object::NewBinary(ByteString(result.GetData(), result.GetSize())));
     }
 
     /**
@@ -87,7 +87,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_length)
     {
-        frame->SetReturnValue(Value::NewInt(args[0].AsBinary().GetLength()));
+        frame->SetReturnValue(Object::NewInt(args[0]->AsBinary().GetLength()));
     }
 
     /**
@@ -97,13 +97,13 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_chop)
     {
-        const ByteString& b = args[0].AsBinary();
+        const ByteString b = args[0]->AsBinary();
 
         if (b.IsEmpty())
         {
             frame->SetReturnValue(args[0]);
         } else {
-            frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes(), b.GetLength() - 1)));
+            frame->SetReturnValue(Object::NewBinary(ByteString(b.GetBytes(), b.GetLength() - 1)));
         }
     }
 
@@ -115,7 +115,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_chomp)
     {
-        const ByteString& b = args[0].AsBinary();
+        const ByteString b = args[0]->AsBinary();
 
         if (!b.IsEmpty())
         {
@@ -123,12 +123,12 @@ namespace tempearly
 
             if (length > 1 && b[length - 2] == '\r' && b[length - 1] == '\n')
             {
-                frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes(), length - 2)));
+                frame->SetReturnValue(Object::NewBinary(ByteString(b.GetBytes(), length - 2)));
                 return;
             }
             else if (b[length - 1] == '\n' || b[length - 1] == '\r')
             {
-                frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes(), length - 1)));
+                frame->SetReturnValue(Object::NewBinary(ByteString(b.GetBytes(), length - 1)));
                 return;
             }
         }
@@ -142,7 +142,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_reverse)
     {
-        const ByteString& b = args[0].AsBinary();
+        const ByteString b = args[0]->AsBinary();
 
         if (!b.IsEmpty())
         {
@@ -153,7 +153,7 @@ namespace tempearly
             {
                 result.PushBack(b[i - 1]);
             }
-            frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
+            frame->SetReturnValue(Object::NewBinary(ByteString(result.GetData(), result.GetSize())));
         } else {
             frame->SetReturnValue(args[0]);
         }
@@ -166,7 +166,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_hash)
     {
-        const ByteString& b = args[0].AsBinary();
+        const ByteString b = args[0]->AsBinary();
         i64 hash = 0;
 
         for (std::size_t i = 0; i < b.GetLength(); ++i)
@@ -178,7 +178,7 @@ namespace tempearly
         hash += (hash << 3);
         hash ^= (hash >> 11);
         hash += (hash << 15);
-        frame->SetReturnValue(Value::NewInt(hash));
+        frame->SetReturnValue(Object::NewInt(hash));
     }
 
     namespace
@@ -195,7 +195,7 @@ namespace tempearly
             {
                 if (m_index < m_bytes.GetLength())
                 {
-                    return Value::NewInt(m_bytes[m_index++]);
+                    return Object::NewInt(m_bytes[m_index++]);
                 } else {
                     return Result(Result::KIND_BREAK);
                 }
@@ -215,7 +215,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_iter)
     {
-        const ByteString& b = args[0].AsBinary();
+        const ByteString b = args[0]->AsBinary();
         Handle<IteratorObject> iterator;
 
         if (b.IsEmpty())
@@ -224,7 +224,7 @@ namespace tempearly
         } else {
             iterator = new BinaryIterator(interpreter, b);
         }
-        frame->SetReturnValue(Value(iterator));
+        frame->SetReturnValue(iterator);
     }
 
     /**
@@ -235,7 +235,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_bool)
     {
-        frame->SetReturnValue(Value::NewBool(!args[0].AsBinary().IsEmpty()));
+        frame->SetReturnValue(Object::NewBool(!args[0]->AsBinary().IsEmpty()));
     }
 
     /**
@@ -247,10 +247,10 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_add)
     {
-        const ByteString& a = args[0].AsBinary();
+        const ByteString a = args[0]->AsBinary();
         ByteString b;
 
-        if (!args[1].AsBinary(interpreter, b))
+        if (!args[1]->AsBinary(interpreter, b))
         {
             return;
         }
@@ -262,7 +262,7 @@ namespace tempearly
         {
             frame->SetReturnValue(args[0]);
         } else {
-            frame->SetReturnValue(Value::NewBinary(a + b));
+            frame->SetReturnValue(Object::NewBinary(a + b));
         }
     }
 
@@ -277,9 +277,9 @@ namespace tempearly
     {
         i64 count;
 
-        if (args[1].AsInt(interpreter, count))
+        if (args[1]->AsInt(interpreter, count))
         {
-            const ByteString& b = args[0].AsBinary();
+            const ByteString b = args[0]->AsBinary();
 
             if (count < 0)
             {
@@ -298,7 +298,7 @@ namespace tempearly
                 {
                     result.PushBack(b.GetBytes(), b.GetLength());
                 }
-                frame->SetReturnValue(Value::NewBinary(ByteString(result.GetData(), result.GetSize())));
+                frame->SetReturnValue(Object::NewBinary(ByteString(result.GetData(), result.GetSize())));
                 return;
             }
         }
@@ -311,14 +311,14 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_eq)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsBinary())
+        if (operand->IsBinary())
         {
-            frame->SetReturnValue(Value::NewBool(self.AsBinary().Equals(operand.AsBinary())));
+            frame->SetReturnValue(Object::NewBool(self->AsBinary().Equals(operand->AsBinary())));
         } else {
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
     }
 
@@ -332,16 +332,16 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_lt)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsBinary())
+        if (operand->IsBinary())
         {
-            frame->SetReturnValue(Value::NewBool(self.AsBinary().Compare(operand.AsBinary()) < 0));
+            frame->SetReturnValue(Object::NewBool(self->AsBinary().Compare(operand->AsBinary()) < 0));
         } else {
             interpreter->Throw(
                 interpreter->eTypeError,
-                "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Binary'"
+                "Cannot compare '" + operand->GetClass(interpreter)->GetName() + "' with 'Binary'"
             );
         }
     }
@@ -362,17 +362,18 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(bin_getitem)
     {
-        const ByteString& b = args[0].AsBinary();
+        const ByteString b = args[0]->AsBinary();
         const std::size_t length = b.GetLength();
-        const Value& argument = args[1];
+        const Handle<Object>& argument = args[1];
 
-        if (argument.IsRange())
+        if (argument->IsRange())
         {
-            Handle<RangeObject> range = argument.As<RangeObject>();
+            const Handle<RangeObject> range = argument.As<RangeObject>();
             i64 begin;
             i64 end;
 
-            if (!range->GetBegin().AsInt(interpreter, begin) || !range->GetEnd().AsInt(interpreter, end))
+            if (!range->GetBegin()->AsInt(interpreter, begin)
+                || !range->GetEnd()->AsInt(interpreter, end))
             {
                 return;
             }
@@ -393,11 +394,11 @@ namespace tempearly
                 interpreter->Throw(interpreter->eIndexError, "Index out of bounds");
                 return;
             }
-            frame->SetReturnValue(Value::NewBinary(ByteString(b.GetBytes() + begin, end - begin)));
+            frame->SetReturnValue(Object::NewBinary(ByteString(b.GetBytes() + begin, end - begin)));
         } else {
             i64 index;
 
-            if (!argument.AsInt(interpreter, index))
+            if (!argument->AsInt(interpreter, index))
             {
                 return;
             }
@@ -410,7 +411,7 @@ namespace tempearly
                 interpreter->Throw(interpreter->eIndexError, "Index out of bounds");
                 return;
             }
-            frame->SetReturnValue(Value::NewInt(b[index]));
+            frame->SetReturnValue(Object::NewInt(b[index]));
         }
     }
 

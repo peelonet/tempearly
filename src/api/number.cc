@@ -13,9 +13,9 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(num_is_inf)
     {
-        const Value& receiver = args[0];
+        const Handle<Object>& receiver = args[0];
 
-        frame->SetReturnValue(Value::NewBool(receiver.IsFloat() && std::isinf(receiver.AsFloat())));
+        frame->SetReturnValue(Object::NewBool(receiver->IsFloat() && std::isinf(receiver->AsFloat())));
     }
 
     /**
@@ -25,9 +25,9 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(num_is_nan)
     {
-        const Value& receiver = args[0];
+        const Handle<Object>& receiver = args[0];
 
-        frame->SetReturnValue(Value::NewBool(receiver.IsFloat() && std::isnan(receiver.AsFloat())));
+        frame->SetReturnValue(Object::NewBool(receiver->IsFloat() && std::isnan(receiver->AsFloat())));
     }
 
     /**
@@ -39,9 +39,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::acos(f)));
+            frame->SetReturnValue(Object::NewFloat(std::acos(f)));
         }
     }
 
@@ -54,9 +54,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::asin(f)));
+            frame->SetReturnValue(Object::NewFloat(std::asin(f)));
         }
     }
 
@@ -69,9 +69,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::atan(f)));
+            frame->SetReturnValue(Object::NewFloat(std::atan(f)));
         }
     }
 
@@ -86,9 +86,9 @@ namespace tempearly
         double y;
         double x;
 
-        if (args[0].AsFloat(interpreter, y) && args[1].AsFloat(interpreter, x))
+        if (args[0]->AsFloat(interpreter, y) && args[1]->AsFloat(interpreter, x))
         {
-            frame->SetReturnValue(Value::NewFloat(std::atan2(y, x)));
+            frame->SetReturnValue(Object::NewFloat(std::atan2(y, x)));
         }
     }
 
@@ -101,9 +101,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::cos(f)));
+            frame->SetReturnValue(Object::NewFloat(std::cos(f)));
         }
     }
 
@@ -116,9 +116,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::exp(f)));
+            frame->SetReturnValue(Object::NewFloat(std::exp(f)));
         }
     }
 
@@ -131,9 +131,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::log(f)));
+            frame->SetReturnValue(Object::NewFloat(std::log(f)));
         }
     }
 
@@ -147,9 +147,9 @@ namespace tempearly
         double base;
         double exp;
 
-        if (args[0].AsFloat(interpreter, base) && args[1].AsFloat(interpreter, exp))
+        if (args[0]->AsFloat(interpreter, base) && args[1]->AsFloat(interpreter, exp))
         {
-            frame->SetReturnValue(Value::NewFloat(std::pow(base, exp)));
+            frame->SetReturnValue(Object::NewFloat(std::pow(base, exp)));
         }
     }
 
@@ -162,9 +162,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::sin(f)));
+            frame->SetReturnValue(Object::NewFloat(std::sin(f)));
         }
     }
 
@@ -177,9 +177,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::sqrt(f)));
+            frame->SetReturnValue(Object::NewFloat(std::sqrt(f)));
         }
     }
 
@@ -192,9 +192,9 @@ namespace tempearly
     {
         double f;
 
-        if (args[0].AsFloat(interpreter, f))
+        if (args[0]->AsFloat(interpreter, f))
         {
-            frame->SetReturnValue(Value::NewFloat(std::tan(f)));
+            frame->SetReturnValue(Object::NewFloat(std::tan(f)));
         }
     }
 
@@ -210,27 +210,27 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_s_call)
     {
-        const Value& argument = args[0];
+        const Handle<Object>& argument = args[0];
 
-        if (argument.IsInt())
+        if (argument->IsInt())
         {
             frame->SetReturnValue(argument);
         }
-        else if (argument.IsFloat())
+        else if (argument->IsFloat())
         {
-            frame->SetReturnValue(Value::NewInt(argument.AsInt()));
+            frame->SetReturnValue(Object::NewInt(argument->AsInt()));
         } else {
             String string;
             int radix = -1;
             i64 slot;
 
-            if (!argument.AsString(interpreter, string))
+            if (!argument->AsString(interpreter, string))
             {
                 return;
             }
             if (args.GetSize() > 1)
             {
-                if (!args[1].AsInt(interpreter, slot))
+                if (!args[1]->AsInt(interpreter, slot))
                 {
                     return;
                 }
@@ -243,7 +243,7 @@ namespace tempearly
             }
             if (string.ParseInt(slot, radix))
             {
-                frame->SetReturnValue(Value::NewInt(slot));
+                frame->SetReturnValue(Object::NewInt(slot));
             } else {
                 interpreter->Throw(
                     interpreter->eValueError,
@@ -271,11 +271,11 @@ namespace tempearly
         {
             i64 max;
 
-            if (args[0].AsInt(interpreter, max))
+            if (args[0]->AsInt(interpreter, max))
             {
                 if (max > 1)
                 {
-                    frame->SetReturnValue(Value::NewInt(Random::NextU64() % max));
+                    frame->SetReturnValue(Object::NewInt(Random::NextU64() % max));
                 }
                 else if (max == 0)
                 {
@@ -285,7 +285,7 @@ namespace tempearly
                 }
             }
         } else {
-            frame->SetReturnValue(Value::NewInt(Random::NextU64()));
+            frame->SetReturnValue(Object::NewInt(Random::NextU64()));
         }
     }
 
@@ -313,7 +313,7 @@ namespace tempearly
 
         if (args.GetSize() > 1)
         {
-            if (!args[1].AsInt(interpreter, radix))
+            if (!args[1]->AsInt(interpreter, radix))
             {
                 return;
             }
@@ -323,7 +323,7 @@ namespace tempearly
                 return;
             }
         }
-        frame->SetReturnValue(Value::NewString(String::FromI64(args[0].AsInt(), radix)));
+        frame->SetReturnValue(Object::NewString(String::FromI64(args[0]->AsInt(), radix)));
     }
 
     /**
@@ -334,22 +334,22 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_add)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsFloat())
+        if (operand->IsFloat())
         {
-            const double a = self.AsFloat();
-            const double b = operand.AsFloat();
+            const double a = self->AsFloat();
+            const double b = operand->AsFloat();
 
-            frame->SetReturnValue(Value::NewFloat(a + b));
+            frame->SetReturnValue(Object::NewFloat(a + b));
         } else {
-            const i64 a = self.AsInt();
+            const i64 a = self->AsInt();
             i64 b;
 
-            if (operand.AsInt(interpreter, b))
+            if (operand->AsInt(interpreter, b))
             {
-                frame->SetReturnValue(Value::NewInt(a + b));
+                frame->SetReturnValue(Object::NewInt(a + b));
             }
         }
     }
@@ -362,22 +362,22 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_sub)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsFloat())
+        if (operand->IsFloat())
         {
-            const double a = self.AsFloat();
-            const double b = operand.AsFloat();
+            const double a = self->AsFloat();
+            const double b = operand->AsFloat();
 
-            frame->SetReturnValue(Value::NewFloat(a - b));
+            frame->SetReturnValue(Object::NewFloat(a - b));
         } else {
-            const i64 a = self.AsInt();
+            const i64 a = self->AsInt();
             i64 b;
 
-            if (operand.AsInt(interpreter, b))
+            if (operand->AsInt(interpreter, b))
             {
-                frame->SetReturnValue(Value::NewInt(a - b));
+                frame->SetReturnValue(Object::NewInt(a - b));
             }
         }
     }
@@ -390,22 +390,22 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_mul)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsFloat())
+        if (operand->IsFloat())
         {
-            const double a = self.AsFloat();
-            const double b = operand.AsFloat();
+            const double a = self->AsFloat();
+            const double b = operand->AsFloat();
 
-            frame->SetReturnValue(Value::NewFloat(a * b));
+            frame->SetReturnValue(Object::NewFloat(a * b));
         } else {
-            const i64 a = self.AsInt();
+            const i64 a = self->AsInt();
             i64 b;
 
-            if (operand.AsInt(interpreter, b))
+            if (operand->AsInt(interpreter, b))
             {
-                frame->SetReturnValue(Value::NewInt(a * b));
+                frame->SetReturnValue(Object::NewInt(a * b));
             }
         }
     }
@@ -419,14 +419,14 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_div)
     {
-        const double a = args[0].AsFloat();
+        const double a = args[0]->AsFloat();
         double b;
 
-        if (args[1].AsFloat(interpreter, b))
+        if (args[1]->AsFloat(interpreter, b))
         {
             if (b != 0.0)
             {
-                frame->SetReturnValue(Value::NewFloat(a / b));
+                frame->SetReturnValue(Object::NewFloat(a / b));
             } else {
                 interpreter->Throw(interpreter->eZeroDivisionError, "Division by zero");
             }
@@ -442,16 +442,16 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_mod)
     {
-        const i64 a = args[0].AsInt();
+        const i64 a = args[0]->AsInt();
         i64 b;
 
-        if (args[1].AsInt(interpreter, b))
+        if (args[1]->AsInt(interpreter, b))
         {
             if (b == 0)
             {
                 interpreter->Throw(interpreter->eZeroDivisionError, "Division by zero");
             } else {
-                frame->SetReturnValue(Value::NewInt(a % b));
+                frame->SetReturnValue(Object::NewInt(a % b));
             }
         }
     }
@@ -463,12 +463,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_and)
     {
-        const i64 a = args[0].AsInt();
+        const i64 a = args[0]->AsInt();
         i64 b;
 
-        if (args[1].AsInt(interpreter, b))
+        if (args[1]->AsInt(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewInt(a & b));
+            frame->SetReturnValue(Object::NewInt(a & b));
         }
     }
 
@@ -479,12 +479,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_or)
     {
-        const i64 a = args[0].AsInt();
+        const i64 a = args[0]->AsInt();
         i64 b;
 
-        if (args[1].AsInt(interpreter, b))
+        if (args[1]->AsInt(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewInt(a | b));
+            frame->SetReturnValue(Object::NewInt(a | b));
         }
     }
 
@@ -495,12 +495,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_xor)
     {
-        const i64 a = args[0].AsInt();
+        const i64 a = args[0]->AsInt();
         i64 b;
 
-        if (args[1].AsInt(interpreter, b))
+        if (args[1]->AsInt(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewInt(a ^ b));
+            frame->SetReturnValue(Object::NewInt(a ^ b));
         }
     }
 
@@ -511,12 +511,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_lsh)
     {
-        const i64 a = args[0].AsInt();
+        const i64 a = args[0]->AsInt();
         i64 b;
 
-        if (args[1].AsInt(interpreter, b))
+        if (args[1]->AsInt(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewInt(b < 0 ? a >> -b : a << b));
+            frame->SetReturnValue(Object::NewInt(b < 0 ? a >> -b : a << b));
         }
     }
 
@@ -527,12 +527,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_rsh)
     {
-        const i64 a = args[0].AsInt();
+        const i64 a = args[0]->AsInt();
         i64 b;
 
-        if (args[1].AsInt(interpreter, b))
+        if (args[1]->AsInt(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewInt(b < 0 ? a << -b : a >> b));
+            frame->SetReturnValue(Object::NewInt(b < 0 ? a << -b : a >> b));
         }
     }
 
@@ -544,18 +544,18 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_eq)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsInt())
+        if (operand->IsInt())
         {
-            frame->SetReturnValue(Value::NewBool(self.AsInt() == operand.AsInt()));
+            frame->SetReturnValue(Object::NewBool(self->AsInt() == operand->AsInt()));
         }
-        else if (operand.IsFloat())
+        else if (operand->IsFloat())
         {
-            frame->SetReturnValue(Value::NewBool(static_cast<double>(self.AsFloat()) == operand.AsFloat()));
+            frame->SetReturnValue(Object::NewBool(static_cast<double>(self->AsFloat()) == operand->AsFloat()));
         } else {
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
     }
 
@@ -570,20 +570,20 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_lt)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsInt())
+        if (operand->IsInt())
         {
-            frame->SetReturnValue(Value::NewBool(self.AsInt() < operand.AsInt()));
+            frame->SetReturnValue(Object::NewBool(self->AsInt() < operand->AsInt()));
         }
-        else if (operand.IsFloat())
+        else if (operand->IsFloat())
         {
-            frame->SetReturnValue(Value::NewBool(static_cast<double>(self.AsInt()) < operand.AsFloat()));
+            frame->SetReturnValue(Object::NewBool(static_cast<double>(self->AsInt()) < operand->AsFloat()));
         } else {
             interpreter->Throw(
                 interpreter->eTypeError,
-                "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Int'"
+                "Cannot compare '" + operand->GetClass(interpreter)->GetName() + "' with 'Int'"
             );
         }
     }
@@ -595,7 +595,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_inc)
     {
-        frame->SetReturnValue(Value::NewInt(args[0].AsInt() + 1));
+        frame->SetReturnValue(Object::NewInt(args[0]->AsInt() + 1));
     }
 
     /**
@@ -605,7 +605,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_dec)
     {
-        frame->SetReturnValue(Value::NewInt(args[0].AsInt() - 1));
+        frame->SetReturnValue(Object::NewInt(args[0]->AsInt() - 1));
     }
 
     /**
@@ -615,7 +615,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_neg)
     {
-        frame->SetReturnValue(Value::NewInt(-args[0].AsInt()));
+        frame->SetReturnValue(Object::NewInt(-args[0]->AsInt()));
     }
 
     /**
@@ -625,7 +625,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(int_invert)
     {
-        frame->SetReturnValue(Value::NewInt(~args[0].AsInt()));
+        frame->SetReturnValue(Object::NewInt(~args[0]->AsInt()));
     }
 
     /**
@@ -637,26 +637,26 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_s_call)
     {
-        const Value& argument = args[0];
+        const Handle<Object>& argument = args[0];
 
-        if (argument.IsFloat())
+        if (argument->IsFloat())
         {
             frame->SetReturnValue(argument);
         }
-        else if (argument.IsInt())
+        else if (argument->IsInt())
         {
-            frame->SetReturnValue(Value::NewFloat(argument.AsFloat()));
+            frame->SetReturnValue(Object::NewFloat(argument->AsFloat()));
         } else {
             String string;
             double slot;
 
-            if (!argument.AsString(interpreter, string))
+            if (!argument->AsString(interpreter, string))
             {
                 return;
             }
             if (string.ParseDouble(slot))
             {
-                frame->SetReturnValue(Value::NewFloat(slot));
+                frame->SetReturnValue(Object::NewFloat(slot));
             } else {
                 interpreter->Throw(
                     interpreter->eValueError,
@@ -679,17 +679,17 @@ namespace tempearly
         {
             double max;
 
-            if (args[0].AsFloat(interpreter, max))
+            if (args[0]->AsFloat(interpreter, max))
             {
                 if (max > 0)
                 {
-                    frame->SetReturnValue(Value::NewFloat(Random::NextDouble() * max));
+                    frame->SetReturnValue(Object::NewFloat(Random::NextDouble() * max));
                 } else {
                     interpreter->Throw(interpreter->eValueError, "Max cannot be negative or zero");
                 }
             }
         } else {
-            frame->SetReturnValue(Value::NewFloat(Random::NextDouble()));
+            frame->SetReturnValue(Object::NewFloat(Random::NextDouble()));
         }
     }
 
@@ -700,7 +700,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_hash)
     {
-        double f = args[0].AsFloat();
+        double f = args[0]->AsFloat();
         i64 i;
 
         if (std::isnan(f))
@@ -716,7 +716,7 @@ namespace tempearly
             shaker.f = f;
             i = shaker.i;
         }
-        frame->SetReturnValue(Value::NewInt(i ^ (static_cast<u64>(i >> 32))));
+        frame->SetReturnValue(Object::NewInt(i ^ (static_cast<u64>(i >> 32))));
     }
 
     /**
@@ -726,7 +726,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_str)
     {
-        frame->SetReturnValue(Value::NewString(String::FromDouble(args[0].AsFloat())));
+        frame->SetReturnValue(Object::NewString(String::FromDouble(args[0]->AsFloat())));
     }
 
     /**
@@ -736,12 +736,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_add)
     {
-        const double a = args[0].AsFloat();
+        const double a = args[0]->AsFloat();
         double b;
 
-        if (args[1].AsFloat(interpreter, b))
+        if (args[1]->AsFloat(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewFloat(a + b));
+            frame->SetReturnValue(Object::NewFloat(a + b));
         }
     }
 
@@ -752,12 +752,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_sub)
     {
-        const double a = args[0].AsFloat();
+        const double a = args[0]->AsFloat();
         double b;
 
-        if (args[1].AsFloat(interpreter, b))
+        if (args[1]->AsFloat(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewFloat(a - b));
+            frame->SetReturnValue(Object::NewFloat(a - b));
         }
     }
 
@@ -768,12 +768,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_mul)
     {
-        const double a = args[0].AsFloat();
+        const double a = args[0]->AsFloat();
         double b;
 
-        if (args[1].AsFloat(interpreter, b))
+        if (args[1]->AsFloat(interpreter, b))
         {
-            frame->SetReturnValue(Value::NewFloat(a * b));
+            frame->SetReturnValue(Object::NewFloat(a * b));
         }
     }
 
@@ -786,14 +786,14 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_div)
     {
-        const double a = args[0].AsFloat();
+        const double a = args[0]->AsFloat();
         double b;
 
-        if (args[1].AsFloat(interpreter, b))
+        if (args[1]->AsFloat(interpreter, b))
         {
             if (b != 0.0)
             {
-                frame->SetReturnValue(Value::NewFloat(a / b));
+                frame->SetReturnValue(Object::NewFloat(a / b));
             } else {
                 interpreter->Throw(interpreter->eZeroDivisionError, "Float division by zero");
             }
@@ -809,10 +809,10 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_mod)
     {
-        const double a = args[0].AsFloat();
+        const double a = args[0]->AsFloat();
         double b;
 
-        if (args[1].AsFloat(interpreter, b))
+        if (args[1]->AsFloat(interpreter, b))
         {
             if (b != 0.0)
             {
@@ -824,7 +824,7 @@ namespace tempearly
                     mod += b;
                     div -= 1.0;
                 }
-                frame->SetReturnValue(Value::NewFloat(mod));
+                frame->SetReturnValue(Object::NewFloat(mod));
             } else {
                 interpreter->Throw(interpreter->eZeroDivisionError, "Float modulo");
             }
@@ -839,12 +839,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_eq)
     {
-        const Value& operand = args[1];
+        const Handle<Object>& operand = args[1];
 
         frame->SetReturnValue(
-            Value::NewBool(
-                operand.IsFloat() || operand.IsInt() ?
-                args[0].AsFloat() == operand.AsFloat() :
+            Object::NewBool(
+                operand->IsFloat() || operand->IsInt() ?
+                args[0]->AsFloat() == operand->AsFloat() :
                 false
             )
         );
@@ -861,15 +861,15 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_lt)
     {
-        const Value& operand = args[1];
+        const Handle<Object>& operand = args[1];
 
-        if (operand.IsFloat() || operand.IsInt())
+        if (operand->IsFloat() || operand->IsInt())
         {
-            frame->SetReturnValue(Value::NewBool(args[0].AsFloat() < operand.AsFloat()));
+            frame->SetReturnValue(Object::NewBool(args[0]->AsFloat() < operand->AsFloat()));
         } else {
             interpreter->Throw(
                 interpreter->eTypeError,
-                "Cannot compare '" + operand.GetClass(interpreter)->GetName() + "' with 'Float'"
+                "Cannot compare '" + operand->GetClass(interpreter)->GetName() + "' with 'Float'"
             );
         }
     }
@@ -881,7 +881,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_inc)
     {
-        frame->SetReturnValue(Value::NewFloat(args[0].AsFloat() + 1.0));
+        frame->SetReturnValue(Object::NewFloat(args[0]->AsFloat() + 1.0));
     }
 
     /**
@@ -891,7 +891,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_dec)
     {
-        frame->SetReturnValue(Value::NewFloat(args[0].AsFloat() - 1.0));
+        frame->SetReturnValue(Object::NewFloat(args[0]->AsFloat() - 1.0));
     }
 
     /**
@@ -901,18 +901,18 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(flo_neg)
     {
-        frame->SetReturnValue(Value::NewFloat(-args[0].AsFloat()));
+        frame->SetReturnValue(Object::NewFloat(-args[0]->AsFloat()));
     }
 
     TEMPEARLY_NATIVE_METHOD(flo_as_json)
     {
-        double number = args[0].AsFloat();
+        double number = args[0]->AsFloat();
 
         if (std::isinf(number) || std::isnan(number))
         {
-            frame->SetReturnValue(Value::NewString("null"));
+            frame->SetReturnValue(Object::NewString("null"));
         } else {
-            frame->SetReturnValue(Value::NewString(String::FromDouble(number)));
+            frame->SetReturnValue(Object::NewString(String::FromDouble(number)));
         }
     }
 

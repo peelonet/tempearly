@@ -14,6 +14,6 @@
 #define TEMPEARLY_NATIVE_METHOD(MethodName) \
     static void MethodName(const Handle<Interpreter>& interpreter, \
                            const Handle<Frame>& frame, \
-                           const Vector<Value>& args)
+                           const Vector<Handle<Object>>& args)
 
 #endif /* !TEMPEARLY_MACROS_H_GUARD */

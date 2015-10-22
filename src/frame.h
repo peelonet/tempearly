@@ -1,7 +1,6 @@
 #ifndef TEMPEARLY_FRAME_H_GUARD
 #define TEMPEARLY_FRAME_H_GUARD
 
-#include "value.h"
 #include "api/function.h"
 
 namespace tempearly
@@ -26,7 +25,7 @@ namespace tempearly
         explicit Frame(const Handle<Frame>& previous,
                        const Handle<Frame>& enclosing_frame,
                        const Handle<FunctionObject>& function,
-                       const Vector<Value>& arguments);
+                       const Vector<Handle<Object>>& arguments);
 
         ~Frame();
 
@@ -59,7 +58,7 @@ namespace tempearly
         /**
          * Returns list of arguments given for the function invocation.
          */
-        inline const Vector<Value>& GetArguments() const
+        inline Vector<Handle<Object>> GetArguments() const
         {
             return m_arguments;
         }
@@ -94,7 +93,7 @@ namespace tempearly
          * \return     A boolean flag indicating whether variable with given
          *             identifier was found or not
          */
-        bool GetLocalVariable(const String& id, Value& slot) const;
+        bool GetLocalVariable(const String& id, Handle<Object>& slot) const;
 
         /**
          * Assigns an local variable inside this frame. Existing local
@@ -103,7 +102,7 @@ namespace tempearly
          * \param id    Name of the variable
          * \param value Value of the variable
          */
-        void SetLocalVariable(const String& id, const Value& value);
+        void SetLocalVariable(const String& id, const Handle<Object>& value);
 
         /**
          * Replaces existing local variable with specified name with a new
@@ -115,13 +114,24 @@ namespace tempearly
          * \return      A boolean flag indicating whether variable with
          *              given name was found or not
          */
-        bool ReplaceLocalVariable(const String& id, const Value& value);
+        bool ReplaceLocalVariable(
+            const String& id,
+            const Handle<Object>& value
+        );
+
+        /**
+         * Returns true if an return value has been specified for this frame.
+         */
+        inline bool HasReturnValue() const
+        {
+            return !!m_return_value;
+        }
 
         /**
          * Returns value returned by the function invocation or null value if
          * no value was returned.
          */
-        inline const Value& GetReturnValue() const
+        inline Handle<Object> GetReturnValue() const
         {
             return m_return_value;
         }
@@ -129,7 +139,7 @@ namespace tempearly
         /**
          * Sets value returned by the function invocation.
          */
-        inline void SetReturnValue(const Value& return_value)
+        inline void SetReturnValue(const Handle<Object>& return_value)
         {
             m_return_value = return_value;
         }
@@ -144,11 +154,11 @@ namespace tempearly
         /** Pointer to function being executed by this frame. */
         FunctionObject* m_function;
         /** Arguments given for the function invocation. */
-        const Vector<Value> m_arguments;
+        const Vector<Object*> m_arguments;
         /** Container for local variables. */
-        Dictionary<Value>* m_local_variables;
+        Dictionary<Object*>* m_local_variables;
         /** Value returned by the function. */
-        Value m_return_value;
+        Object* m_return_value;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Frame);
     };
 }

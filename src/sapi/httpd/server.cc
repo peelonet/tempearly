@@ -200,32 +200,34 @@ namespace tempearly
             compile_script(mapping);
             m_script_cache.Insert(full_name, mapping);
         }
-        interpreter = new Interpreter();
-        interpreter->request = new HttpServerRequest(
-            client,
-            request.method,
-            request.path,
-            request.query_string,
-            request.headers,
-            data,
-            data_size
+        interpreter = new Interpreter(
+            new HttpServerRequest(
+                request.method,
+                request.path,
+                request.query_string,
+                request.headers,
+                data,
+                data_size
+            ),
+            new HttpServerResponse(client)
         );
-        interpreter->response = new HttpServerResponse(client);
         interpreter->Initialize();
         interpreter->PushFrame();
         if (mapping.script)
         {
+            const Handle<Response> response = interpreter->GetResponse();
+
             if (!mapping.script->Execute(interpreter))
             {
-                interpreter->response->SendException(interpreter->GetException());
+                response->SendException(interpreter->GetException());
             }
-            else if (!interpreter->response->IsCommitted())
+            else if (!response->IsCommitted())
             {
-                interpreter->response->Commit();
+                response->Commit();
             }
         } else {
             interpreter->Throw(interpreter->eSyntaxError, mapping.error);
-            interpreter->response->SendException(interpreter->GetException());
+            interpreter->GetResponse()->SendException(interpreter->GetException());
         }
         interpreter->PopFrame();
         client->Close();
@@ -415,7 +417,7 @@ namespace tempearly
             Handle<Script> script = parser->Compile();
 
             parser->Close();
-            mapping.script = script.Get();
+            mapping.script = script;
             mapping.error.Clear();
         } else {
             mapping.error = "Unable to include file";

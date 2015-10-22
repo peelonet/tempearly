@@ -14,7 +14,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_method)
     {
-        frame->SetReturnValue(Value::NewString(HttpMethod::ToString(interpreter->request->GetMethod())));
+        frame->SetReturnValue(Object::NewString(HttpMethod::ToString(interpreter->GetRequest()->GetMethod())));
     }
 
     /**
@@ -24,7 +24,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_path)
     {
-        frame->SetReturnValue(Value::NewString(interpreter->request->GetPath()));
+        frame->SetReturnValue(Object::NewString(interpreter->GetRequest()->GetPath()));
     }
 
     /**
@@ -35,11 +35,11 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_content_type)
     {
-        const String content_type = interpreter->request->GetContentType();
+        const String content_type = interpreter->GetRequest()->GetContentType();
 
         if (!content_type.IsEmpty())
         {
-            frame->SetReturnValue(Value::NewString(content_type));
+            frame->SetReturnValue(Object::NewString(content_type));
         }
     }
 
@@ -50,7 +50,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_get)
     {
-        frame->SetReturnValue(Value::NewBool(interpreter->request->GetMethod() == HttpMethod::GET));
+        frame->SetReturnValue(Object::NewBool(interpreter->GetRequest()->GetMethod() == HttpMethod::GET));
     }
 
     /**
@@ -60,7 +60,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_post)
     {
-        frame->SetReturnValue(Value::NewBool(interpreter->request->GetMethod() == HttpMethod::POST));
+        frame->SetReturnValue(Object::NewBool(interpreter->GetRequest()->GetMethod() == HttpMethod::POST));
     }
 
     /**
@@ -71,7 +71,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_secure)
     {
-        frame->SetReturnValue(Value::NewBool(interpreter->request->IsSecure()));
+        frame->SetReturnValue(Object::NewBool(interpreter->GetRequest()->IsSecure()));
     }
 
     /**
@@ -83,7 +83,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_is_ajax)
     {
-        frame->SetReturnValue(Value::NewBool(interpreter->request->IsAjax()));
+        frame->SetReturnValue(Object::NewBool(interpreter->GetRequest()->IsAjax()));
     }
 
     /**
@@ -94,11 +94,11 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_body)
     {
-        const ByteString body = interpreter->request->GetBody();
+        const ByteString body = interpreter->GetRequest()->GetBody();
 
         if (!body.IsEmpty())
         {
-            frame->SetReturnValue(Value::NewBinary(body));
+            frame->SetReturnValue(Object::NewBinary(body));
         }
     }
 
@@ -112,10 +112,10 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(req_json)
     {
-        const ByteString body = interpreter->request->GetBody();
+        const ByteString body = interpreter->GetRequest()->GetBody();
         Handle<Stream> stream;
         Handle<JsonParser> parser;
-        Value value;
+        Handle<Object> value;
 
         if (body.IsEmpty())
         {
@@ -146,13 +146,13 @@ namespace tempearly
         String name;
         String value;
 
-        if (!args[1].AsString(interpreter, name))
+        if (!args[1]->AsString(interpreter, name))
         {
             return;
         }
-        else if (interpreter->request->GetParameter(name, value))
+        else if (interpreter->GetRequest()->GetParameter(name, value))
         {
-            frame->SetReturnValue(Value::NewString(value));
+            frame->SetReturnValue(Object::NewString(value));
         }
     }
 
@@ -168,17 +168,17 @@ namespace tempearly
         String name;
         String value;
 
-        if (!args[1].AsString(interpreter, name))
+        if (!args[1]->AsString(interpreter, name))
         {
             return;
         }
-        else if (interpreter->request->GetParameter(name, value))
+        else if (interpreter->GetRequest()->GetParameter(name, value))
         {
             i64 number;
 
             if (value.ParseInt(number, 10))
             {
-                frame->SetReturnValue(Value::NewInt(number));
+                frame->SetReturnValue(Object::NewInt(number));
                 return;
             }
         }
@@ -186,7 +186,7 @@ namespace tempearly
         {
             frame->SetReturnValue(args[2]);
         } else {
-            frame->SetReturnValue(Value::NewInt(0));
+            frame->SetReturnValue(Object::NewInt(0));
         }
     }
 
@@ -203,17 +203,17 @@ namespace tempearly
         String name;
         String value;
 
-        if (!args[1].AsString(interpreter, name))
+        if (!args[1]->AsString(interpreter, name))
         {
             return;
         }
-        else if (interpreter->request->GetParameter(name, value))
+        else if (interpreter->GetRequest()->GetParameter(name, value))
         {
             double number;
 
             if (value.ParseDouble(number))
             {
-                frame->SetReturnValue(Value::NewFloat(number));
+                frame->SetReturnValue(Object::NewFloat(number));
                 return;
             }
         }
@@ -221,7 +221,7 @@ namespace tempearly
         {
             frame->SetReturnValue(args[2]);
         } else {
-            frame->SetReturnValue(Value::NewFloat(0.0));
+            frame->SetReturnValue(Object::NewFloat(0.0));
         }
     }
 
@@ -236,19 +236,19 @@ namespace tempearly
         Vector<String> values;
         String name;
 
-        if (!args[1].AsString(interpreter, name))
+        if (!args[1]->AsString(interpreter, name))
         {
             return;
         }
         list = new ListObject(interpreter->cList);
-        if (interpreter->request->GetAllParameters(name, values))
+        if (interpreter->GetRequest()->GetAllParameters(name, values))
         {
             for (std::size_t i = 0; i < values.GetSize(); ++i)
             {
-                list->Append(Value::NewString(values[i]));
+                list->Append(Object::NewString(values[i]));
             }
         }
-        frame->SetReturnValue(Value(list));
+        frame->SetReturnValue(list);
     }
 
     /**
@@ -262,35 +262,34 @@ namespace tempearly
         Vector<String> values;
         String name;
 
-        if (!args[1].AsString(interpreter, name))
+        if (!args[1]->AsString(interpreter, name))
         {
             return;
         }
         set = new SetObject(interpreter->cSet);
-        if (interpreter->request->GetAllParameters(name, values))
+        if (interpreter->GetRequest()->GetAllParameters(name, values))
         {
-            Value value;
-            i64 hash;
-
             for (std::size_t i = 0; i < values.GetSize(); ++i)
             {
-                value = Value::NewString(values[i]);
-                if (!value.GetHash(interpreter, hash))
+                const Handle<Object> value = Object::NewString(values[i]);
+                i64 hash;
+
+                if (!value->GetHash(interpreter, hash))
                 {
                     return;
                 }
                 set->Add(hash, value);
             }
         }
-        frame->SetReturnValue(Value(set));
+        frame->SetReturnValue(set);
     }
 
     void init_request(Interpreter* i)
     {
         Handle<Class> cRequest = new Class(i->cObject);
-        Handle<Object> instance = new Object(cRequest);
+        Handle<Object> instance = new CustomObject(cRequest);
 
-        i->SetGlobalVariable("request", Value(instance));
+        i->SetGlobalVariable("request", instance);
 
         cRequest->SetAllocator(Class::kNoAlloc);
 

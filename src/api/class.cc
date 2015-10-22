@@ -3,13 +3,13 @@
 
 namespace tempearly
 {
-    static Handle<CoreObject> no_alloc(const Handle<Interpreter>&, const Handle<Class>&);
+    static Handle<Object> no_alloc(const Handle<Interpreter>&, const Handle<Class>&);
 
     const Class::Allocator Class::kNoAlloc = no_alloc;
 
     Class::Class(const Handle<Class>& base)
         : m_base(base.Get())
-        , m_allocator(m_base ? m_base->m_allocator : 0)
+        , m_allocator(m_base ? m_base->m_allocator : nullptr)
         , m_attributes(nullptr) {}
 
     Class::~Class()
@@ -27,11 +27,11 @@ namespace tempearly
 
     String Class::GetName() const
     {
-        Value value;
+        Handle<Object> value;
 
-        if (GetAttribute("__name__", value) && value.IsString())
+        if (GetOwnAttribute("__name__", value) && value->IsString())
         {
-            return value.AsString();
+            return value->AsString();
         } else {
             return "<anonymous class>";
         }
@@ -47,44 +47,46 @@ namespace tempearly
         }
     }
 
-    Dictionary<Value> Class::GetAllAttributes() const
+    Dictionary<Handle<Object>> Class::GetOwnAttributes() const
     {
         if (m_attributes)
         {
             return *m_attributes;
         } else {
-            return Dictionary<Value>();
+            return Dictionary<Handle<Object>>();
         }
     }
 
-    bool Class::GetAttribute(const String& id, Value& value) const
+    bool Class::GetOwnAttribute(const String& id, Handle<Object>& slot) const
     {
         if (m_attributes)
         {
-            const AttributeMap::Entry* entry = m_attributes->Find(id);
+            const Dictionary<Object*>::Entry* entry = m_attributes->Find(id);
 
             if (entry)
             {
-                value = entry->GetValue();
+                slot = entry->GetValue();
 
                 return true;
             }
         }
         if (m_base)
         {
-            return m_base->GetAttribute(id, value);
+            return m_base->GetOwnAttribute(id, slot);
         } else {
             return false;
         }
     }
 
-    void Class::SetAttribute(const String& id, const Value& value)
+    bool Class::SetOwnAttribute(const String& id, const Handle<Object>& value)
     {
         if (!m_attributes)
         {
-            m_attributes = new AttributeMap();
+            m_attributes = new Dictionary<Object*>();
         }
         m_attributes->Insert(id, value);
+
+        return true;
     }
 
     void Class::AddMethod(const Handle<Interpreter>& interpreter,
@@ -101,9 +103,9 @@ namespace tempearly
 
         if (!m_attributes)
         {
-            m_attributes = new AttributeMap();
+            m_attributes = new Dictionary<Object*>();
         }
-        m_attributes->Insert(name, Value(method));
+        m_attributes->Insert(name, method);
     }
 
     namespace
@@ -123,7 +125,7 @@ namespace tempearly
             bool Invoke(const Handle<Interpreter>& interpreter,
                         const Handle<Frame>& frame)
             {
-                const Vector<Value>& args = frame->GetArguments();
+                const Vector<Handle<Object>> args = frame->GetArguments();
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
@@ -180,11 +182,11 @@ namespace tempearly
                                 int arity,
                                 MethodCallback callback)
     {
-        Value method = Value(new StaticMethod(interpreter, this, arity, callback));
+        Handle<Object> method = new StaticMethod(interpreter, this, arity, callback);
 
         if (!m_attributes)
         {
-            m_attributes = new AttributeMap();
+            m_attributes = new Dictionary<Object*>();
         }
         m_attributes->Insert(name, method);
     }
@@ -201,8 +203,8 @@ namespace tempearly
             bool Invoke(const Handle<Interpreter>& interpreter,
                         const Handle<Frame>& frame)
             {
-                const Vector<Value>& args = frame->GetArguments();
-                Value result;
+                const Vector<Handle<Object>> args = frame->GetArguments();
+                Handle<Object> result;
 
                 // Arguments must not be empty.
                 if (args.IsEmpty())
@@ -214,10 +216,10 @@ namespace tempearly
 
                     return false;
                 }
-                if (!args[0].CallMethod(interpreter,
-                                        result,
-                                        m_alias,
-                                        args.SubVector(1)))
+                if (!args[0]->CallMethod(interpreter,
+                                         result,
+                                         m_alias,
+                                         args.SubVector(1)))
                 {
                     return false;
                 }
@@ -241,11 +243,11 @@ namespace tempearly
                                const String& alias_name,
                                const String& aliased_name)
     {
-        Value method = Value(new AliasMethod(interpreter, aliased_name));
+        Handle<Object> method = new AliasMethod(interpreter, aliased_name);
 
         if (!m_attributes)
         {
-            m_attributes = new AttributeMap();
+            m_attributes = new Dictionary<Object*>();
         }
         m_attributes->Insert(alias_name, method);
     }
@@ -259,21 +261,26 @@ namespace tempearly
         }
         if (m_attributes)
         {
-            for (const AttributeMap::Entry* entry = m_attributes->GetFront(); entry; entry = entry->GetNext())
+            for (Dictionary<Object*>::Entry* entry = m_attributes->GetFront();
+                 entry;
+                 entry = entry->GetNext())
             {
-                entry->GetValue().Mark();
+                if (!entry->GetValue()->IsMarked())
+                {
+                    entry->GetValue()->Mark();
+                }
             }
         }
     }
 
-    static Handle<CoreObject> no_alloc(const Handle<Interpreter>& interpreter,
-                                       const Handle<Class>& cls)
+    static Handle<Object> no_alloc(const Handle<Interpreter>& interpreter,
+                                   const Handle<Class>& cls)
     {
-        return Handle<CoreObject>();
+        return Handle<Object>();
     }
 
-    static Handle<CoreObject> class_alloc_callback(const Handle<Interpreter>& interpreter,
-                                                   const Handle<Class>& cls)
+    static Handle<Object> class_alloc_callback(const Handle<Interpreter>& interpreter,
+                                               const Handle<Class>& cls)
     {
         return new Class(interpreter->cObject);
     }
@@ -290,7 +297,7 @@ namespace tempearly
     {
         Handle<Class> cls = args[0].As<Class>();
         Class::Allocator allocator = cls->GetAllocator();
-        Handle<CoreObject> instance;
+        Handle<Object> instance;
 
         if (allocator)
         {
@@ -302,9 +309,9 @@ namespace tempearly
                 return;
             }
         } else {
-            instance = new Object(cls);
+            instance = new CustomObject(cls);
         }
-        frame->SetReturnValue(Value(instance));
+        frame->SetReturnValue(instance);
     }
 
     /**
@@ -317,10 +324,10 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(class_call)
     {
-        Value instance;
+        Handle<Object> instance;
 
-        if (args[0].CallMethod(interpreter, instance, "alloc")
-            && instance.CallMethod(interpreter, "__init__", args.SubVector(1)))
+        if (args[0]->CallMethod(interpreter, instance, "alloc")
+            && instance->CallMethod(interpreter, "__init__", args.SubVector(1)))
         {
             frame->SetReturnValue(instance);
         }
@@ -334,13 +341,13 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(class_str)
     {
-        Value name;
+        Handle<Object> name;
 
-        if (args[0].As<Class>()->GetAttribute("__name__", name) && name.IsString())
+        if (args[0].As<Class>()->GetOwnAttribute("__name__", name) && name->IsString())
         {
             frame->SetReturnValue(name);
         } else {
-            frame->SetReturnValue(Value::NewString("<anonymous type>"));
+            frame->SetReturnValue(Object::NewString("<anonymous type>"));
         }
     }
 

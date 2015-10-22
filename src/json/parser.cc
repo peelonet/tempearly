@@ -8,21 +8,45 @@
 
 namespace tempearly
 {
-    static bool parse_value(const Handle<JsonParser>&, const Handle<Interpreter>&, Value&);
-    static bool parse_array(const Handle<JsonParser>&, const Handle<Interpreter>&, Value&);
-    static bool parse_object(const Handle<JsonParser>&, const Handle<Interpreter>&, Value&);
-    static bool parse_string(const Handle<JsonParser>&, const Handle<Interpreter>&, Value&);
-    static bool parse_number(const Handle<JsonParser>&, const Handle<Interpreter>&, Value&, int);
+    static bool parse_value(
+        const Handle<JsonParser>&,
+        const Handle<Interpreter>&,
+        Handle<Object>&
+    );
+    static bool parse_array(
+        const Handle<JsonParser>&,
+        const Handle<Interpreter>&,
+        Handle<Object>&
+    );
+    static bool parse_object(
+        const Handle<JsonParser>&,
+        const Handle<Interpreter>&,
+        Handle<Object>&
+    );
+    static bool parse_string(
+        const Handle<JsonParser>&,
+        const Handle<Interpreter>&,
+        Handle<Object>&
+    );
+    static bool parse_number(
+        const Handle<JsonParser>&,
+        const Handle<Interpreter>&,
+        Handle<Object>&,
+        int
+    );
 
     JsonParser::JsonParser(const Handle<Stream>& stream)
         : Parser(stream) {}
 
-    bool JsonParser::ParseValue(const Handle<Interpreter>& interpreter, Value& slot)
+    bool JsonParser::ParseValue(const Handle<Interpreter>& interpreter,
+                                Handle<Object>& slot)
     {
         return parse_value(this, interpreter, slot);
     }
 
-    static bool parse_value(const Handle<JsonParser>& parser, const Handle<Interpreter>& interpreter, Value& slot)
+    static bool parse_value(const Handle<JsonParser>& parser,
+                            const Handle<Interpreter>& interpreter,
+                            Handle<Object>& slot)
     {
         int r;
 
@@ -33,10 +57,13 @@ namespace tempearly
                 parser->SetErrorMessage("Unexpected end of input; Missing JSON value");
                 return false;
 
+            // "true"
             case 't':
-                if (parser->ReadRune('r') && parser->ReadRune('u') && parser->ReadRune('e'))
+                if (parser->ReadRune('r')
+                    && parser->ReadRune('u')
+                    && parser->ReadRune('e'))
                 {
-                    slot = Value::NewBool(true);
+                    slot = Object::NewBool(true);
 
                     return true;
                 } else {
@@ -45,10 +72,14 @@ namespace tempearly
                     return false;
                 }
 
+            // "false"
             case 'f':
-                if (parser->ReadRune('a') && parser->ReadRune('l') && parser->ReadRune('s') && parser->ReadRune('e'))
+                if (parser->ReadRune('a')
+                    && parser->ReadRune('l')
+                    && parser->ReadRune('s')
+                    && parser->ReadRune('e'))
                 {
-                    slot = Value::NewBool(false);
+                    slot = Object::NewBool(false);
 
                     return true;
                 } else {
@@ -57,10 +88,13 @@ namespace tempearly
                     return false;
                 }
 
+            // "null"
             case 'n':
-                if (parser->ReadRune('u') && parser->ReadRune('l') && parser->ReadRune('l'))
+                if (parser->ReadRune('u')
+                    && parser->ReadRune('l')
+                    && parser->ReadRune('l'))
                 {
-                    slot.Clear();
+                    slot = Object::NewNull();
 
                     return true;
                 } else {
@@ -89,10 +123,12 @@ namespace tempearly
         }
     }
 
-    static bool parse_array(const Handle<JsonParser>& parser, const Handle<Interpreter>& interpreter, Value& slot)
+    static bool parse_array(const Handle<JsonParser>& parser,
+                            const Handle<Interpreter>& interpreter,
+                            Handle<Object>& slot)
     {
         Handle<ListObject> list = new ListObject(interpreter->cList);
-        Value value;
+        Handle<Object> value;
 
         for (;;)
         {
@@ -125,11 +161,13 @@ namespace tempearly
         }
     }
 
-    static bool parse_object(const Handle<JsonParser>& parser, const Handle<Interpreter>& interpreter, Value& slot)
+    static bool parse_object(const Handle<JsonParser>& parser,
+                             const Handle<Interpreter>& interpreter,
+                             Handle<Object>& slot)
     {
         Handle<MapObject> map = new MapObject(interpreter->cMap);
-        Value key;
-        Value value;
+        Handle<Object> key;
+        Handle<Object> value;
         i64 hash;
 
         for (;;)
@@ -147,7 +185,8 @@ namespace tempearly
 
                 return false;
             }
-            else if (!parse_string(parser, interpreter, key) || !key.GetHash(interpreter, hash))
+            else if (!parse_string(parser, interpreter, key)
+                    || !key->GetHash(interpreter, hash))
             {
                 return false;
             }
@@ -181,7 +220,9 @@ namespace tempearly
         }
     }
 
-    static bool parse_string(const Handle<JsonParser>& parser, const Handle<Interpreter>& interpreter, Value& slot)
+    static bool parse_string(const Handle<JsonParser>& parser,
+                             const Handle<Interpreter>& interpreter,
+                             Handle<Object>& slot)
     {
         StringBuilder buffer;
 
@@ -197,7 +238,7 @@ namespace tempearly
             }
             else if (r == '"')
             {
-                slot = Value::NewString(buffer.ToString());
+                slot = Object::NewString(buffer.ToString());
 
                 return true;
             }
@@ -270,7 +311,7 @@ namespace tempearly
 
     static bool parse_number(const Handle<JsonParser>& parser,
                              const Handle<Interpreter>& interpreter,
-                             Value& slot,
+                             Handle<Object>& slot,
                              int initial)
     {
         StringBuilder buffer;
@@ -294,7 +335,7 @@ namespace tempearly
         {
             if (!parser->PeekRune('.'))
             {
-                slot = Value::NewInt(0);
+                slot = Object::NewInt(0);
 
                 return true;
             }
@@ -355,7 +396,7 @@ namespace tempearly
 
                 return false;
             }
-            slot = Value::NewFloat(number);
+            slot = Object::NewFloat(number);
         } else {
             i64 number;
 
@@ -365,7 +406,7 @@ namespace tempearly
 
                 return false;
             }
-            slot = Value::NewInt(number);
+            slot = Object::NewInt(number);
         }
 
         return true;

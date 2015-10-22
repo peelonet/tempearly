@@ -101,7 +101,7 @@ namespace tempearly
          */
         virtual void Write(const String& text);
 
-        void SendException(const Value& exception);
+        void SendException(const Handle<Object>& exception);
 
     private:
         /** Status code of the response. */

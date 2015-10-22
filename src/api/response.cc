@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "api/object.h"
 #include "core/bytestring.h"
 
 namespace tempearly
@@ -18,33 +17,34 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(res_header)
     {
+        const Handle<Response> response = interpreter->GetResponse();
         String name;
         String old_value;
         bool exists;
 
-        if (!args[1].AsString(interpreter, name))
+        if (!args[1]->AsString(interpreter, name))
         {
             return;
         }
-        exists = interpreter->response->GetHeader(name, old_value);
+        exists = response->GetHeader(name, old_value);
         if (args.GetSize() > 2)
         {
             String new_value;
 
-            if (!args[2].AsString(interpreter, new_value))
+            if (!args[2]->AsString(interpreter, new_value))
             {
                 return;
             }
-            else if (interpreter->response->IsCommitted())
+            else if (response->IsCommitted())
             {
                 interpreter->Throw(interpreter->eStateError, "Headers are already sent");
                 return;
             }
-            interpreter->response->SetHeader(name, new_value);
+            response->SetHeader(name, new_value);
         }
         if (exists)
         {
-            frame->SetReturnValue(Value::NewString(old_value));
+            frame->SetReturnValue(Object::NewString(old_value));
         }
     }
 
@@ -55,7 +55,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(res_is_committed)
     {
-        frame->SetReturnValue(Value::NewBool(interpreter->response->IsCommitted()));
+        frame->SetReturnValue(Object::NewBool(interpreter->GetResponse()->IsCommitted()));
     }
 
     /**
@@ -66,25 +66,27 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(res_redirect)
     {
+        const Handle<Response> response = interpreter->GetResponse();
         String location;
         bool permanent = false;
 
-        if (!args[1].AsString(interpreter, location))
+        if (!args[1]->AsString(interpreter, location))
         {
             return;
         }
-        if (args.GetSize() > 2 && !args[2].AsBool(interpreter, permanent))
+        if (args.GetSize() > 2 && !args[2]->AsBool(interpreter, permanent))
         {
             return;
         }
-        if (interpreter->response->IsCommitted())
+        if (response->IsCommitted())
         {
             interpreter->Throw(interpreter->eStateError, "Headers are already sent");
             return;
         }
-        interpreter->response->SetStatus(permanent ? 301 : 302);
-        interpreter->response->SetHeader("Location", location);
-        interpreter->response->Commit();
+        // TODO: Clear other possibly existing headers.
+        response->SetStatus(permanent ? 301 : 302);
+        response->SetHeader("Location", location);
+        response->Commit();
     }
 
     /**
@@ -99,24 +101,25 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(res_status)
     {
-        const int old_status = interpreter->response->GetStatus();
+        const Handle<Response> response = interpreter->GetResponse();
+        const int old_status = response->GetStatus();
 
         if (args.GetSize() > 1)
         {
             i64 new_status;
 
-            if (!args[1].AsInt(interpreter, new_status))
+            if (!args[1]->AsInt(interpreter, new_status))
             {
                 return;
             }
-            else if (interpreter->response->IsCommitted())
+            else if (response->IsCommitted())
             {
                 interpreter->Throw(interpreter->eStateError, "Headers are already sent");
                 return;
             }
-            interpreter->response->SetStatus(new_status);
+            response->SetStatus(new_status);
         }
-        frame->SetReturnValue(Value::NewInt(old_status));
+        frame->SetReturnValue(Object::NewInt(old_status));
     }
 
     /**
@@ -129,27 +132,27 @@ namespace tempearly
     {
         ByteString bytes;
 
-        if (args[1].IsBinary())
+        if (args[1]->IsBinary())
         {
-            bytes = args[1].AsBinary();
+            bytes = args[1]->AsBinary();
         }
-        else if (args[1].IsString())
+        else if (args[1]->IsString())
         {
-            bytes = args[1].AsString().Encode();
+            bytes = args[1]->AsString().Encode();
         } else {
             interpreter->Throw(interpreter->eValueError, "Either string or binary is required");
             return;
         }
-        interpreter->response->Write(bytes);
-        frame->SetReturnValue(Value::NewInt(bytes.GetLength()));
+        interpreter->GetResponse()->Write(bytes);
+        frame->SetReturnValue(Object::NewInt(bytes.GetLength()));
     }
 
     void init_response(Interpreter* i)
     {
         Handle<Class> cResponse = new Class(i->cStream);
-        Handle<Object> instance = new Object(cResponse);
+        Handle<Object> instance = new CustomObject(cResponse);
 
-        i->SetGlobalVariable("response", Value(instance));
+        i->SetGlobalVariable("response", instance);
 
         cResponse->SetAllocator(Class::kNoAlloc);
 

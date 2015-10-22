@@ -1,4 +1,3 @@
-#include "value.h"
 #include "api/exception.h"
 #include "core/bytestring.h"
 #include "sapi/response.h"
@@ -59,9 +58,9 @@ namespace tempearly
         Write(text.Encode());
     }
 
-    void Response::SendException(const Value& exception)
+    void Response::SendException(const Handle<Object>& exception)
     {
-        if (exception.IsException())
+        if (exception->IsException())
         {
             String message = exception.As<ExceptionObject>()->GetMessage();
 

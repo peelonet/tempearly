@@ -16,7 +16,7 @@ namespace tempearly
 
         static bool Apply(const Handle<Interpreter>& interpreter,
                           const Vector<Handle<Parameter> >& parameters,
-                          const Vector<Value>& arguments);
+                          const Vector<Handle<Object>>& arguments);
 
         /**
          * Returns name of the parameter.

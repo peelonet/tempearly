@@ -1,4 +1,3 @@
-#include "api/exception.h"
 #include "core/bytestring.h"
 #include "net/socket.h"
 #include "sapi/httpd/response.h"

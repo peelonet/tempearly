@@ -1,19 +1,18 @@
 #include "interpreter.h"
-#include "api/exception.h"
 
 namespace tempearly
 {
     ExceptionObject::ExceptionObject(const Handle<Class>& cls, const Handle<Frame>& frame)
-        : Object(cls)
+        : CustomObject(cls)
         , m_frame(frame.Get()) {}
 
     String ExceptionObject::GetMessage() const
     {
-        Value message;
+        Handle<Object> message;
 
-        if (GetAttribute("message", message) && message.IsString())
+        if (GetOwnAttribute("message", message) && message->IsString())
         {
-            return message.AsString();
+            return message->AsString();
         } else {
             return String();
         }
@@ -40,13 +39,13 @@ namespace tempearly
     {
         if (args.GetSize() == 2)
         {
-            const Value& message = args[1];
+            const Handle<Object>& message = args[1];
 
-            if (message.Is(Value::KIND_STRING))
+            if (message->IsString())
             {
-                args[0].SetAttribute("message", args[1]);
+                args[0]->SetOwnAttribute("message", args[1]);
             }
-            else if (!message.Is(Value::KIND_NULL))
+            else if (!message->IsNull())
             {
                 interpreter->Throw(interpreter->eTypeError, "String required");
             }
@@ -57,8 +56,8 @@ namespace tempearly
         }
     }
 
-    static Handle<CoreObject> ex_alloc(const Handle<Interpreter>& interpreter,
-                                       const Handle<Class>& cls)
+    static Handle<Object> ex_alloc(const Handle<Interpreter>& interpreter,
+                                   const Handle<Class>& cls)
     {
         return new ExceptionObject(cls, interpreter->GetFrame());
     }

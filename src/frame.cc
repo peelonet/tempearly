@@ -6,12 +6,13 @@ namespace tempearly
     Frame::Frame(const Handle<Frame>& previous,
                  const Handle<Frame>& enclosing_frame,
                  const Handle<FunctionObject>& function,
-                 const Vector<Value>& arguments)
+                 const Vector<Handle<Object>>& arguments)
         : m_previous(previous.Get())
         , m_enclosing_frame(enclosing_frame.Get())
         , m_function(function.Get())
         , m_arguments(arguments)
-        , m_local_variables(nullptr) {}
+        , m_local_variables(nullptr)
+        , m_return_value(nullptr) {}
 
     Frame::~Frame()
     {
@@ -23,11 +24,11 @@ namespace tempearly
 
     Handle<Object> Frame::GetLocalVariables(const Handle<Interpreter>& interpreter) const
     {
-        Handle<Object> object = new Object(interpreter->cObject);
+        Handle<Object> object = new CustomObject(interpreter->cObject);
 
         if (m_local_variables)
         {
-            for (const Dictionary<Value>::Entry* e = m_local_variables->GetFront(); e; e = e->GetNext())
+            for (const Dictionary<Object*>::Entry* e = m_local_variables->GetFront(); e; e = e->GetNext())
             {
                 const String& name = e->GetName();
 
@@ -35,7 +36,7 @@ namespace tempearly
                 {
                     continue;
                 }
-                object->SetAttribute(name, e->GetValue());
+                object->SetOwnAttribute(name, e->GetValue());
             }
         }
 
@@ -47,11 +48,11 @@ namespace tempearly
         return m_local_variables && m_local_variables->Find(id);
     }
 
-    bool Frame::GetLocalVariable(const String& id, Value& slot) const
+    bool Frame::GetLocalVariable(const String& id, Handle<Object>& slot) const
     {
         if (m_local_variables)
         {
-            const Dictionary<Value>::Entry* e = m_local_variables->Find(id);
+            const Dictionary<Object*>::Entry* e = m_local_variables->Find(id);
 
             if (e)
             {
@@ -64,20 +65,21 @@ namespace tempearly
         return false;
     }
 
-    void Frame::SetLocalVariable(const String& id, const Value& value)
+    void Frame::SetLocalVariable(const String& id, const Handle<Object>& value)
     {
         if (!m_local_variables)
         {
-            m_local_variables = new Dictionary<Value>();
+            m_local_variables = new Dictionary<Object*>();
         }
         m_local_variables->Insert(id, value);
     }
 
-    bool Frame::ReplaceLocalVariable(const String& id, const Value& value)
+    bool Frame::ReplaceLocalVariable(const String& id,
+                                     const Handle<Object>& value)
     {
         if (m_local_variables)
         {
-            Dictionary<Value>::Entry* e = m_local_variables->Find(id);
+            Dictionary<Object*>::Entry* e = m_local_variables->Find(id);
 
             if (e)
             {
@@ -107,15 +109,24 @@ namespace tempearly
         }
         for (std::size_t i = 0; i < m_arguments.GetSize(); ++i)
         {
-            m_arguments[i].Mark();
+            if (!m_arguments[i]->IsMarked())
+            {
+                m_arguments[i]->Mark();
+            }
         }
         if (m_local_variables)
         {
-            for (const Dictionary<Value>::Entry* e = m_local_variables->GetFront(); e; e = e->GetNext())
+            for (const Dictionary<Object*>::Entry* e = m_local_variables->GetFront(); e; e = e->GetNext())
             {
-                e->GetValue().Mark();
+                if (!e->GetValue()->IsMarked())
+                {
+                    e->GetValue()->Mark();
+                }
             }
         }
-        m_return_value.Mark();
+        if (m_return_value && !m_return_value->IsMarked())
+        {
+            m_return_value->Mark();
+        }
     }
 }

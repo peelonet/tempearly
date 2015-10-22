@@ -1,15 +1,14 @@
 #ifndef TEMPEARLY_API_LIST_H_GUARD
 #define TEMPEARLY_API_LIST_H_GUARD
 
-#include "value.h"
-#include "api/object.h"
+#include "customobject.h"
 
 namespace tempearly
 {
     /**
      * Implementation of linked list.
      */
-    class ListObject : public Object
+    class ListObject : public CustomObject
     {
     public:
         /**
@@ -23,12 +22,12 @@ namespace tempearly
              *
              * \param value Value of the link
              */
-            explicit Link(const Value& value);
+            explicit Link(const Handle<Object>& value);
 
             /**
              * Returns value of the link.
              */
-            inline const Value& GetValue() const
+            inline Handle<Object> GetValue() const
             {
                 return m_value;
             }
@@ -36,7 +35,7 @@ namespace tempearly
             /**
              * Sets value of the link.
              */
-            inline void SetValue(const Value& value)
+            inline void SetValue(const Handle<Object>& value)
             {
                 m_value = value;
             }
@@ -64,7 +63,7 @@ namespace tempearly
 
         private:
             /** Value of the entry. */
-            Value m_value;
+            Object* m_value;
             /** Pointer to next entry in the list. */
             Link* m_next;
             /** Pointer to previous entry in the list. */
@@ -123,33 +122,33 @@ namespace tempearly
         /**
          * Inserts given value into the list.
          */
-        void Append(const Value& value);
+        void Append(const Handle<Object>& value);
 
         /**
          * Inserts all elements from given vector to the end of the list.
          */
-        void Append(const Vector<Value>& vector);
+        void Append(const Vector<Handle<Object>>& vector);
 
         /**
          * Inserts all elements from another list to the end of this one.
          */
-        void Append(const Handle<ListObject>& that);
+        void AppendAll(const Handle<ListObject>& that);
 
         /**
          * Inserts given value in begining of the list.
          */
-        void Prepend(const Value& value);
+        void Prepend(const Handle<Object>& value);
 
         /**
          * Inserts all elements from given vector into beginning of the list.
          */
-        void Prepend(const Vector<Value>& vector);
+        void Prepend(const Vector<Handle<Object>>& vector);
 
         /**
          * Inserts an element at the given position. If position is out of
          * bounds, the element will be appended at the end of the list.
          */
-        void Insert(std::size_t index, const Value& value);
+        void Insert(std::size_t index, const Handle<Object>& value);
 
         /**
          * Removes an value from the specified index.
@@ -166,7 +165,7 @@ namespace tempearly
          * \return      A boolean flag indicating whether element with given
          *              index was found or not
          */
-        bool Erase(std::size_t index, Value& slot);
+        bool Erase(std::size_t index, Handle<Object>& slot);
 
         /**
          * Removes all values from the list.

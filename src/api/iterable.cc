@@ -14,14 +14,14 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_first)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        else if (iterator.GetNext(interpreter, element))
+        else if (iterator->GetNext(interpreter, element))
         {
             frame->SetReturnValue(element);
         }
@@ -46,16 +46,16 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_last)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        else if (iterator.GetNext(interpreter, element))
+        else if (iterator->GetNext(interpreter, element))
         {
-            while (iterator.GetNext(interpreter, element));
+            while (iterator->GetNext(interpreter, element));
             if (!interpreter->HasException())
             {
                 frame->SetReturnValue(element);
@@ -82,18 +82,18 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_single)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        else if (iterator.GetNext(interpreter, element))
+        else if (iterator->GetNext(interpreter, element))
         {
-            Value remaining;
+            Handle<Object> remaining;
 
-            if (iterator.GetNext(interpreter, remaining))
+            if (iterator->GetNext(interpreter, remaining))
             {
                 interpreter->Throw(interpreter->eStateError, "Iteration contains more than one element");
                 return;
@@ -130,30 +130,30 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_max)
     {
-        Value iterator;
-        Value max;
+        Handle<Object> iterator;
+        Handle<Object> max;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        if (iterator.GetNext(interpreter, max))
+        if (iterator->GetNext(interpreter, max))
         {
-            Value element;
-            Value result;
-            Vector<Value> args2;
+            Handle<Object> element;
+            Handle<Object> result;
+            Vector<Handle<Object>> args2;
 
             if (args.GetSize() < 2)
             {
                 bool b;
 
                 args2.Reserve(1);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(max);
-                    if (!element.CallMethod(interpreter, result, "__gt__", args2)
-                        || !result.AsBool(interpreter, b))
+                    if (!element->CallMethod(interpreter, result, "__gt__", args2)
+                        || !result->AsBool(interpreter, b))
                     {
                         return;
                     }
@@ -166,13 +166,13 @@ namespace tempearly
                 i64 i;
 
                 args2.Reserve(2);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(max);
                     args2.PushBack(element);
-                    if (!args[1].CallMethod(interpreter, result, "__call__", args2)
-                        || !result.AsInt(interpreter, i))
+                    if (!args[1]->CallMethod(interpreter, result, "__call__", args2)
+                        || !result->AsInt(interpreter, i))
                     {
                         return;
                     }
@@ -209,30 +209,30 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_min)
     {
-        Value iterator;
-        Value min;
+        Handle<Object> iterator;
+        Handle<Object> min;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        if (iterator.GetNext(interpreter, min))
+        if (iterator->GetNext(interpreter, min))
         {
-            Value element;
-            Value result;
-            Vector<Value> args2;
+            Handle<Object> element;
+            Handle<Object> result;
+            Vector<Handle<Object>> args2;
 
             if (args.GetSize() < 2)
             {
                 bool b;
 
                 args2.Reserve(1);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(min);
-                    if (!element.CallMethod(interpreter, result, "__lt__", args2)
-                        || !result.AsBool(interpreter, b))
+                    if (!element->CallMethod(interpreter, result, "__lt__", args2)
+                        || !result->AsBool(interpreter, b))
                     {
                         return;
                     }
@@ -245,13 +245,13 @@ namespace tempearly
                 i64 i;
 
                 args2.Reserve(2);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(min);
                     args2.PushBack(element);
-                    if (!args[1].CallMethod(interpreter, result, "__call__", args2)
-                        || !result.AsInt(interpreter, i))
+                    if (!args[1]->CallMethod(interpreter, result, "__call__", args2)
+                        || !result->AsInt(interpreter, i))
                     {
                         return;
                     }
@@ -289,27 +289,27 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_avg)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        if (iterator.GetNext(interpreter, element))
+        if (iterator->GetNext(interpreter, element))
         {
             u64 count = 1;
-            Value sum = element;
-            Vector<Value> args2;
+            Handle<Object> sum = element;
+            Vector<Handle<Object>> args2;
 
             if (args.GetSize() < 2)
             {
                 args2.Reserve(1);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(element);
-                    if (!sum.CallMethod(interpreter, sum, "__add__", args2))
+                    if (!sum->CallMethod(interpreter, sum, "__add__", args2))
                     {
                         return;
                     }
@@ -317,12 +317,12 @@ namespace tempearly
                 }
             } else {
                 args2.Reserve(2);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(sum);
                     args2.PushBack(element);
-                    if (!args[1].CallMethod(interpreter, sum, "__call__", args2))
+                    if (!args[1]->CallMethod(interpreter, sum, "__call__", args2))
                     {
                         return;
                     }
@@ -331,11 +331,11 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                Value result;
+                Handle<Object> result;
 
                 args2.Clear();
-                args2.PushBack(Value::NewInt(count));
-                if (sum.CallMethod(interpreter, result, "__div__", args2))
+                args2.PushBack(Object::NewInt(count));
+                if (sum->CallMethod(interpreter, result, "__div__", args2))
                 {
                     frame->SetReturnValue(result);
                 }
@@ -364,38 +364,38 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_sum)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        else if (iterator.GetNext(interpreter, element))
+        else if (iterator->GetNext(interpreter, element))
         {
-            Value sum = element;
-            Vector<Value> args2;
+            Handle<Object> sum = element;
+            Vector<Handle<Object>> args2;
 
             if (args.GetSize() < 2)
             {
                 args2.Reserve(1);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(element);
-                    if (!sum.CallMethod(interpreter, sum, "__add__", args2))
+                    if (!sum->CallMethod(interpreter, sum, "__add__", args2))
                     {
                         return;
                     }
                 }
             } else {
                 args2.Reserve(2);
-                while (iterator.GetNext(interpreter, element))
+                while (iterator->GetNext(interpreter, element))
                 {
                     args2.Clear();
                     args2.PushBack(sum);
                     args2.PushBack(element);
-                    if (!args[1].CallMethod(interpreter, sum, "__call__", args2))
+                    if (!args[1]->CallMethod(interpreter, sum, "__call__", args2))
                     {
                         return;
                     }
@@ -423,40 +423,40 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_all)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        else if (iterator.GetNext(interpreter, element))
+        else if (iterator->GetNext(interpreter, element))
         {
             do
             {
-                Value result;
+                Handle<Object> result;
                 bool b;
 
-                if (!args[1].CallMethod(interpreter, result, "__call__", element)
-                    || !result.AsBool(interpreter, b))
+                if (!args[1]->CallMethod(interpreter, result, "__call__", element)
+                    || !result->AsBool(interpreter, b))
                 {
                     return;
                 }
                 else if (!b)
                 {
-                    frame->SetReturnValue(Value::NewBool(false));
+                    frame->SetReturnValue(Object::NewBool(false));
                     return;
                 }
             }
-            while (iterator.GetNext(interpreter, element));
+            while (iterator->GetNext(interpreter, element));
             if (!interpreter->HasException())
             {
-                frame->SetReturnValue(Value::NewBool(true));
+                frame->SetReturnValue(Object::NewBool(true));
             }
         }
         else if (!interpreter->HasException())
         {
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
     }
 
@@ -471,36 +471,36 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_any)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        else if (iterator.GetNext(interpreter, element))
+        else if (iterator->GetNext(interpreter, element))
         {
             do
             {
-                Value result;
+                Handle<Object> result;
                 bool b;
 
-                if (!args[1].CallMethod(interpreter, result, "__call__", element)
-                    || !result.AsBool(interpreter, b))
+                if (!args[1]->CallMethod(interpreter, result, "__call__", element)
+                    || !result->AsBool(interpreter, b))
                 {
                     return;
                 }
                 else if (b)
                 {
-                    frame->SetReturnValue(Value::NewBool(true));
+                    frame->SetReturnValue(Object::NewBool(true));
                     return;
                 }
             }
-            while (iterator.GetNext(interpreter, element));
+            while (iterator->GetNext(interpreter, element));
         }
         if (!interpreter->HasException())
         {
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
     }
 
@@ -512,16 +512,16 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_each)
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
-        while (iterator.GetNext(interpreter, element))
+        while (iterator->GetNext(interpreter, element))
         {
-            if (!args[1].CallMethod(interpreter, "__call__", element))
+            if (!args[1]->CallMethod(interpreter, "__call__", element))
             {
                 return;
             }
@@ -542,20 +542,20 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_filter)
     {
-        Value iterator;
+        Handle<Object> iterator;
 
-        if (args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             Handle<ListObject> list = new ListObject(interpreter->cList);
-            Value element;
+            Handle<Object> element;
 
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
-                Value result;
+                Handle<Object> result;
                 bool b;
 
-                if (!args[1].CallMethod(interpreter, result, "__call__", element)
-                    || !result.AsBool(interpreter, b))
+                if (!args[1]->CallMethod(interpreter, result, "__call__", element)
+                    || !result->AsBool(interpreter, b))
                 {
                     return;
                 }
@@ -566,7 +566,7 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                frame->SetReturnValue(Value(list));
+                frame->SetReturnValue(list);
             }
         }
     }
@@ -581,20 +581,20 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_grep)
     {
-        Value iterator;
+        Handle<Object> iterator;
 
-        if (args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
-            Value element;
+            Handle<Object> element;
             Handle<ListObject> list = new ListObject(interpreter->cList);
 
-            while (!iterator.GetNext(interpreter, element))
+            while (!iterator->GetNext(interpreter, element))
             {
-                Value result;
+                Handle<Object> result;
                 bool b;
 
-                if (!args[1].CallMethod(interpreter, result, "__case__", element)
-                    || !result.AsBool(interpreter, b))
+                if (!args[1]->CallMethod(interpreter, result, "__case__", element)
+                    || !result->AsBool(interpreter, b))
                 {
                     return;
                 }
@@ -605,7 +605,7 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                frame->SetReturnValue(Value(list));
+                frame->SetReturnValue(list);
             }
         }
     }
@@ -621,21 +621,21 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_has)
     {
-        Value iterator;
+        Handle<Object> iterator;
 
-        if (args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
-            Value element;
+            Handle<Object> element;
 
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
                 bool b;
 
-                if (args[1].Equals(interpreter, element, b))
+                if (args[1]->Equals(interpreter, element, b))
                 {
                     if (b)
                     {
-                        frame->SetReturnValue(Value::NewBool(true));
+                        frame->SetReturnValue(Object::NewBool(true));
                         return;
                     }
                 } else {
@@ -644,7 +644,7 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                frame->SetReturnValue(Value::NewBool(false));
+                frame->SetReturnValue(Object::NewBool(false));
             }
         }
     }
@@ -669,7 +669,7 @@ namespace tempearly
         }
         else if (args.GetSize() == 2)
         {
-            if (!args[1].AsString(interpreter, separator))
+            if (!args[1]->AsString(interpreter, separator))
             {
                 return;
             }
@@ -677,25 +677,25 @@ namespace tempearly
             interpreter->Throw(interpreter->eValueError, "Too many arguments");
             return;
         }
-        if (!args[0].HasFlag(CountedObject::FLAG_INSPECTING))
+        if (!args[0]->HasFlag(CountedObject::FLAG_INSPECTING))
         {
-            Value iterator;
-            Value element;
+            Handle<Object> iterator;
+            Handle<Object> element;
             bool first = true;
 
-            args[0].SetFlag(CountedObject::FLAG_INSPECTING);
-            if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+            args[0]->SetFlag(CountedObject::FLAG_INSPECTING);
+            if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
             {
-                args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+                args[0]->UnsetFlag(CountedObject::FLAG_INSPECTING);
                 return;
             }
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
                 String repr;
 
-                if (!element.ToString(interpreter, repr))
+                if (!element->ToString(interpreter, repr))
                 {
-                    args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+                    args[0]->UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;
                 }
                 if (first)
@@ -706,13 +706,13 @@ namespace tempearly
                 }
                 buffer.Append(repr);
             }
-            args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+            args[0]->UnsetFlag(CountedObject::FLAG_INSPECTING);
             if (interpreter->HasException())
             {
                 return;
             }
         }
-        frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        frame->SetReturnValue(Object::NewString(buffer.ToString()));
     }
 
     /**
@@ -725,18 +725,18 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_map)
     {
-        Value iterator;
+        Handle<Object> iterator;
 
-        if (args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             Handle<ListObject> list = new ListObject(interpreter->cList);
-            Value element;
+            Handle<Object> element;
 
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
-                Value result;
+                Handle<Object> result;
 
-                if (!args[1].CallMethod(interpreter, result, "__call__", element))
+                if (!args[1]->CallMethod(interpreter, result, "__call__", element))
                 {
                     return;
                 }
@@ -744,13 +744,13 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                frame->SetReturnValue(Value(list));
+                frame->SetReturnValue(list);
             }
         }
     }
 
     static bool quicksort(const Handle<Interpreter>& interpreter,
-                          Vector<Value>& vector,
+                          Vector<Handle<Object>>& vector,
                           const std::size_t offset,
                           const std::size_t slice_size)
     {
@@ -777,13 +777,13 @@ namespace tempearly
 
         while (left < right)
         {
-            if (!vector[pivot].IsLessThan(interpreter, vector[left], slot))
+            if (!vector[pivot]->IsLessThan(interpreter, vector[left], slot))
             {
                 return false;
             }
             else if (slot)
             {
-                if (!vector[right].IsLessThan(interpreter, vector[pivot], slot))
+                if (!vector[right]->IsLessThan(interpreter, vector[pivot], slot))
                 {
                     return false;
                 }
@@ -802,7 +802,7 @@ namespace tempearly
 
         while (left - offset < slice_size - 1)
         {
-            if (!vector[pivot].IsLessThan(interpreter, vector[left], slot))
+            if (!vector[pivot]->IsLessThan(interpreter, vector[left], slot))
             {
                 return false;
             }
@@ -820,16 +820,16 @@ namespace tempearly
     }
 
     static bool quicksort_callback(const Handle<Interpreter>& interpreter,
-                                   Vector<Value>& vector,
+                                   Vector<Handle<Object>>& vector,
                                    const std::size_t offset,
                                    const std::size_t slice_size,
-                                   const Value& function)
+                                   const Handle<Object>& function)
     {
         std::size_t left;
         std::size_t right;
         std::size_t pivot;
-        Vector<Value> args;
-        Value result;
+        Vector<Handle<Object>> args;
+        Handle<Object> result;
         bool slot;
 
         if (slice_size < 2)
@@ -854,8 +854,8 @@ namespace tempearly
             args.Clear();
             args.PushBack(vector[left]);
             args.PushBack(vector[pivot]);
-            if (!function.CallMethod(interpreter, result, "__call__", args)
-                || !result.AsBool(interpreter, slot))
+            if (!function->CallMethod(interpreter, result, "__call__", args)
+                || !result->AsBool(interpreter, slot))
             {
                 return false;
             }
@@ -864,8 +864,8 @@ namespace tempearly
                 args.Clear();
                 args.PushBack(vector[right]);
                 args.PushBack(vector[pivot]);
-                if (!function.CallMethod(interpreter, result, "__call__", args)
-                    || !result.AsBool(interpreter, slot))
+                if (!function->CallMethod(interpreter, result, "__call__", args)
+                    || !result->AsBool(interpreter, slot))
                 {
                     return false;
                 }
@@ -887,8 +887,8 @@ namespace tempearly
             args.Clear();
             args.PushBack(vector[pivot]);
             args.PushBack(vector[left]);
-            if (!function.CallMethod(interpreter, result, "__call__", args)
-                || !result.AsBool(interpreter, slot))
+            if (!function->CallMethod(interpreter, result, "__call__", args)
+                || !result->AsBool(interpreter, slot))
             {
                 return false;
             }
@@ -916,14 +916,14 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_sort)
     {
-        Value iterator;
+        Handle<Object> iterator;
 
-        if (args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
-            Value element;
-            Vector<Value> vector;
+            Handle<Object> element;
+            Vector<Handle<Object>> vector;
 
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
                 vector.PushBack(element);
             }
@@ -936,7 +936,7 @@ namespace tempearly
                         Handle<ListObject> list = new ListObject(interpreter->cList);
 
                         list->Append(vector);
-                        frame->SetReturnValue(Value(list));
+                        frame->SetReturnValue(list);
                     }
                 }
                 else if (quicksort_callback(interpreter, vector, 0, vector.GetSize(), args[1]))
@@ -944,7 +944,7 @@ namespace tempearly
                     Handle<ListObject> list = new ListObject(interpreter->cList);
 
                     list->Append(vector);
-                    frame->SetReturnValue(Value(list));
+                    frame->SetReturnValue(list);
                 }
             }
         }
@@ -964,22 +964,22 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iterable_split)
     {
-        Value iterator;
+        Handle<Object> iterator;
 
-        if (args[0].CallMethod(interpreter, iterator, "__iter__"))
+        if (args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             Handle<ListObject> result = new ListObject(interpreter->cList);
             Handle<ListObject> a = new ListObject(interpreter->cList);
             Handle<ListObject> b = new ListObject(interpreter->cList);
-            Value element;
+            Handle<Object> element;
 
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
-                Value result;
+                Handle<Object> result;
                 bool slot;
 
-                if (!args[1].CallMethod(interpreter, result, "__call__", element)
-                    || !result.AsBool(interpreter, slot))
+                if (!args[1]->CallMethod(interpreter, result, "__call__", element)
+                    || !result->AsBool(interpreter, slot))
                 {
                     return;
                 }
@@ -992,9 +992,9 @@ namespace tempearly
             }
             if (!interpreter->HasException())
             {
-                result->Append(Value(a));
-                result->Append(Value(b));
-                frame->SetReturnValue(Value(result));
+                result->Append(a);
+                result->Append(b);
+                frame->SetReturnValue(result);
             }
         }
     }
@@ -1011,10 +1011,10 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(iterable_take)
     {
         i64 count;
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
         
-        if (!args[1].AsInt(interpreter, count))
+        if (!args[1]->AsInt(interpreter, count))
         {
             return;
         }
@@ -1023,13 +1023,13 @@ namespace tempearly
             interpreter->Throw(interpreter->eValueError, "Negative count");
             return;
         }
-        else if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+        else if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
         while (count-- > 0)
         {
-            if (!iterator.GetNext(interpreter, element))
+            if (!iterator->GetNext(interpreter, element))
             {
                 if (!interpreter->HasException())
                 {
@@ -1051,27 +1051,27 @@ namespace tempearly
         StringBuilder buffer;
 
         buffer << '[';
-        if (!args[0].HasFlag(CountedObject::FLAG_INSPECTING))
+        if (!args[0]->HasFlag(CountedObject::FLAG_INSPECTING))
         {
-            Value iterator;
-            Value element;
+            Handle<Object> iterator;
+            Handle<Object> element;
             bool first = true;
 
-            args[0].SetFlag(CountedObject::FLAG_INSPECTING);
-            if (!args[0].CallMethod(interpreter, iterator, "__iter__"))
+            args[0]->SetFlag(CountedObject::FLAG_INSPECTING);
+            if (!args[0]->CallMethod(interpreter, iterator, "__iter__"))
             {
-                args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+                args[0]->UnsetFlag(CountedObject::FLAG_INSPECTING);
                 return;
             }
-            while (iterator.GetNext(interpreter, element))
+            while (iterator->GetNext(interpreter, element))
             {
-                Value result;
+                Handle<Object> result;
                 String json;
 
-                if (!element.CallMethod(interpreter, result, "as_json")
-                    || !result.AsString(interpreter, json))
+                if (!element->CallMethod(interpreter, result, "as_json")
+                    || !result->AsString(interpreter, json))
                 {
-                    args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+                    args[0]->UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;
                 }
                 if (first)
@@ -1082,14 +1082,14 @@ namespace tempearly
                 }
                 buffer << json;
             }
-            args[0].UnsetFlag(CountedObject::FLAG_INSPECTING);
+            args[0]->UnsetFlag(CountedObject::FLAG_INSPECTING);
             if (interpreter->HasException())
             {
                 return;
             }
         }
         buffer << ']';
-        frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        frame->SetReturnValue(Object::NewString(buffer.ToString()));
     }
 
     void init_iterable(Interpreter* i)

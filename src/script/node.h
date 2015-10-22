@@ -37,7 +37,8 @@ namespace tempearly
          * \return            True if evaluation was successfull, false if an
          *                    exception was thrown
          */
-        bool Evaluate(const Handle<Interpreter>& interpreter, Value& slot) const;
+        bool Evaluate(const Handle<Interpreter>& interpreter,
+                      Handle<Object>& slot) const;
 
         /**
          * Uses node as variable and assigns an value into it.
@@ -49,7 +50,7 @@ namespace tempearly
          *                    exception was thrown
          */
         virtual bool Assign(const Handle<Interpreter>& interpreter,
-                            const Value& value) const;
+                            const Handle<Object>& value) const;
 
         /**
          * Same as Assign, but uses current local variable scope, instead of
@@ -65,7 +66,7 @@ namespace tempearly
          * exception was thrown
          */
          virtual bool AssignLocal(const Handle<Interpreter>& interpreter,
-                                  const Value& value) const;
+                                  const Handle<Object>& value) const;
 
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Node);
@@ -189,7 +190,7 @@ namespace tempearly
     public:
         explicit CatchNode(const Handle<TypeHint>& type, const Handle<Node>& variable, const Handle<Node>& statement);
 
-        bool IsCatch(const Handle<Interpreter>& interpreter, const Value& exception, bool& slot) const;
+        bool IsCatch(const Handle<Interpreter>& interpreter, const Handle<Object>& exception, bool& slot) const;
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
@@ -275,14 +276,14 @@ namespace tempearly
     class ValueNode : public Node
     {
     public:
-        explicit ValueNode(const Value& value);
+        explicit ValueNode(const Handle<Object>& value);
 
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         void Mark();
 
     private:
-        const Value m_value;
+        Object* m_value;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(ValueNode);
     };
 
@@ -344,7 +345,7 @@ namespace tempearly
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         bool Assign(const Handle<Interpreter>& interpreter,
-                    const Value& value) const;
+                    const Handle<Object>& value) const;
 
         void Mark();
 
@@ -428,7 +429,7 @@ namespace tempearly
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         bool Assign(const Handle<Interpreter>& interpreter,
-                    const Value& value) const;
+                    const Handle<Object>& value) const;
 
         void Mark();
 
@@ -464,10 +465,10 @@ namespace tempearly
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         bool Assign(const Handle<Interpreter>& interpreter,
-                    const Value& value) const;
+                    const Handle<Object>& value) const;
 
         bool AssignLocal(const Handle<Interpreter>& interpreter,
-                         const Value& value) const;
+                         const Handle<Object>& value) const;
 
     private:
         const String m_id;
@@ -484,7 +485,7 @@ namespace tempearly
         Result Execute(const Handle<Interpreter>& interpreter) const;
 
         bool Assign(const Handle<Interpreter>& interpreter,
-                    const Value& value) const;
+                    const Handle<Object>& value) const;
 
         void Mark();
 

@@ -27,7 +27,11 @@ namespace tempearly
          * \return            False if an exception was thrown while testing,
          *                    true otherwise
          */
-        virtual bool Accepts(const Handle<Interpreter>& interpreter, const Value& value, bool& slot) const = 0;
+        virtual bool Accepts(
+            const Handle<Interpreter>& interpreter,
+            const Handle<Object>& value,
+            bool& slot
+        ) const = 0;
 
         /**
          * Constructs an nullable version of this type hint.

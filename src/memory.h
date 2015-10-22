@@ -239,6 +239,15 @@ namespace tempearly
         }
 
         /**
+         * Casting method.
+         */
+        template< class U >
+        Handle<U> As() const
+        {
+            return Handle<U>(static_cast<U*>(m_pointer));
+        }
+
+        /**
          * Returns pointer to the managed object.
          */
         inline T* Get() const

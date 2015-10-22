@@ -48,8 +48,8 @@ namespace tempearly
 
     class ByteString;
     class Class;
-    class CoreObject;
     class CountedObject;
+    class CustomObject;
     class Date;
     class DateTime;
     class ExceptionObject;
@@ -79,7 +79,6 @@ namespace tempearly
     class Time;
     class Token;
     class TypeHint;
-    class Value;
 }
 
 #endif /* !TEMPEARLY_DEFINES_H_GUARD */
