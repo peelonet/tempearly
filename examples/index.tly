@@ -11,6 +11,7 @@
         <h1>Tempearly examples</h1>
         <ul>
             <li><a href="/coin-flipper.tly">Coin flipper</a></li>
+            <li><a href="/for-loop.tly">For-loop and collections</a></li>
             <li><a href="/form.tly">Forms</a></li>
             <li><a href="/random.tly">Random numbers</a></li>
             <li><a href="/sort.tly">Quicksort</a></li>

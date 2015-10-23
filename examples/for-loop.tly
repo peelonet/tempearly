@@ -1,0 +1,48 @@
+#!/usr/bin/env tempearly-cgi
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tempearly examples</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Collections and for-loops test</h1>
+        <p>Please input some numbers:</p>
+        <form method="post" action="{{ request.path() }}" role="form">
+            <button type="button" class="btn btn-lg btn-success">+</button>
+            <button type="button" class="btn btn-lg btn-danger">-</button>
+            <button type="submit" class="btn btn-lg btn-primary">Done</button>
+            <div class="row"></div>
+        </form>
+        {% if request.is_post(): %}
+            <p>You inputted following numbers:</p>
+            <samp>
+                {% for number : request.list("value"): %}
+                    {{ number }}
+                {% else: %}
+                    You didn't input anything!
+                {% end for; %}
+            </samp>
+        {% end if; %}
+    </div>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script>
+        $(function() {
+            $(".btn-success").click(function() {
+                var input = $("<div></div>", {
+                    "class": "col-xs-2",
+                    html: "<input type='number' name='value' class='form-control' value='0'>"
+                });
+
+                input.appendTo(".row");
+                $("input", input).focus();
+            });
+            $(".btn-danger").click(function() {
+                $(".row > .col-xs-2").last().detach();
+            });
+        });
+    </script>
+</body>
+</html>
