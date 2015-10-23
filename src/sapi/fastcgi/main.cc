@@ -20,25 +20,26 @@ int main(int argc, char** argv)
 
         while (FCGI_Accept() >= 0)
         {
-            Handle<Interpreter> interpreter = new Interpreter();
+            const Handle<Interpreter> interpreter = new Interpreter(
+                new CgiRequest(),
+                new CgiResponse()
+            );
 
-            interpreter->request = new CgiRequest();
-            interpreter->response = new CgiResponse();
             interpreter->Initialize();
             interpreter->PushFrame();
             if (script)
             {
                 if (!script->Execute(interpreter))
                 {
-                    interpreter->response->SendException(interpreter->GetException());
+                    interpreter->GetResponse()->SendException(interpreter->GetException());
                 }
-                else if (!interpreter->response->IsCommitted())
+                else if (!interpreter->GetResponse()->IsCommitted())
                 {
-                    interpreter->response->Commit();
+                    interpreter->GetResponse()->Commit();
                 }
             } else {
                 interpreter->Throw(interpreter->eSyntaxError, error_message);
-                interpreter->response->SendException(interpreter->GetException());
+                interpreter->GetResponse()->SendException(interpreter->GetException());
             }
             interpreter->PopFrame();
         }

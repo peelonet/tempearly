@@ -6,7 +6,7 @@
 namespace tempearly
 {
     ListObject::ListObject(const Handle<Class>& cls)
-        : Object(cls)
+        : CustomObject(cls)
         , m_size(0)
         , m_front(nullptr)
         , m_back(nullptr) {}
@@ -24,7 +24,7 @@ namespace tempearly
         return Handle<Link>();
     }
 
-    void ListObject::Append(const Value& value)
+    void ListObject::Append(const Handle<Object>& value)
     {
         Handle<Link> link = new Link(value);
 
@@ -38,7 +38,7 @@ namespace tempearly
         ++m_size;
     }
 
-    void ListObject::Append(const Vector<Value>& vector)
+    void ListObject::Append(const Vector<Handle<Object>>& vector)
     {
         if (!vector.IsEmpty())
         {
@@ -64,7 +64,7 @@ namespace tempearly
         }
     }
 
-    void ListObject::Append(const Handle<ListObject>& that)
+    void ListObject::AppendAll(const Handle<ListObject>& that)
     {
         if (!that || this == that.Get())
         {
@@ -85,7 +85,7 @@ namespace tempearly
         m_size += that->m_size;
     }
 
-    void ListObject::Prepend(const Value& value)
+    void ListObject::Prepend(const Handle<Object>& value)
     {
         Handle<Link> link = new Link(value);
 
@@ -99,7 +99,7 @@ namespace tempearly
         ++m_size;
     }
 
-    void ListObject::Prepend(const Vector<Value>& vector)
+    void ListObject::Prepend(const Vector<Handle<Object>>& vector)
     {
         if (!vector.IsEmpty())
         {
@@ -125,7 +125,7 @@ namespace tempearly
         }
     }
 
-    void ListObject::Insert(std::size_t index, const Value& value)
+    void ListObject::Insert(std::size_t index, const Handle<Object>& value)
     {
         Handle<Link> position = At(index);
 
@@ -175,7 +175,7 @@ namespace tempearly
         --m_size;
     }
 
-    bool ListObject::Erase(std::size_t index, Value& slot)
+    bool ListObject::Erase(std::size_t index, Handle<Object>& slot)
     {
         Handle<Link> link = At(index);
 
@@ -221,7 +221,7 @@ namespace tempearly
         }
     }
 
-    ListObject::Link::Link(const Value& value)
+    ListObject::Link::Link(const Handle<Object>& value)
         : m_value(value)
         , m_next(nullptr)
         , m_prev(nullptr) {}
@@ -229,7 +229,10 @@ namespace tempearly
     void ListObject::Link::Mark()
     {
         CountedObject::Mark();
-        m_value.Mark();
+        if (!m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
         if (m_next && !m_next->IsMarked())
         {
             m_next->Mark();
@@ -240,8 +243,8 @@ namespace tempearly
         }
     }
 
-    static Handle<CoreObject> list_alloc(const Handle<Interpreter>& interpreter,
-                                         const Handle<Class>& cls)
+    static Handle<Object> list_alloc(const Handle<Interpreter>& interpreter,
+                                     const Handle<Class>& cls)
     {
         return new ListObject(cls);
     }
@@ -272,7 +275,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_size)
     {
-        frame->SetReturnValue(Value::NewInt(args[0].As<ListObject>()->GetSize()));
+        frame->SetReturnValue(Object::NewInt(args[0].As<ListObject>()->GetSize()));
     }
 
     /**
@@ -317,7 +320,7 @@ namespace tempearly
         Handle<ListObject> list = args[0].As<ListObject>();
         i64 index;
 
-        if (!args[1].AsInt(interpreter, index))
+        if (!args[1]->AsInt(interpreter, index))
         {
             return;
         }
@@ -348,19 +351,19 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_index)
     {
-        const Value& needle = args[1];
+        const Handle<Object>& needle = args[1];
         bool result;
         i64 index = 0;
 
         for (Handle<ListObject::Link> link = args[0].As<ListObject>()->GetFront(); link; link = link->GetNext())
         {
-            if (!link->GetValue().Equals(interpreter, needle, result))
+            if (!link->GetValue()->Equals(interpreter, needle, result))
             {
                 return;
             }
             else if (result)
             {
-                frame->SetReturnValue(Value::NewInt(index));
+                frame->SetReturnValue(Object::NewInt(index));
                 return;
             }
             ++index;
@@ -378,13 +381,13 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(list_remove)
     {
         Handle<ListObject> list = args[0].As<ListObject>();
-        const Value& needle = args[1];
+        const Handle<Object>& needle = args[1];
         bool result;
         std::size_t index = 0;
 
         for (Handle<ListObject::Link> link = list->GetFront(); link; link = link->GetNext())
         {
-            if (!link->GetValue().Equals(interpreter, needle, result))
+            if (!link->GetValue()->Equals(interpreter, needle, result))
             {
                 return;
             }
@@ -410,13 +413,13 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(list_pop)
     {
         Handle<ListObject> list = args[0].As<ListObject>();
-        Value value;
+        Handle<Object> value;
 
         if (args.GetSize() > 1)
         {
             i64 index;
 
-            if (!args[1].AsInt(interpreter, index))
+            if (!args[1]->AsInt(interpreter, index))
             {
                 return;
             }
@@ -457,7 +460,7 @@ namespace tempearly
             {
                 if (m_link)
                 {
-                    Value value = m_link->GetValue();
+                    const Handle<Object> value = m_link->GetValue();
 
                     m_link = m_link->GetNext();
 
@@ -498,7 +501,7 @@ namespace tempearly
         } else {
             iterator = new ListIterator(interpreter->cIterator, list);
         }
-        frame->SetReturnValue(Value(iterator));
+        frame->SetReturnValue(iterator);
     }
 
     /**
@@ -515,22 +518,22 @@ namespace tempearly
     {
         Handle<ListObject> original = args[0].As<ListObject>();
         Handle<ListObject> result;
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
-        if (!args[1].CallMethod(interpreter, iterator, "__iter__"))
+        if (!args[1]->CallMethod(interpreter, iterator, "__iter__"))
         {
             return;
         }
         result = new ListObject(interpreter->cList);
-        result->Append(original);
-        while (iterator.GetNext(interpreter, element))
+        result->AppendAll(original);
+        while (iterator->GetNext(interpreter, element))
         {
             result->Append(element);
         }
         if (!interpreter->HasException())
         {
-            frame->SetReturnValue(Value(result));
+            frame->SetReturnValue(result);
         }
     }
 
@@ -547,16 +550,16 @@ namespace tempearly
         Handle<ListObject> result;
         i64 n;
 
-        if (!args[1].AsInt(interpreter, n))
+        if (!args[1]->AsInt(interpreter, n))
         {
             return;
         }
         result = new ListObject(interpreter->cList);
         while (n-- > 0)
         {
-            result->Append(original);
+            result->AppendAll(original);
         }
-        frame->SetReturnValue(Value(result));
+        frame->SetReturnValue(result);
     }
 
     /**
@@ -566,7 +569,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(list_bool)
     {
-        frame->SetReturnValue(Value::NewBool(!args[0].As<ListObject>()->IsEmpty()));
+        frame->SetReturnValue(Object::NewBool(!args[0].As<ListObject>()->IsEmpty()));
     }
 
     /**
@@ -589,14 +592,14 @@ namespace tempearly
         Handle<ListObject> list = args[0].As<ListObject>();
         Handle<ListObject::Link> link;
 
-        if (args[1].IsRange())
+        if (args[1]->IsRange())
         {
             Handle<ListObject> result;
             Handle<RangeObject> range = args[1].As<RangeObject>();
             i64 begin;
             i64 end;
 
-            if (!range->GetBegin().AsInt(interpreter, begin) || !range->GetEnd().AsInt(interpreter, end))
+            if (!range->GetBegin()->AsInt(interpreter, begin) || !range->GetEnd()->AsInt(interpreter, end))
             {
                 return;
             }
@@ -617,11 +620,11 @@ namespace tempearly
             {
                 result->Append(link->GetValue());
             }
-            frame->SetReturnValue(Value(result));
+            frame->SetReturnValue(result);
         } else {
             i64 index;
 
-            if (!args[1].AsInt(interpreter, index))
+            if (!args[1]->AsInt(interpreter, index))
             {
                 return;
             }
@@ -651,7 +654,7 @@ namespace tempearly
         Handle<ListObject::Link> link;
         i64 index;
 
-        if (!args[1].AsInt(interpreter, index))
+        if (!args[1]->AsInt(interpreter, index))
         {
             return;
         }

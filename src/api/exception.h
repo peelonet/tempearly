@@ -5,7 +5,7 @@
 
 namespace tempearly
 {
-    class ExceptionObject : public Object
+    class ExceptionObject : public CustomObject
     {
     public:
         explicit ExceptionObject(const Handle<Class>& cls, const Handle<Frame>& frame);

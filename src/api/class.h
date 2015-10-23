@@ -1,16 +1,22 @@
 #ifndef TEMPEARLY_API_CLASS_H_GUARD
 #define TEMPEARLY_API_CLASS_H_GUARD
 
-#include "coreobject.h"
-#include "core/vector.h"
+#include "object.h"
 
 namespace tempearly
 {
-    class Class : public CoreObject
+    class Class : public Object
     {
     public:
-        typedef Handle<CoreObject> (*Allocator)(const Handle<Interpreter>&, const Handle<Class>&);
-        typedef void (*MethodCallback)(const Handle<Interpreter>&, const Handle<Frame>&, const Vector<Value>&);
+        typedef Handle<Object> (*Allocator)(
+            const Handle<Interpreter>&,
+            const Handle<Class>&
+        );
+        typedef void (*MethodCallback)(
+            const Handle<Interpreter>&,
+            const Handle<Frame>&,
+            const Vector<Handle<Object>>&
+        );
 
         /**
          * Allocator which allocates nothing.
@@ -49,11 +55,11 @@ namespace tempearly
             m_allocator = allocator;
         }
 
-        Dictionary<Value> GetAllAttributes() const;
+        Dictionary<Handle<Object>> GetOwnAttributes() const;
 
-        bool GetAttribute(const String& id, Value& value) const;
+        bool GetOwnAttribute(const String& id, Handle<Object>& slot) const;
 
-        void SetAttribute(const String& id, const Value& value);
+        bool SetOwnAttribute(const String& id, const Handle<Object>& value);
 
         void AddMethod(const Handle<Interpreter>& interpreter,
                        const String& name,
@@ -91,7 +97,7 @@ namespace tempearly
         /** Allocator callback. */
         Allocator m_allocator;
         /** Contains attributes for the class. */
-        AttributeMap* m_attributes;
+        Dictionary<Object*>* m_attributes;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Class);
     };
 }

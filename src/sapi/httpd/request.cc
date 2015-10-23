@@ -1,18 +1,15 @@
 #include "core/bytestring.h"
-#include "net/socket.h"
 #include "sapi/httpd/request.h"
 
 namespace tempearly
 {
-    HttpServerRequest::HttpServerRequest(const Handle<Socket>& socket,
-                                         HttpMethod::Kind method,
+    HttpServerRequest::HttpServerRequest(HttpMethod::Kind method,
                                          const String& path,
                                          const ByteString& query_string,
                                          const Dictionary<String>& headers,
                                          const byte* body,
                                          std::size_t body_size)
-        : m_socket(socket.Get())
-        , m_method(method)
+        : m_method(method)
         , m_path(path)
         , m_query_string(query_string)
         , m_headers(headers)
@@ -112,14 +109,5 @@ namespace tempearly
         }
 
         return false;
-    }
-
-    void HttpServerRequest::Mark()
-    {
-        Request::Mark();
-        if (m_socket && !m_socket->IsMarked())
-        {
-            m_socket->Mark();
-        }
     }
 }

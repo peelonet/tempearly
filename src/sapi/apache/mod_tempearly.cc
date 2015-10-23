@@ -33,21 +33,22 @@ extern "C" int tempearly_handler(request_rec* request)
         return HTTP_FORBIDDEN;
     }
 
-    Handle<Interpreter> interpreter = new Interpreter();
+    Handle<Interpreter> interpreter = new Interpreter(
+        new ApacheRequest(request),
+        new ApacheResponse(request)
+    );
 
-    interpreter->request = new ApacheRequest(request);
-    interpreter->response = new ApacheResponse(request);
     interpreter->Initialize();
 
     if (!interpreter->Include(Filename(request->filename)))
     {
-        interpreter->response->SendException(interpreter->GetException());
+        interpreter->GetResponse()->SendException(interpreter->GetException());
 
         return HTTP_INTERNAL_SERVER_ERROR;
     }
-    else if (!interpreter->response->IsCommitted())
+    else if (!interpreter->GetResponse()->IsCommitted())
     {
-        interpreter->response->Commit();
+        interpreter->GetResponse()->Commit();
     }
 
     return OK;

@@ -35,7 +35,7 @@ namespace tempearly
             /** Date and time when the script was last compiled. */
             DateTime last_cached;
             /** Contains compiled script or NULL if syntax error occured. */
-            Script* script;
+            Handle<Script> script;
             /** Contains error message if an syntax error occured. */
             String error;
         };

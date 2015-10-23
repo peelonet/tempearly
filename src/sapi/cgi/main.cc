@@ -9,18 +9,19 @@ int main(int argc, char** argv)
 {
     if (argc == 2)
     {
-        Handle<Interpreter> interpreter = new Interpreter();
+        Handle<Interpreter> interpreter = new Interpreter(
+            new CgiRequest(),
+            new CgiResponse()
+        );
 
-        interpreter->request = new CgiRequest();
-        interpreter->response = new CgiResponse();
         interpreter->Initialize();
         if (!interpreter->Include(Filename(argv[1])))
         {
-            interpreter->response->SendException(interpreter->GetException());
+            interpreter->GetResponse()->SendException(interpreter->GetException());
         }
-        else if (!interpreter->response->IsCommitted())
+        else if (!interpreter->GetResponse()->IsCommitted())
         {
-            interpreter->response->Commit();
+            interpreter->GetResponse()->Commit();
         }
     }
 

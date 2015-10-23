@@ -2,11 +2,11 @@
 
 namespace tempearly
 {
-    Result::Result(Kind kind, const Value& value)
+    Result::Result(Kind kind, const Handle<Object>& value)
         : m_kind(kind)
         , m_value(value) {}
 
-    Result::Result(const Value& value)
+    Result::Result(const Handle<Object>& value)
         : m_kind(KIND_SUCCESS)
         , m_value(value) {}
 
@@ -24,6 +24,9 @@ namespace tempearly
 
     void Result::Mark() const
     {
-        m_value.Mark();
+        if (m_value && !m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
     }
 }

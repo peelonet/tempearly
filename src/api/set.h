@@ -1,8 +1,7 @@
 #ifndef TEMPEARLY_API_SET_H_GUARD
 #define TEMPEARLY_API_SET_H_GUARD
 
-#include "value.h"
-#include "api/object.h"
+#include "object.h"
 
 namespace tempearly
 {
@@ -10,7 +9,7 @@ namespace tempearly
      * Set is an unordered container where each value can exist only once.
      * Values are identified by their hash codes.
      */
-    class SetObject : public Object
+    class SetObject : public CustomObject
     {
     public:
         /**
@@ -25,7 +24,7 @@ namespace tempearly
              * \param hash  Hash code of the entry
              * \param value Value of the entry
              */
-            explicit Entry(i64 hash, const Value& value);
+            explicit Entry(i64 hash, const Handle<Object>& value);
 
             /**
              * Returns hash code of the entry.
@@ -38,7 +37,7 @@ namespace tempearly
             /**
              * Returns value of the entry.
              */
-            inline const Value& GetValue() const
+            inline Handle<Object> GetValue() const
             {
                 return m_value;
             }
@@ -46,7 +45,7 @@ namespace tempearly
             /**
              * Sets value of the entry.
              */
-            inline void SetValue(const Value& value)
+            inline void SetValue(const Handle<Object>& value)
             {
                 m_value = value;
             }
@@ -76,7 +75,7 @@ namespace tempearly
             /** Cached hash code of the value. */
             i64 m_hash;
             /** Value of the entry. */
-            Value m_value;
+            Object* m_value;
             /** Pointer to next entry in the set. */
             Entry* m_next;
             /** Pointer to previous entry in the set. */
@@ -151,12 +150,12 @@ namespace tempearly
          * \param hash  Hash code of the entry to insert
          * \param value Value of the entry to insert
          */
-        void Add(i64 hash, const Value& value);
+        void Add(i64 hash, const Handle<Object>& value);
 
         /**
          * Inserts all entries from given set into this one.
          */
-        void Add(const Handle<SetObject>& that);
+        void AddAll(const Handle<SetObject>& that);
 
         /**
          * Removes an entry with given hash code from the set.

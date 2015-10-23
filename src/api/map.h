@@ -1,15 +1,14 @@
 #ifndef TEMPEARLY_API_MAP_H_GUARD
 #define TEMPEARLY_API_MAP_H_GUARD
 
-#include "value.h"
-#include "api/object.h"
+#include "customobject.h"
 
 namespace tempearly
 {
     /**
      * Implementation of hash map object which stores pairs of values.
      */
-    class MapObject : public Object
+    class MapObject : public CustomObject
     {
     public:
         /**
@@ -25,7 +24,11 @@ namespace tempearly
              * \param key   Key value of the entry
              * \param value Value of the entry
              */
-            explicit Entry(i64 hash, const Value& key, const Value& value);
+            explicit Entry(
+                i64 hash,
+                const Handle<Object>& key,
+                const Handle<Object>& value
+            );
 
             /**
              * Returns hash code of the entry.
@@ -38,7 +41,7 @@ namespace tempearly
             /**
              * Returns key of the entry.
              */
-            inline const Value& GetKey() const
+            inline Handle<Object> GetKey() const
             {
                 return m_key;
             }
@@ -46,7 +49,7 @@ namespace tempearly
             /**
              * Returns value of the entry.
              */
-            inline const Value& GetValue() const
+            inline Handle<Object> GetValue() const
             {
                 return m_value;
             }
@@ -54,7 +57,7 @@ namespace tempearly
             /**
              * Sets value of the entry.
              */
-            inline void SetValue(const Value& value)
+            inline void SetValue(const Handle<Object>& value)
             {
                 m_value = value;
             }
@@ -84,9 +87,9 @@ namespace tempearly
             /** Cached hash code of the entry. */
             const i64 m_hash;
             /** Key of the entry. */
-            Value m_key;
+            Object* m_key;
             /** Value of the entry. */
-            Value m_value;
+            Object* m_value;
             /** Pointer to next entry. */
             Entry* m_next;
             /** Pointer to previous entry. */
@@ -157,7 +160,7 @@ namespace tempearly
          * \return     A boolean flag indicating whether entry with given hash
          *             code was found or not
          */
-        bool Find(i64 hash, Value& slot) const;
+        bool Find(i64 hash, Handle<Object>& slot) const;
 
         /**
          * Inserts an entry into the map. Existing entries with same hash code
@@ -167,7 +170,11 @@ namespace tempearly
          * \param key   Key value of the entry
          * \param value Value of the entry
          */
-        void Insert(i64 hash, const Value& key, const Value& value);
+        void Insert(
+            i64 hash,
+            const Handle<Object>& key,
+            const Handle<Object>& value
+        );
 
         /**
          * Removes an entry from the map.
@@ -177,7 +184,7 @@ namespace tempearly
          * \return     A boolean flag indicating whether entry with given hash
          *             code was found or not
          */
-        bool Erase(i64 hash, Value& slot);
+        bool Erase(i64 hash, Handle<Object>& slot);
 
         /**
          * Removes all entries from the map.

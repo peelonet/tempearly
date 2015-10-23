@@ -1,5 +1,5 @@
 #include "interpreter.h"
-#include "api/exception.h"
+#include "api/class.h"
 #include "api/iterator.h"
 #include "api/map.h"
 #include "core/bytestring.h"
@@ -31,11 +31,14 @@ namespace tempearly
     void init_string(Interpreter*);
     void init_void(Interpreter*);
 
-    Interpreter::Interpreter()
-        : request(nullptr)
-        , response(nullptr)
+    Interpreter::Interpreter(const Handle<Request>& request,
+                             const Handle<Response>& response)
+        : m_request(request)
+        , m_response(response)
         , m_frame(nullptr)
         , m_global_variables(nullptr)
+        , m_exception(nullptr)
+        , m_caught_exception(nullptr)
         , m_empty_iterator(nullptr)
         , m_imported_files(nullptr) {}
 
@@ -113,14 +116,14 @@ namespace tempearly
         return false;
     }
 
-    Value Interpreter::Import(const Filename& filename)
+    Handle<Object> Interpreter::Import(const Filename& filename)
     {
         const String& full_name = filename.GetFullName();
         Handle<Stream> stream;
 
         if (m_imported_files)
         {
-            Dictionary<Value>::Entry* entry = m_imported_files->Find(full_name);
+            Dictionary<Object*>::Entry* entry = m_imported_files->Find(full_name);
 
             if (entry)
             {
@@ -131,7 +134,7 @@ namespace tempearly
         {
             Handle<ScriptParser> parser = new ScriptParser(stream);
             Handle<Script> script = parser->Compile();
-            Value result;
+            Handle<Object> result;
 
             parser->Close();
             PushFrame();
@@ -139,28 +142,27 @@ namespace tempearly
             {
                 Throw(eSyntaxError, parser->GetErrorMessage());
 
-                return Value();
+                return Handle<Object>();
             }
             if (!script->Execute(this))
             {
                 PopFrame();
 
-                return Value();
+                return Handle<Object>();
             }
             result = m_frame->GetLocalVariables(this);
             PopFrame();
             if (!m_imported_files)
             {
-                m_imported_files = new Dictionary<Value>();
+                m_imported_files = new Dictionary<Object*>();
             }
             m_imported_files->Insert(full_name, result);
 
             return result;
-        } else {
-            Throw(eImportError, "Unable to import file");
-
-            return Value();
         }
+        Throw(eImportError, "Unable to import file");
+
+        return Handle<Object>();
     }
 
     Handle<Class> Interpreter::AddClass(const String& name, const Handle<Class>& base)
@@ -169,8 +171,8 @@ namespace tempearly
 
         if (!name.IsEmpty())
         {
-            cls->SetAttribute("__name__", Value::NewString(name));
-            SetGlobalVariable(name, Value(cls));
+            cls->SetOwnAttribute("__name__", Object::NewString(name));
+            SetGlobalVariable(name, cls);
         }
 
         return cls;
@@ -191,7 +193,7 @@ namespace tempearly
             bool Invoke(const Handle<Interpreter>& interpreter,
                         const Handle<Frame>& frame)
             {
-                const Vector<Value>& args = frame->GetArguments();
+                const Vector<Handle<Object>> args = frame->GetArguments();
 
                 // Test that we have correct amount of arguments.
                 if (m_arity < 0)
@@ -241,14 +243,14 @@ namespace tempearly
 
         if (!name.IsEmpty())
         {
-            function->SetAttribute("__name__", Value::NewString(name));
-            SetGlobalVariable(name, Value(function));
+            function->SetOwnAttribute("__name__", Object::NewString(name));
+            SetGlobalVariable(name, function);
         }
     }
 
     Handle<Frame> Interpreter::PushFrame(const Handle<Frame>& enclosing,
                                          const Handle<FunctionObject>& function,
-                                         const Vector<Value>& arguments)
+                                         const Vector<Handle<Object>>& arguments)
     {
         Handle<Frame> frame = new Frame(m_frame, enclosing, function, arguments);
 
@@ -270,11 +272,11 @@ namespace tempearly
         return m_global_variables && m_global_variables->Find(id);
     }
 
-    bool Interpreter::GetGlobalVariable(const String& id, Value& slot) const
+    bool Interpreter::GetGlobalVariable(const String& id, Handle<Object>& slot) const
     {
         if (m_global_variables)
         {
-            const Dictionary<Value>::Entry* e = m_global_variables->Find(id);
+            const Dictionary<Object*>::Entry* e = m_global_variables->Find(id);
 
             if (e)
             {
@@ -287,18 +289,18 @@ namespace tempearly
         return false;
     }
 
-    void Interpreter::SetGlobalVariable(const String& id, const Value& value)
+    void Interpreter::SetGlobalVariable(const String& id, const Handle<Object>& value)
     {
         if (!m_global_variables)
         {
-            m_global_variables = new Dictionary<Value>();
+            m_global_variables = new Dictionary<Object*>();
         }
         m_global_variables->Insert(id, value);
     }
 
     bool Interpreter::HasException(const Handle<Class>& cls)
     {
-        return m_exception.IsInstance(this, cls);
+        return m_exception && m_exception->IsInstance(this, cls);
     }
 
     void Interpreter::Throw(const Handle<Class>& cls, const String& message)
@@ -307,8 +309,8 @@ namespace tempearly
         {
             Handle<ExceptionObject> exception = new ExceptionObject(cls, m_frame);
 
-            exception->SetAttribute("message", Value::NewString(message));
-            m_exception = Value(exception);
+            exception->SetOwnAttribute("message", Object::NewString(message));
+            m_exception = exception;
         } else {
             std::fprintf(stderr, "%s (fatal internal error)\n", message.Encode().c_str());
             std::abort();
@@ -346,13 +348,13 @@ namespace tempearly
     void Interpreter::Mark()
     {
         CountedObject::Mark();
-        if (request && !request->IsMarked())
+        if (!m_request->IsMarked())
         {
-            request->Mark();
+            m_request->Mark();
         }
-        if (response && !response->IsMarked())
+        if (!m_response->IsMarked())
         {
-            response->Mark();
+            m_response->Mark();
         }
         if (m_frame && !m_frame->IsMarked())
         {
@@ -360,22 +362,38 @@ namespace tempearly
         }
         if (m_global_variables)
         {
-            for (const Dictionary<Value>::Entry* e = m_global_variables->GetFront(); e; e = e->GetNext())
+            for (Dictionary<Object*>::Entry* e = m_global_variables->GetFront();
+                 e;
+                 e = e->GetNext())
             {
-                e->GetValue().Mark();
+                if (!e->GetValue()->IsMarked())
+                {
+                    e->GetValue()->Mark();
+                }
             }
         }
-        m_exception.Mark();
-        m_caught_exception.Mark();
+        if (m_exception && !m_exception->IsMarked())
+        {
+            m_exception->Mark();
+        }
+        if (m_caught_exception && !m_caught_exception->IsMarked())
+        {
+            m_caught_exception->Mark();
+        }
         if (m_empty_iterator && !m_empty_iterator->IsMarked())
         {
             m_empty_iterator->Mark();
         }
         if (m_imported_files)
         {
-            for (const Dictionary<Value>::Entry* e = m_imported_files->GetFront(); e; e = e->GetNext())
+            for (Dictionary<Object*>::Entry* e = m_imported_files->GetFront();
+                 e;
+                 e = e->GetNext())
             {
-                e->GetValue().Mark();
+                if (!e->GetValue()->IsMarked())
+                {
+                    e->GetValue()->Mark();
+                }
             }
         }
     }

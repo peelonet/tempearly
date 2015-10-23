@@ -10,7 +10,10 @@ namespace tempearly
     public:
         explicit JsonParser(const Handle<Stream>& stream);
 
-        bool ParseValue(const Handle<Interpreter>& interpreter, Value& slot);
+        bool ParseValue(
+            const Handle<Interpreter>& interpreter,
+            Handle<Object>& slot
+        );
 
     private:
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(JsonParser);

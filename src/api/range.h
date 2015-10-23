@@ -1,24 +1,24 @@
 #ifndef TEMPEARLY_API_RANGE_H_GUARD
 #define TEMPEARLY_API_RANGE_H_GUARD
 
-#include "value.h"
+#include "customobject.h"
 
 namespace tempearly
 {
-    class RangeObject : public Object
+    class RangeObject : public CustomObject
     {
     public:
         explicit RangeObject(const Handle<Interpreter>& interpreter,
-                             const Value& begin,
-                             const Value& end,
+                             const Handle<Object>& begin,
+                             const Handle<Object>& end,
                              bool exclusive);
 
-        inline const Value& GetBegin() const
+        inline Handle<Object> GetBegin() const
         {
             return m_begin;
         }
 
-        inline const Value& GetEnd() const
+        inline Handle<Object> GetEnd() const
         {
             return m_end;
         }
@@ -36,8 +36,8 @@ namespace tempearly
         }
 
     private:
-        const Value m_begin;
-        const Value m_end;
+        Object* m_begin;
+        Object* m_end;
         const bool m_exclusive;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(RangeObject);
     };

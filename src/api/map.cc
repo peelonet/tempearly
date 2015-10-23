@@ -8,7 +8,7 @@
 namespace tempearly
 {
     MapObject::MapObject(const Handle<Class>& cls, std::size_t bucket_size)
-        : Object(cls)
+        : CustomObject(cls)
         , m_bucket_size(bucket_size)
         , m_bucket(Memory::Allocate<Entry*>(m_bucket_size))
         , m_front(nullptr)
@@ -41,7 +41,7 @@ namespace tempearly
         return false;
     }
 
-    bool MapObject::Find(i64 hash, Value& slot) const
+    bool MapObject::Find(i64 hash, Handle<Object>& slot) const
     {
         const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
 
@@ -58,7 +58,7 @@ namespace tempearly
         return false;
     }
 
-    void MapObject::Insert(i64 hash, const Value& key, const Value& value)
+    void MapObject::Insert(i64 hash, const Handle<Object>& key, const Handle<Object>& value)
     {
         std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
         Handle<Entry> entry;
@@ -85,7 +85,7 @@ namespace tempearly
         ++m_size;
     }
 
-    bool MapObject::Erase(i64 hash, Value& slot)
+    bool MapObject::Erase(i64 hash, Handle<Object>& slot)
     {
         const std::size_t index = static_cast<std::size_t>(hash % m_bucket_size);
         Handle<Entry> entry = m_bucket[index];
@@ -170,7 +170,7 @@ namespace tempearly
         }
     }
 
-    MapObject::Entry::Entry(i64 hash, const Value& key, const Value& value)
+    MapObject::Entry::Entry(i64 hash, const Handle<Object>& key, const Handle<Object>& value)
         : m_hash(hash)
         , m_key(key)
         , m_value(value)
@@ -181,8 +181,14 @@ namespace tempearly
     void MapObject::Entry::Mark()
     {
         CountedObject::Mark();
-        m_key.Mark();
-        m_value.Mark();
+        if (!m_key->IsMarked())
+        {
+            m_key->Mark();
+        }
+        if (!m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
         if (m_next && !m_next->IsMarked())
         {
             m_next->Mark();
@@ -197,8 +203,8 @@ namespace tempearly
         }
     }
 
-    static Handle<CoreObject> map_alloc(const Handle<Interpreter>& interpreter,
-                                        const Handle<Class>& cls)
+    static Handle<Object> map_alloc(const Handle<Interpreter>& interpreter,
+                                    const Handle<Class>& cls)
     {
         return new MapObject(cls);
     }
@@ -210,7 +216,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(map_size)
     {
-        frame->SetReturnValue(Value::NewInt(args[0].As<MapObject>()->GetSize()));
+        frame->SetReturnValue(Object::NewInt(args[0].As<MapObject>()->GetSize()));
     }
 
     /**
@@ -229,7 +235,7 @@ namespace tempearly
         {
             set->Add(e->GetHash(), e->GetKey());
         }
-        frame->SetReturnValue(Value(set));
+        frame->SetReturnValue(set);
     }
 
     /**
@@ -248,7 +254,7 @@ namespace tempearly
         {
             list->Append(e->GetValue());
         }
-        frame->SetReturnValue(Value(list));
+        frame->SetReturnValue(list);
     }
 
     /**
@@ -260,9 +266,9 @@ namespace tempearly
     {
         i64 hash;
 
-        if (args[1].GetHash(interpreter, hash))
+        if (args[1]->GetHash(interpreter, hash))
         {
-            frame->SetReturnValue(Value::NewBool(args[0].As<MapObject>()->Has(hash)));
+            frame->SetReturnValue(Object::NewBool(args[0].As<MapObject>()->Has(hash)));
         }
     }
 
@@ -278,9 +284,9 @@ namespace tempearly
         Handle<MapObject::Entry> entry;
         i64 hash;
 
-        if (args[1].GetHash(interpreter, hash))
+        if (args[1]->GetHash(interpreter, hash))
         {
-            Value value;
+            Handle<Object> value;
 
             if (args[0].As<MapObject>()->Find(hash, value))
             {
@@ -318,9 +324,9 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(map_pop)
     {
         i64 hash;
-        Value value;
+        Handle<Object> value;
 
-        if (!args[1].GetHash(interpreter, hash))
+        if (!args[1]->GetHash(interpreter, hash))
         {
             return;
         }
@@ -332,7 +338,7 @@ namespace tempearly
         {
             frame->SetReturnValue(args[2]);
         }
-        else if (args[0].CallMethod(interpreter, value, "__missing__", args[1]))
+        else if (args[0]->CallMethod(interpreter, value, "__missing__", args[1]))
         {
             frame->SetReturnValue(value);
         }
@@ -362,21 +368,21 @@ namespace tempearly
 
             if (args.GetSize() > 1)
             {
-                if (args[1].IsNull())
+                if (args[1]->IsNull())
                 {
                     sep1 = ": ";
                 }
-                else if (!args[1].AsString(interpreter, sep1))
+                else if (!args[1]->AsString(interpreter, sep1))
                 {
                     return;
                 }
                 if (args.GetSize() > 2)
                 {
-                    if (args[2].IsNull())
+                    if (args[2]->IsNull())
                     {
                         sep2 = ", ";
                     }
-                    else if (!args[2].AsString(interpreter, sep2))
+                    else if (!args[2]->AsString(interpreter, sep2))
                     {
                         return;
                     }
@@ -396,13 +402,13 @@ namespace tempearly
                 {
                     buffer.Append(sep2);
                 }
-                if (!entry->GetKey().ToString(interpreter, string))
+                if (!entry->GetKey()->ToString(interpreter, string))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;
                 }
                 buffer << string << sep1;
-                if (!entry->GetValue().ToString(interpreter, string))
+                if (!entry->GetValue()->ToString(interpreter, string))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;
@@ -411,7 +417,7 @@ namespace tempearly
             }
             map->UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
-        frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        frame->SetReturnValue(Object::NewString(buffer.ToString()));
     }
 
     /**
@@ -427,16 +433,16 @@ namespace tempearly
 
         for (Handle<MapObject::Entry> entry = args[0].As<MapObject>()->GetFront(); entry; entry = entry->GetNext())
         {
-            const Value& key = entry->GetKey();
-            const Value& value = entry->GetValue();
+            const Handle<Object> key = entry->GetKey();
+            const Handle<Object> value = entry->GetValue();
 
-            if (!value.GetHash(interpreter, hash))
+            if (!value->GetHash(interpreter, hash))
             {
                 return;
             }
             result->Insert(hash, value, key);
         }
-        frame->SetReturnValue(Value(result));
+        frame->SetReturnValue(result);
     }
 
     /**
@@ -449,7 +455,7 @@ namespace tempearly
         Handle<MapObject> map = args[0].As<MapObject>();
         Handle<MapObject> other;
 
-        if (!args[1].IsMap())
+        if (!args[1]->IsMap())
         {
             interpreter->Throw(interpreter->eValueError, "Map required");
             return;
@@ -483,7 +489,7 @@ namespace tempearly
                     list->Append(entry->GetKey());
                     list->Append(entry->GetValue());
 
-                    return Result(Result::KIND_SUCCESS, Value(list));
+                    return Result(Result::KIND_SUCCESS, list);
                 }
 
                 return Result(Result::KIND_BREAK);
@@ -525,7 +531,7 @@ namespace tempearly
         } else {
             iterator = new MapIterator(interpreter, map);
         }
-        frame->SetReturnValue(Value(iterator));
+        frame->SetReturnValue(iterator);
     }
 
     /**
@@ -540,12 +546,12 @@ namespace tempearly
         Handle<MapObject::Entry> entry;
         i64 hash;
 
-        if (args[1].GetHash(interpreter, hash))
+        if (args[1]->GetHash(interpreter, hash))
         {
-            Value value;
+            Handle<Object> value;
 
             if (args[0].As<MapObject>()->Find(hash, value)
-                || args[0].CallMethod(interpreter, value, "__missing__", args[1]))
+                || args[0]->CallMethod(interpreter, value, "__missing__", args[1]))
             {
                 frame->SetReturnValue(value);
             }
@@ -566,11 +572,11 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(map_setitem)
     {
-        const Value& key = args[1];
-        const Value& value = args[2];
+        const Handle<Object>& key = args[1];
+        const Handle<Object>& value = args[2];
         i64 hash;
 
-        if (!key.GetHash(interpreter, hash))
+        if (!key->GetHash(interpreter, hash))
         {
             return;
         }
@@ -588,7 +594,7 @@ namespace tempearly
     {
         String repr;
 
-        if (args[1].ToString(interpreter, repr))
+        if (args[1]->ToString(interpreter, repr))
         {
             interpreter->Throw(interpreter->eKeyError, repr);
         }
@@ -602,7 +608,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(map_bool)
     {
-        frame->SetReturnValue(Value::NewBool(!args[0].As<MapObject>()->IsEmpty()));
+        frame->SetReturnValue(Object::NewBool(!args[0].As<MapObject>()->IsEmpty()));
     }
 
     /**
@@ -623,13 +629,13 @@ namespace tempearly
             map->SetFlag(CountedObject::FLAG_INSPECTING);
             for (Handle<MapObject::Entry> entry = map->GetFront(); entry; entry = entry->GetNext())
             {
-                Value result;
+                Handle<Object> result;
                 String key;
                 String value;
 
-                if (!entry->GetKey().ToString(interpreter, key)
-                    || !entry->GetValue().CallMethod(interpreter, result, "as_json")
-                    || !result.AsString(interpreter, value))
+                if (!entry->GetKey()->ToString(interpreter, key)
+                    || !entry->GetValue()->CallMethod(interpreter, result, "as_json")
+                    || !result->AsString(interpreter, value))
                 {
                     map->UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;
@@ -645,7 +651,7 @@ namespace tempearly
             map->UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
         buffer << '}';
-        frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        frame->SetReturnValue(Object::NewString(buffer.ToString()));
     }
 
     /**
@@ -659,7 +665,7 @@ namespace tempearly
         Handle<MapObject> other;
         Handle<MapObject> result;
 
-        if (!args[1].IsMap())
+        if (!args[1]->IsMap())
         {
             interpreter->Throw(interpreter->eValueError, "Map required");
             return;
@@ -674,7 +680,7 @@ namespace tempearly
         {
             result->Insert(entry->GetHash(), entry->GetKey(), entry->GetValue());
         }
-        frame->SetReturnValue(Value(result));
+        frame->SetReturnValue(result);
     }
 
     void init_map(Interpreter* i)

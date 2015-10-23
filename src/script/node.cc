@@ -9,13 +9,19 @@ namespace tempearly
 {
     Node::Node() {}
 
-    bool Node::Evaluate(const Handle<Interpreter>& interpreter, Value& slot) const
+    bool Node::Evaluate(const Handle<Interpreter>& interpreter,
+                        Handle<Object>& slot) const
     {
         Result result = Execute(interpreter);
 
         if (result.Is(Result::KIND_SUCCESS))
         {
-            slot = result.GetValue();
+            if (result.HasValue())
+            {
+                slot = result.GetValue();
+            } else {
+                slot = Object::NewNull();
+            }
 
             return true;
         }
@@ -39,7 +45,7 @@ namespace tempearly
     }
 
     bool Node::Assign(const Handle<Interpreter>& interpreter,
-                      const Value& value) const
+                      const Handle<Object>& value) const
     {
         interpreter->Throw(interpreter->eSyntaxError,
                            "Node is not assignable");
@@ -48,7 +54,7 @@ namespace tempearly
     }
 
     bool Node::AssignLocal(const Handle<Interpreter>& interpreter,
-                           const Value& value) const
+                           const Handle<Object>& value) const
     {
         return Assign(interpreter, value);
     }
@@ -65,7 +71,7 @@ namespace tempearly
 
     Result TextNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        interpreter->response->Write(m_content);
+        interpreter->GetResponse()->Write(m_content);
 
         return Result();
     }
@@ -76,20 +82,19 @@ namespace tempearly
 
     Result ExpressionNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
+        Handle<Object> value;
 
         if (m_expression->Evaluate(interpreter, value))
         {
             String string;
 
-            if (value.ToString(interpreter, string))
+            if (value->ToString(interpreter, string))
             {
                 if (m_escape)
                 {
-                    interpreter->response->Write(string.EscapeXml());
-                } else {
-                    interpreter->response->Write(string);
+                    string = string.EscapeXml();
                 }
+                interpreter->GetResponse()->Write(string);
 
                 return Result();
             }
@@ -107,14 +112,14 @@ namespace tempearly
         }
     }
 
-    BlockNode::BlockNode(const Vector<Handle<Node> >& nodes)
+    BlockNode::BlockNode(const Vector<Handle<Node>>& nodes)
         : m_nodes(nodes) {}
 
     Result BlockNode::Execute(const Handle<Interpreter>& interpreter) const
     {
         for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
         {
-            Result result = m_nodes[i]->Execute(interpreter);
+            const Result result = m_nodes[i]->Execute(interpreter);
 
             if (!result.Is(Result::KIND_SUCCESS))
             {
@@ -148,11 +153,11 @@ namespace tempearly
 
     Result IfNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition;
+        Handle<Object> condition;
         bool b;
 
         if (!m_condition->Evaluate(interpreter, condition)
-            || !condition.ToBool(interpreter, b))
+            || !condition->ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -192,17 +197,17 @@ namespace tempearly
 
     Result WhileNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition;
+        Handle<Object> condition;
         bool b;
 
         if (!m_condition->Evaluate(interpreter, condition)
-            || !condition.ToBool(interpreter, b))
+            || !condition->ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
         while (b)
         {
-            Result result = m_statement->Execute(interpreter);
+            const Result result = m_statement->Execute(interpreter);
 
             switch (result.GetKind())
             {
@@ -219,7 +224,7 @@ namespace tempearly
                     return result;
             }
             if (!m_condition->Evaluate(interpreter, condition)
-                || !condition.ToBool(interpreter, b))
+                || !condition->ToBool(interpreter, b))
             {
                 return Result(Result::KIND_ERROR);
             }
@@ -252,22 +257,22 @@ namespace tempearly
 
     Result ForNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value collection;
-        Value iterator;
-        Value element;
+        Handle<Object> collection;
+        Handle<Object> iterator;
+        Handle<Object> element;
 
         if (!m_collection->Evaluate(interpreter, collection)
-            || !collection.CallMethod(interpreter, iterator, "__iter__"))
+            || !collection->CallMethod(interpreter, iterator, "__iter__"))
         {
             return Result(Result::KIND_ERROR);
         }
-        if (iterator.GetNext(interpreter, element))
+        if (iterator->GetNext(interpreter, element))
         {
             do
             {
                 if (m_variable->AssignLocal(interpreter, element))
                 {
-                    Result result = m_statement->Execute(interpreter);
+                    const Result result = m_statement->Execute(interpreter);
 
                     switch (result.GetKind())
                     {
@@ -285,7 +290,7 @@ namespace tempearly
                     return Result(Result::KIND_ERROR);
                 }
             }
-            while (iterator.GetNext(interpreter, element));
+            while (iterator->GetNext(interpreter, element));
             if (interpreter->HasException())
             {
                 return Result(Result::KIND_ERROR);
@@ -331,7 +336,9 @@ namespace tempearly
         , m_variable(variable.Get())
         , m_statement(statement.Get()) {}
 
-    bool CatchNode::IsCatch(const Handle<Interpreter>& interpreter, const Value& exception, bool& slot) const
+    bool CatchNode::IsCatch(const Handle<Interpreter>& interpreter,
+                            const Handle<Object>& exception,
+                            bool& slot) const
     {
         if (m_type)
         {
@@ -383,7 +390,7 @@ namespace tempearly
 
         if (result.Is(Result::KIND_ERROR))
         {
-            const Value& exception = interpreter->GetException();
+            const Handle<ExceptionObject> exception = interpreter->GetException();
             bool caught;
 
             for (std::size_t i = 0; i < m_catches.GetSize(); ++i)
@@ -466,11 +473,11 @@ namespace tempearly
     {
         if (m_value)
         {
-            Value value;
+            Handle<Object> value;
 
             if (m_value->Evaluate(interpreter, value))
             {
-                return Result(Result::KIND_RETURN, value);
+                return value;
             } else {
                 return Result(Result::KIND_ERROR);
             }
@@ -493,7 +500,7 @@ namespace tempearly
 
     Result ThrowNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value exception;
+        Handle<Object> exception;
 
         if (m_exception)
         {
@@ -501,18 +508,20 @@ namespace tempearly
             {
                 return Result(Result::KIND_ERROR);
             }
-            else if (!exception.IsInstance(interpreter, interpreter->cException))
+            else if (!exception->IsInstance(interpreter, interpreter->cException))
             {
                 interpreter->Throw(
                     interpreter->eTypeError,
-                    "Cannot throw instance of '" + exception.GetClass(interpreter)->GetName() + "'"
+                    "Cannot throw instance of '"
+                    + exception->GetClass(interpreter)->GetName()
+                    + "'"
                 );
 
                 return Result(Result::KIND_ERROR);
             }
         } else {
             exception = interpreter->GetCaughtException();
-            if (exception.IsNull())
+            if (!exception)
             {
                 interpreter->Throw(interpreter->eStateError, "No previously caught exception");
 
@@ -520,7 +529,7 @@ namespace tempearly
             }
             interpreter->ClearCaughtException();
         }
-        interpreter->SetException(exception);
+        interpreter->SetException(exception.As<ExceptionObject>());
 
         return Result(Result::KIND_ERROR);
     }
@@ -534,18 +543,21 @@ namespace tempearly
         }
     }
 
-    ValueNode::ValueNode(const Value& value)
+    ValueNode::ValueNode(const Handle<Object>& value)
         : m_value(value) {}
 
     Result ValueNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        return m_value;
+        return Handle<Object>(m_value);
     }
 
     void ValueNode::Mark()
     {
         Node::Mark();
-        m_value.Mark();
+        if (!m_value->IsMarked())
+        {
+            m_value->Mark();
+        }
     }
 
     AndNode::AndNode(const Handle<Node>& left, const Handle<Node>& right)
@@ -554,11 +566,11 @@ namespace tempearly
 
     Result AndNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition;
+        Handle<Object> condition;
         bool b;
 
         if (!m_left->Evaluate(interpreter, condition)
-            || !condition.ToBool(interpreter, b))
+            || !condition->ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -589,11 +601,11 @@ namespace tempearly
 
     Result OrNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition;
+        Handle<Object> condition;
         bool b;
 
         if (!m_left->Evaluate(interpreter, condition)
-            || !condition.ToBool(interpreter, b))
+            || !condition->ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         }
@@ -623,15 +635,15 @@ namespace tempearly
 
     Result NotNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value condition;
+        Handle<Object> condition;
         bool b;
 
         if (!m_condition->Evaluate(interpreter, condition)
-            || !condition.ToBool(interpreter, b))
+            || !condition->ToBool(interpreter, b))
         {
             return Result(Result::KIND_ERROR);
         } else {
-            return Value::NewBool(!b);
+            return Object::NewBool(!b);
         }
     }
 
@@ -658,17 +670,17 @@ namespace tempearly
 
     Result AttributeNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
+        Handle<Object> value;
 
         if (!m_receiver->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
-        else if (m_null_safe && value.IsNull())
+        else if (m_null_safe && value->IsNull())
         {
             return Result();
         }
-        else if (value.GetAttribute(interpreter, m_id, value))
+        else if (value->GetAttribute(interpreter, m_id, value))
         {
             return value;
         } else {
@@ -677,19 +689,19 @@ namespace tempearly
     }
 
     bool AttributeNode::Assign(const Handle<Interpreter>& interpreter,
-                               const Value& value) const
+                               const Handle<Object>& value) const
     {
-        Value receiver;
+        Handle<Object> receiver;
 
         if (!m_receiver->Evaluate(interpreter, receiver))
         {
             return false;
         }
-        else if (m_null_safe && receiver.IsNull())
+        else if (m_null_safe && receiver->IsNull())
         {
             return true;
         } else {
-            return receiver.SetAttribute(m_id, value);
+            return receiver->SetOwnAttribute(m_id, value);
         }
     }
 
@@ -713,22 +725,22 @@ namespace tempearly
 
     Result CallNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
+        Handle<Object> value;
 
         if (!m_receiver->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
-        else if (m_null_safe && value.IsNull())
+        else if (m_null_safe && value->IsNull())
         {
             return Result();
         } else {
-            Vector<Value> args;
+            Vector<Handle<Object>> args;
 
             args.Reserve(m_args.GetSize());
             for (std::size_t i = 0; i < m_args.GetSize(); ++i)
             {
-                Value argument;
+                Handle<Object> argument;
 
                 if (!m_args[i]->Evaluate(interpreter, argument))
                 {
@@ -736,7 +748,7 @@ namespace tempearly
                 }
                 args.PushBack(argument);
             }
-            if (value.CallMethod(interpreter, value, m_id, args))
+            if (value->CallMethod(interpreter, value, m_id, args))
             {
                 return value;
             } else {
@@ -767,13 +779,13 @@ namespace tempearly
 
     Result PrefixNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
+        Handle<Object> value;
 
         if (!m_variable->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
-        if (!value.CallMethod(interpreter, value, m_kind == INCREMENT ? "__inc__" : "__dec__")
+        if (!value->CallMethod(interpreter, value, m_kind == INCREMENT ? "__inc__" : "__dec__")
             || !m_variable->Assign(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
@@ -797,14 +809,14 @@ namespace tempearly
 
     Result PostfixNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
-        Value result;
+        Handle<Object> value;
+        Handle<Object> result;
 
         if (!m_variable->Evaluate(interpreter, value))
         {
             return Result(Result::KIND_ERROR);
         }
-        if (!value.CallMethod(interpreter, result, m_kind == INCREMENT ? "__inc__" : "__dec__")
+        if (!value->CallMethod(interpreter, result, m_kind == INCREMENT ? "__inc__" : "__dec__")
             || !m_variable->Assign(interpreter, result))
         {
             return Result(Result::KIND_ERROR);
@@ -834,13 +846,13 @@ namespace tempearly
 
     Result SubscriptNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value container;
-        Value index;
-        Value result;
+        Handle<Object> container;
+        Handle<Object> index;
+        Handle<Object> result;
 
         if (!m_container->Evaluate(interpreter, container)
             || !m_index->Evaluate(interpreter, index)
-            || !container.CallMethod(interpreter, result, "__getitem__", index))
+            || !container->CallMethod(interpreter, result, "__getitem__", index))
         {
             return Result(Result::KIND_ERROR);
         } else {
@@ -849,11 +861,11 @@ namespace tempearly
     }
 
     bool SubscriptNode::Assign(const Handle<Interpreter>& interpreter,
-                               const Value& value) const
+                               const Handle<Object>& value) const
     {
-        Value container;
-        Value index;
-        Vector<Value> args;
+        Handle<Object> container;
+        Handle<Object> index;
+        Vector<Handle<Object>> args;
 
         if (!m_container->Evaluate(interpreter, container)
             || !m_index->Evaluate(interpreter, index))
@@ -864,7 +876,7 @@ namespace tempearly
         args.PushBack(index);
         args.PushBack(value);
 
-        return container.CallMethod(interpreter, "__setitem__", args);
+        return container->CallMethod(interpreter, "__setitem__", args);
     }
 
     void SubscriptNode::Mark()
@@ -887,7 +899,7 @@ namespace tempearly
 
     Result AssignNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
+        Handle<Object> value;
 
         if (m_value->Evaluate(interpreter, value)
             && m_variable->Assign(interpreter, value))
@@ -921,7 +933,7 @@ namespace tempearly
 
     Result IdentifierNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value value;
+        Handle<Object> value;
 
         for (Handle<Frame> frame = interpreter->GetFrame(); frame; frame = frame->GetEnclosingFrame())
         {
@@ -940,7 +952,7 @@ namespace tempearly
     }
 
     bool IdentifierNode::Assign(const Handle<Interpreter>& interpreter,
-                                const Value& value) const
+                                const Handle<Object>& value) const
     {
         Handle<Frame> frame;
 
@@ -969,7 +981,7 @@ namespace tempearly
     }
 
     bool IdentifierNode::AssignLocal(const Handle<Interpreter>& interpreter,
-                                     const Value& value) const
+                                     const Handle<Object>& value) const
     {
         Handle<Frame> frame = interpreter->GetFrame();
 
@@ -1011,7 +1023,7 @@ namespace tempearly
         
         for (std::size_t i = 0; i < m_elements.GetSize(); ++i)
         {
-            Value value;
+            Handle<Object> value;
 
             if (m_elements[i]->Evaluate(interpreter, value))
             {
@@ -1021,20 +1033,21 @@ namespace tempearly
             }
         }
 
-        return Value(list);
+        return Result(Result::KIND_SUCCESS, list);
     }
 
-    bool ListNode::Assign(const Handle<Interpreter>& interpreter, const Value& value) const
+    bool ListNode::Assign(const Handle<Interpreter>& interpreter,
+                          const Handle<Object>& value) const
     {
-        Value iterator;
-        Value element;
+        Handle<Object> iterator;
+        Handle<Object> element;
         std::size_t index = 0;
 
-        if (!value.CallMethod(interpreter, iterator, "__iter__"))
+        if (!value->CallMethod(interpreter, iterator, "__iter__"))
         {
             return false;
         }
-        while (iterator.GetNext(interpreter, element))
+        while (iterator->GetNext(interpreter, element))
         {
             if (index < m_elements.GetSize())
             {
@@ -1070,8 +1083,8 @@ namespace tempearly
     Result MapNode::Execute(const Handle<Interpreter>& interpreter) const
     {
         Handle<MapObject> map = new MapObject(interpreter->cMap);
-        Value key;
-        Value value;
+        Handle<Object> key;
+        Handle<Object> value;
         i64 hash;
 
         for (std::size_t i = 0; i < m_entries.GetSize(); ++i)
@@ -1080,14 +1093,14 @@ namespace tempearly
 
             if (!entry.GetKey()->Evaluate(interpreter, key)
                 || !entry.GetValue()->Evaluate(interpreter, value)
-                || !key.GetHash(interpreter, hash))
+                || !key->GetHash(interpreter, hash))
             {
                 return Result(Result::KIND_ERROR);
             }
             map->Insert(hash, key, value);
         }
 
-        return Value(map);
+        return Result(Result::KIND_SUCCESS, map);
     }
 
     void MapNode::Mark()
@@ -1117,8 +1130,8 @@ namespace tempearly
 
     Result RangeNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        Value begin;
-        Value end;
+        Handle<Object> begin;
+        Handle<Object> end;
         
         if (!m_begin->Evaluate(interpreter, begin)
             || !m_end->Evaluate(interpreter, end))
@@ -1126,7 +1139,10 @@ namespace tempearly
             return Result(Result::KIND_ERROR);
         }
 
-        return Value(new RangeObject(interpreter, begin, end, m_exclusive));
+        return Result(
+            Result::KIND_SUCCESS,
+            new RangeObject(interpreter, begin, end, m_exclusive)
+        );
     }
 
     void RangeNode::Mark()
@@ -1149,7 +1165,10 @@ namespace tempearly
 
     Result FunctionNode::Execute(const Handle<Interpreter>& interpreter) const
     {
-        return Value(FunctionObject::NewScripted(interpreter, m_parameters, m_nodes));
+        return Result(
+            Result::KIND_SUCCESS,
+            FunctionObject::NewScripted(interpreter, m_parameters, m_nodes)
+        );
     }
 
     void FunctionNode::Mark()

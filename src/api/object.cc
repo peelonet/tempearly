@@ -1,74 +1,9 @@
 #include "interpreter.h"
 #include "api/class.h"
-#include "api/object.h"
 #include "core/stringbuilder.h"
 
 namespace tempearly
 {
-    Object::Object(const Handle<Class>& cls)
-        : m_class(cls.Get())
-        , m_attributes(nullptr) {}
-
-    Object::~Object()
-    {
-        if (m_attributes)
-        {
-            delete m_attributes;
-        }
-    }
-
-    Dictionary<Value> Object::GetAllAttributes() const
-    {
-        if (m_attributes)
-        {
-            return *m_attributes;
-        } else {
-            return Dictionary<Value>();
-        }
-    }
-
-    bool Object::GetAttribute(const String& id, Value& value) const
-    {
-        if (m_attributes)
-        {
-            const AttributeMap::Entry* entry = m_attributes->Find(id);
-
-            if (entry)
-            {
-                value = entry->GetValue();
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    void Object::SetAttribute(const String& id, const Value& value)
-    {
-        if (!m_attributes)
-        {
-            m_attributes = new AttributeMap();
-        }
-        m_attributes->Insert(id, value);
-    }
-
-    void Object::Mark()
-    {
-        CoreObject::Mark();
-        if (m_class && !m_class->IsMarked())
-        {
-            m_class->Mark();
-        }
-        if (m_attributes)
-        {
-            for (const AttributeMap::Entry* entry = m_attributes->GetFront(); entry; entry = entry->GetNext())
-            {
-                entry->GetValue().Mark();
-            }
-        }
-    }
-
     /**
      * Object#__init__()
      *
@@ -86,14 +21,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_hash)
     {
-        if (args[0].Is(Value::KIND_OBJECT))
-        {
-            Handle<CoreObject> object = args[0].AsObject();
-            
-            frame->SetReturnValue(Value::NewInt(reinterpret_cast<u64>(object.Get())));
-        } else {
-            frame->SetReturnValue(Value::NewInt(0));
-        }
+        frame->SetReturnValue(Object::NewInt(reinterpret_cast<u64>(args[0].Get())));
     }
 
     /**
@@ -103,13 +31,13 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_bool)
     {
-        const Value& receiver = args[0];
+        const Handle<Object>& receiver = args[0];
 
-        if (receiver.IsBool())
+        if (receiver->IsBool())
         {
             frame->SetReturnValue(receiver);
         } else {
-            frame->SetReturnValue(Value::NewBool(!receiver.IsNull()));
+            frame->SetReturnValue(Object::NewBool(!receiver->IsNull()));
         }
     }
 
@@ -120,13 +48,13 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_str)
     {
-        const Value& receiver = args[0];
+        const Handle<Object>& receiver = args[0];
 
-        if (receiver.IsString())
+        if (receiver->IsString())
         {
             frame->SetReturnValue(receiver);
         } else {
-            frame->SetReturnValue(Value::NewString("<object>"));
+            frame->SetReturnValue(Object::NewString("<object>"));
         }
     }
 
@@ -140,24 +68,26 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(obj_as_json)
     {
         StringBuilder buffer;
-        const Value& self = args[0];
+        const Handle<Object>& self = args[0];
 
         buffer << '{';
-        if (!self.HasFlag(CountedObject::FLAG_INSPECTING))
+        if (!self->HasFlag(CountedObject::FLAG_INSPECTING))
         {
-            const Dictionary<Value> attributes = self.GetAllAttributes();
+            const Dictionary<Handle<Object>> attributes = self->GetOwnAttributes();
             bool first = true;
 
-            self.SetFlag(CountedObject::FLAG_INSPECTING);
-            for (const Dictionary<Value>::Entry* entry = attributes.GetFront(); entry; entry = entry->GetNext())
+            self->SetFlag(CountedObject::FLAG_INSPECTING);
+            for (const Dictionary<Handle<Object>>::Entry* entry = attributes.GetFront();
+                 entry;
+                 entry = entry->GetNext())
             {
-                Value result;
+                Handle<Object> result;
                 String value;
 
-                if (!entry->GetValue().CallMethod(interpreter, result, "as_json")
-                    || !result.AsString(interpreter, value))
+                if (!entry->GetValue()->CallMethod(interpreter, result, "as_json")
+                    || !result->AsString(interpreter, value))
                 {
-                    self.UnsetFlag(CountedObject::FLAG_INSPECTING);
+                    self->UnsetFlag(CountedObject::FLAG_INSPECTING);
                     return;
                 }
                 if (first)
@@ -168,10 +98,10 @@ namespace tempearly
                 }
                 buffer << '"' << entry->GetName().EscapeJavaScript() << '"' << ':' << value;
             }
-            self.UnsetFlag(CountedObject::FLAG_INSPECTING);
+            self->UnsetFlag(CountedObject::FLAG_INSPECTING);
         }
         buffer << '}';
-        frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        frame->SetReturnValue(Object::NewString(buffer.ToString()));
     }
 
     /**
@@ -182,27 +112,21 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_eq)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
         bool result;
 
-        if (self.Is(Value::KIND_NULL))
+        if (self->IsNull())
         {
-            result = operand.Is(Value::KIND_NULL);
+            result = operand->IsNull();
         }
-        else if (self.Is(Value::KIND_BOOL))
+        else if (self->IsBool())
         {
-            result = operand.Is(Value::KIND_BOOL) && self.AsBool() == operand.AsBool();
-        }
-        else if (self.Is(Value::KIND_OBJECT))
-        {
-            result = self.IsInstance(interpreter, operand.GetClass(interpreter))
-                && operand.Is(Value::KIND_OBJECT)
-                && self.AsObject() == operand.AsObject();
+            result = operand->IsBool() && self->AsBool() == operand->AsBool();
         } else {
-            result = false;
+            result = self.Get() == operand.Get();
         }
-        frame->SetReturnValue(Value::NewBool(result));
+        frame->SetReturnValue(Object::NewBool(result));
     }
 
     /**
@@ -214,21 +138,21 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_gt)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
         bool slot;
 
-        if (!self.IsLessThan(interpreter, operand, slot))
+        if (!self->IsLessThan(interpreter, operand, slot))
         {
             return;
         }
         else if (slot)
         {
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
-        else if (self.Equals(interpreter, operand, slot))
+        else if (self->Equals(interpreter, operand, slot))
         {
-            frame->SetReturnValue(Value::NewBool(!slot));
+            frame->SetReturnValue(Object::NewBool(!slot));
         }
     }
 
@@ -241,21 +165,21 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_lte)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
         bool slot;
 
-        if (!self.IsLessThan(interpreter, operand, slot))
+        if (!self->IsLessThan(interpreter, operand, slot))
         {
             return;
         }
         else if (slot)
         {
-            frame->SetReturnValue(Value::NewBool(true));
+            frame->SetReturnValue(Object::NewBool(true));
         }
-        else if (self.Equals(interpreter, operand, slot))
+        else if (self->Equals(interpreter, operand, slot))
         {
-            frame->SetReturnValue(Value::NewBool(slot));
+            frame->SetReturnValue(Object::NewBool(slot));
         }
     }
 
@@ -268,21 +192,21 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(obj_gte)
     {
-        const Value& self = args[0];
-        const Value& operand = args[1];
+        const Handle<Object>& self = args[0];
+        const Handle<Object>& operand = args[1];
         bool slot;
 
-        if (!self.IsLessThan(interpreter, operand, slot))
+        if (!self->IsLessThan(interpreter, operand, slot))
         {
             return;
         }
         else if (slot)
         {
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
-        else if (self.Equals(interpreter, operand, slot))
+        else if (self->Equals(interpreter, operand, slot))
         {
-            frame->SetReturnValue(Value::NewBool(slot));
+            frame->SetReturnValue(Object::NewBool(slot));
         }
     }
 

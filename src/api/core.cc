@@ -3,9 +3,9 @@
 
 namespace tempearly
 {
-    static bool value_to_file(const Handle<Interpreter>& interpreter, const Value& value, Filename& slot)
+    static bool value_to_file(const Handle<Interpreter>& interpreter, const Handle<Object>& value, Filename& slot)
     {
-        if (value.IsFile())
+        if (value->IsFile())
         {
             slot = value.As<FileObject>()->GetPath();
 
@@ -13,7 +13,7 @@ namespace tempearly
         } else {
             String string;
 
-            if (value.AsString(interpreter, string))
+            if (value->AsString(interpreter, string))
             {
                 slot = string;
 
@@ -37,7 +37,7 @@ namespace tempearly
 
         if (value_to_file(interpreter, args[0], file) && interpreter->Include(file))
         {
-            frame->SetReturnValue(Value::NewBool(true));
+            frame->SetReturnValue(Object::NewBool(true));
         }
     }
 

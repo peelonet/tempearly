@@ -2,6 +2,7 @@
 #define TEMPEARLY_INTERPRETER_H_GUARD
 
 #include "frame.h"
+#include "api/exception.h"
 #include "sapi/request.h"
 #include "sapi/response.h"
 
@@ -10,7 +11,10 @@ namespace tempearly
     class Interpreter : public CountedObject
     {
     public:
-        explicit Interpreter();
+        explicit Interpreter(
+            const Handle<Request>& request,
+            const Handle<Response>& response
+        );
 
         ~Interpreter();
 
@@ -18,7 +22,7 @@ namespace tempearly
 
         bool Include(const Filename& filename);
 
-        Value Import(const Filename& filename);
+        Handle<Object> Import(const Filename& filename);
 
         Handle<Class> AddClass(const String& name,
                                const Handle<Class>& base);
@@ -27,7 +31,23 @@ namespace tempearly
                          int arity,
                          void (*callback)(const Handle<Interpreter>&,
                                           const Handle<Frame>&,
-                                          const Vector<Value>&));
+                                          const Vector<Handle<Object>>&));
+
+        /**
+         * Returns the HTTP request associated with the interpreter.
+         */
+        inline Handle<Request> GetRequest() const
+        {
+            return m_request;
+        }
+
+        /**
+         * Returns the HTTP response associated with the interpreter.
+         */
+        inline Handle<Response> GetResponse() const
+        {
+            return m_response;
+        }
 
         /**
          * Returns current stack frame or null handle if nothing is being
@@ -48,7 +68,7 @@ namespace tempearly
          */
         Handle<Frame> PushFrame(const Handle<Frame>& enclosing = Handle<Frame>(),
                                 const Handle<FunctionObject>& function = Handle<FunctionObject>(),
-                                const Vector<Value>& arguments = Vector<Value>());
+                                const Vector<Handle<Object>>& arguments = Vector<Handle<Object>>());
 
         /**
          * Pops the most recent stack frame from frame chain.
@@ -72,7 +92,7 @@ namespace tempearly
          * \return     A boolean flag indicating whether a variable with given
          *             name was found or not
          */
-        bool GetGlobalVariable(const String& id, Value& slot) const;
+        bool GetGlobalVariable(const String& id, Handle<Object>& slot) const;
 
         /**
          * Assigns a new global variable with given name and value. Existing
@@ -81,14 +101,14 @@ namespace tempearly
          * \param id    Name of the variable
          * \param value Value of the variable
          */
-        void SetGlobalVariable(const String& id, const Value& value);
+        void SetGlobalVariable(const String& id, const Handle<Object>& value);
 
         /**
          * Returns true if this interpreter has an uncaught exception.
          */
         inline bool HasException() const
         {
-            return !m_exception.IsNull();
+            return !!m_exception;
         }
 
         /**
@@ -101,7 +121,7 @@ namespace tempearly
          * Returns currently uncaught exception or NULL handle if there isn't
          * any.
          */
-        inline const Value& GetException() const
+        inline Handle<ExceptionObject> GetException() const
         {
             return m_exception;
         }
@@ -109,7 +129,7 @@ namespace tempearly
         /**
          * Sets currently uncaught exception.
          */
-        inline void SetException(const Value& exception)
+        inline void SetException(const Handle<ExceptionObject>& exception)
         {
             m_exception = exception;
         }
@@ -119,14 +139,14 @@ namespace tempearly
          */
         inline void ClearException()
         {
-            m_exception.Clear();
+            m_exception = nullptr;
         }
 
         /**
          * Returns currently caught exception or NULL handle if there isn't
          * any.
          */
-        inline const Value& GetCaughtException() const
+        inline Handle<ExceptionObject> GetCaughtException() const
         {
             return m_caught_exception;
         }
@@ -134,7 +154,7 @@ namespace tempearly
         /**
          * Sets currently caught exception.
          */
-        inline void SetCaughtException(const Value& caught_exception)
+        inline void SetCaughtException(const Handle<ExceptionObject>& caught_exception)
         {
             m_caught_exception = caught_exception;
         }
@@ -144,7 +164,7 @@ namespace tempearly
          */
         inline void ClearCaughtException()
         {
-            m_caught_exception.Clear();
+            m_caught_exception = nullptr;
         }
 
         /**
@@ -165,9 +185,6 @@ namespace tempearly
          * interpreter.
          */
         void Mark();
-
-        Request* request;
-        Response* response;
 
         Handle<Class> cBinary;
         Handle<Class> cBool;
@@ -206,18 +223,22 @@ namespace tempearly
         Handle<Class> eZeroDivisionError;
 
     private:
+        /** HTTP request associated with the interpreter. */
+        Request* m_request;
+        /** HTTP response associated with the interpreter. */
+        Response* m_response;
         /** Current stack frame. */
         Frame* m_frame;
         /** Container for global variables. */
-        Dictionary<Value>* m_global_variables;
+        Dictionary<Object*>* m_global_variables;
         /** Current uncaught exception. */
-        Value m_exception;
+        ExceptionObject* m_exception;
         /** Current caught exception. */
-        Value m_caught_exception;
+        ExceptionObject* m_caught_exception;
         /** Shared instance of empty iterator. */
         IteratorObject* m_empty_iterator;
         /** Container for imported files. */
-        Dictionary<Value>* m_imported_files;
+        Dictionary<Object*>* m_imported_files;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(Interpreter);
     };
 }

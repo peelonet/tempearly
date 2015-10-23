@@ -1560,19 +1560,19 @@ SCAN_EXPONENT:
                 break;
 
             case Token::KW_TRUE:
-                node = new ValueNode(Value::NewBool(true));
+                node = new ValueNode(Object::NewBool(true));
                 break;
 
             case Token::KW_FALSE:
-                node = new ValueNode(Value::NewBool(false));
+                node = new ValueNode(Object::NewBool(false));
                 break;
 
             case Token::KW_NULL:
-                node = new ValueNode(Value());
+                node = new ValueNode(Object::NewNull());
                 break;
 
             case Token::STRING:
-                node = new ValueNode(Value::NewString(token.text));
+                node = new ValueNode(Object::NewString(token.text));
                 break;
 
             case Token::INT:
@@ -1585,7 +1585,7 @@ SCAN_EXPONENT:
 
                     return Handle<Node>();
                 }
-                node = new ValueNode(Value::NewInt(value));
+                node = new ValueNode(Object::NewInt(value));
                 break;
             }
 
@@ -1599,7 +1599,7 @@ SCAN_EXPONENT:
 
                     return Handle<Node>();
                 }
-                node = new ValueNode(Value::NewFloat(value));
+                node = new ValueNode(Object::NewFloat(value));
                 break;
             }
 

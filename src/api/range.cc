@@ -6,10 +6,10 @@
 namespace tempearly
 {
     RangeObject::RangeObject(const Handle<Interpreter>& interpreter,
-                             const Value& begin,
-                             const Value& end,
+                             const Handle<Object>& begin,
+                             const Handle<Object>& end,
                              bool exclusive)
-        : Object(interpreter->cRange)
+        : CustomObject(interpreter->cRange)
         , m_begin(begin)
         , m_end(end)
         , m_exclusive(exclusive) {}
@@ -17,8 +17,14 @@ namespace tempearly
     void RangeObject::Mark()
     {
         Object::Mark();
-        m_begin.Mark();
-        m_end.Mark();
+        if (!m_begin->IsMarked())
+        {
+            m_begin->Mark();
+        }
+        if (!m_end->IsMarked())
+        {
+            m_end->Mark();
+        }
     }
 
     /**
@@ -28,15 +34,15 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(range_s_call)
     {
-        const Value& begin = args[0];
-        const Value& end = args[1];
+        const Handle<Object> begin = args[0];
+        const Handle<Object> end = args[1];
         bool exclusive = false;
 
-        if (args.GetSize() > 2 && !args[2].AsBool(interpreter, exclusive))
+        if (args.GetSize() > 2 && !args[2]->AsBool(interpreter, exclusive))
         {
             return;
         }
-        frame->SetReturnValue(Value(new RangeObject(interpreter, begin, end, exclusive)));
+        frame->SetReturnValue(new RangeObject(interpreter, begin, end, exclusive));
     }
 
     /**
@@ -73,7 +79,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(range_is_exclusive)
     {
-        frame->SetReturnValue(Value::NewBool(args[0].As<RangeObject>()->IsExclusive()));
+        frame->SetReturnValue(Object::NewBool(args[0].As<RangeObject>()->IsExclusive()));
     }
 
     namespace
@@ -94,7 +100,7 @@ namespace tempearly
             {
                 if (m_current < m_end || (!m_exclusive && m_current == m_end))
                 {
-                    return Result(Result::KIND_SUCCESS, Value::NewInt(m_current++));
+                    return Object::NewInt(m_current++);
                 } else {
                     return Result(Result::KIND_BREAK);
                 }
@@ -111,35 +117,32 @@ namespace tempearly
         {
         public:
             explicit RangeIterator(const Handle<Interpreter>& interpreter,
-                                   const Value& begin,
-                                   const Value& end,
+                                   const Handle<Object>& begin,
+                                   const Handle<Object>& end,
                                    bool exclusive)
                 : IteratorObject(interpreter->cIterator)
-                , m_done(false)
                 , m_current(begin)
                 , m_end(end)
                 , m_exclusive(exclusive) {}
 
             Result Generate(const Handle<Interpreter>& interpreter)
             {
-                Value cmp;
                 bool b;
 
-                if (m_done)
+                if (!m_current)
                 {
                     return Result(Result::KIND_BREAK);
                 }
-                else if (m_current.CallMethod(interpreter, cmp, "__lt__", m_end)
-                        || !cmp.AsBool(interpreter, b))
+                else if (!m_current->IsLessThan(interpreter, m_end, b))
                 {
                     return Result(Result::KIND_ERROR);
                 }
                 else if (b)
                 {
-                    Value current = m_current;
-                    Value next;
+                    const Handle<Object> current = m_current;
+                    Handle<Object> next;
 
-                    if (!m_current.CallMethod(interpreter, next, "__inc__"))
+                    if (!m_current->CallMethod(interpreter, next, "__inc__"))
                     {
                         return Result(Result::KIND_ERROR);
                     }
@@ -147,7 +150,7 @@ namespace tempearly
 
                     return Result(Result::KIND_SUCCESS, current);
                 }
-                m_done = true;
+                m_current = nullptr;
                 if (m_exclusive)
                 {
                     return Result(Result::KIND_BREAK);
@@ -159,14 +162,19 @@ namespace tempearly
             void Mark()
             {
                 IteratorObject::Mark();
-                m_current.Mark();
-                m_end.Mark();
+                if (m_current && !m_current->IsMarked())
+                {
+                    m_current->Mark();
+                }
+                if (!m_end->IsMarked())
+                {
+                    m_end->Mark();
+                }
             }
 
         private:
-            bool m_done;
-            Value m_current;
-            const Value m_end;
+            Object* m_current;
+            Object* m_end;
             const bool m_exclusive;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(RangeIterator);
         };
@@ -181,23 +189,27 @@ namespace tempearly
     TEMPEARLY_NATIVE_METHOD(range_iter)
     {
         Handle<RangeObject> range = args[0].As<RangeObject>();
-        const Value& begin = range->GetBegin();
-        const Value& end = range->GetEnd();
+        const Handle<Object> begin = range->GetBegin();
+        const Handle<Object> end = range->GetEnd();
         Handle<IteratorObject> iterator;
 
-        if (begin.IsInt() && end.IsInt())
+        if (begin->IsInt() && end->IsInt())
         {
-            iterator = new IntRangeIterator(interpreter,
-                                            begin.AsInt(),
-                                            end.AsInt(),
-                                            range->IsExclusive());
+            iterator = new IntRangeIterator(
+                interpreter,
+                begin->AsInt(),
+                end->AsInt(),
+                range->IsExclusive()
+            );
         } else {
-            iterator = new RangeIterator(interpreter,
-                                         begin,
-                                         end,
-                                         range->IsExclusive());
+            iterator = new RangeIterator(
+                interpreter,
+                begin,
+                end,
+                range->IsExclusive()
+            );
         }
-        frame->SetReturnValue(Value(iterator));
+        frame->SetReturnValue(iterator);
     }
 
     /**
@@ -215,7 +227,7 @@ namespace tempearly
             String string;
 
             range->SetFlag(CountedObject::FLAG_INSPECTING);
-            if (!range->GetBegin().ToString(interpreter, string))
+            if (!range->GetBegin()->ToString(interpreter, string))
             {
                 range->UnsetFlag(CountedObject::FLAG_INSPECTING);
                 return;
@@ -225,7 +237,7 @@ namespace tempearly
             {
                 buffer << '.';
             }
-            if (!range->GetEnd().ToString(interpreter, string))
+            if (!range->GetEnd()->ToString(interpreter, string))
             {
                 range->UnsetFlag(CountedObject::FLAG_INSPECTING);
                 return;
@@ -233,7 +245,7 @@ namespace tempearly
             range->UnsetFlag(CountedObject::FLAG_INSPECTING);
             buffer << string;
         }
-        frame->SetReturnValue(Value::NewString(buffer.ToString()));
+        frame->SetReturnValue(Object::NewString(buffer.ToString()));
     }
 
     void init_range(Interpreter* i)

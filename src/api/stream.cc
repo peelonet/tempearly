@@ -45,61 +45,61 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(stream_readline)
     {
-        const Value& receiver = args[0];
-        Vector<Value> one(1, Value::NewInt(1));
-        Value result;
+        const Handle<Object>& receiver = args[0];
+        Vector<Handle<Object>> one(1, Object::NewInt(1));
+        Handle<Object> result;
 
-        if (!receiver.CallMethod(interpreter, result, "read", one))
+        if (!receiver->CallMethod(interpreter, result, "read", one))
         {
             return;
         }
-        else if (result.IsBinary())
+        else if (result->IsBinary())
         {
             Vector<byte> buffer;
-            ByteString bytes = result.AsBinary();
+            ByteString bytes = result->AsBinary();
 
             while (!bytes.IsEmpty() && bytes.GetBack() != '\n')
             {
                 buffer.PushBack(bytes.GetBytes(), bytes.GetLength());
-                if (!receiver.CallMethod(interpreter, result, "read", one))
+                if (!receiver->CallMethod(interpreter, result, "read", one))
                 {
                     return;
                 }
-                else if (!result.IsBinary())
+                else if (!result->IsBinary())
                 {
                     break;
                 }
-                bytes = result.AsBinary();
+                bytes = result->AsBinary();
             }
             if (!buffer.IsEmpty() && buffer.GetBack() == '\r')
             {
                 buffer.Erase(buffer.GetSize() - 1);
             }
-            frame->SetReturnValue(Value::NewBinary(ByteString(buffer.GetData(), buffer.GetSize())));
+            frame->SetReturnValue(Object::NewBinary(ByteString(buffer.GetData(), buffer.GetSize())));
         }
-        else if (result.IsString())
+        else if (result->IsString())
         {
             StringBuilder buffer;
-            String runes = result.AsString();
+            String runes = result->AsString();
 
             while (!runes.IsEmpty() && runes.GetBack() != '\n')
             {
                 buffer.Append(runes);
-                if (!receiver.CallMethod(interpreter, result, "read", one))
+                if (!receiver->CallMethod(interpreter, result, "read", one))
                 {
                     return;
                 }
-                else if (!result.IsString())
+                else if (!result->IsString())
                 {
                     break;
                 }
-                runes = result.AsString();
+                runes = result->AsString();
             }
             if (!buffer.IsEmpty() && buffer.GetBack() == '\r')
             {
                 buffer.Erase(buffer.GetLength() - 1);
             }
-            frame->SetReturnValue(Value::NewString(buffer.ToString()));
+            frame->SetReturnValue(Object::NewString(buffer.ToString()));
         }
     }
 
@@ -132,11 +132,11 @@ namespace tempearly
 
         for (std::size_t i = 1; i < args.GetSize(); ++i)
         {
-            if (!args[i].ToString(interpreter, string))
+            if (!args[i]->ToString(interpreter, string))
             {
                 return;
             }
-            else if (!args[0].CallMethod(interpreter, "write", Vector<Value>(1, Value::NewString(string))))
+            else if (!args[0]->CallMethod(interpreter, "write", Object::NewString(string)))
             {
                 return;
             }
@@ -148,25 +148,26 @@ namespace tempearly
         class StreamIterator : public IteratorObject
         {
         public:
-            explicit StreamIterator(const Handle<Interpreter>& interpreter, const Value& stream)
+            explicit StreamIterator(const Handle<Interpreter>& interpreter,
+                                    const Handle<Object>& stream)
                 : IteratorObject(interpreter->cIterator)
                 , m_stream(stream) {}
 
             Result Generate(const Handle<Interpreter>& interpreter)
             {
-                if (!m_stream.IsNull())
+                if (m_stream)
                 {
-                    Value line;
+                    Handle<Object> line;
 
-                    if (!m_stream.CallMethod(interpreter, line, "readline"))
+                    if (!m_stream->CallMethod(interpreter, line, "readline"))
                     {
                         return Result(Result::KIND_ERROR);
                     }
-                    else if (!line.IsNull())
+                    else if (!line->IsNull())
                     {
-                        return Result(line);
+                        return line;
                     }
-                    m_stream.Clear();
+                    m_stream = nullptr;
                 }
 
                 return Result(Result::KIND_BREAK);
@@ -175,11 +176,14 @@ namespace tempearly
             void Mark()
             {
                 IteratorObject::Mark();
-                m_stream.Mark();
+                if (m_stream && !m_stream->IsMarked())
+                {
+                    m_stream->Mark();
+                }
             }
 
         private:
-            Value m_stream;
+            Object* m_stream;
             TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(StreamIterator);
         };
     }
@@ -192,7 +196,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(stream_iter)
     {
-        frame->SetReturnValue(Value(new StreamIterator(interpreter, args[0])));
+        frame->SetReturnValue(new StreamIterator(interpreter, args[0]));
     }
 
     void init_stream(Interpreter* i)

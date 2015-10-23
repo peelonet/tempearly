@@ -10,7 +10,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(void_iter)
     {
-        frame->SetReturnValue(Value(interpreter->GetEmptyIterator()));
+        frame->SetReturnValue(interpreter->GetEmptyIterator());
     }
 
     /**
@@ -20,7 +20,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(void_str)
     {
-        frame->SetReturnValue(Value::NewString(String()));
+        frame->SetReturnValue(Object::NewString(String()));
     }
 
     /**
@@ -30,7 +30,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(void_as_json)
     {
-        frame->SetReturnValue(Value::NewString("null"));
+        frame->SetReturnValue(Object::NewString("null"));
     }
 
     void init_void(Interpreter* i)

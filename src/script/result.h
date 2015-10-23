@@ -1,7 +1,7 @@
 #ifndef TEMPEARLY_SCRIPT_RESULT_H_GUARD
 #define TEMPEARLY_SCRIPT_RESULT_H_GUARD
 
-#include "value.h"
+#include "object.h"
 
 namespace tempearly
 {
@@ -44,12 +44,15 @@ namespace tempearly
          * \param kind  Type of the result
          * \param value Optional value returned by result
          */
-        explicit Result(Kind kind = KIND_SUCCESS, const Value& value = Value());
+        explicit Result(
+            Kind kind = KIND_SUCCESS,
+            const Handle<Object>& value = Handle<Object>()
+        );
 
         /**
          * Constructs successfull result with an value.
          */
-        Result(const Value& value);
+        Result(const Handle<Object>& value);
 
         /**
          * Copy constructor.
@@ -80,10 +83,18 @@ namespace tempearly
         }
 
         /**
+         * Returns true if this result has an value.
+         */
+        inline bool HasValue() const
+        {
+            return !!m_value;
+        }
+
+        /**
          * Returns an optional value returned by the result, or null value if
          * no value was returned.
          */
-        inline const Value& GetValue() const
+        inline const Handle<Object>& GetValue() const
         {
             return m_value;
         }
@@ -107,7 +118,7 @@ namespace tempearly
         /** Type of the result. */
         Kind m_kind;
         /** Optional value returned with the result. */
-        Value m_value;
+        Handle<Object> m_value;
     };
 }
 

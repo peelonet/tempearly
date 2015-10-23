@@ -4,7 +4,7 @@
 namespace tempearly
 {
     IteratorObject::IteratorObject(const Handle<Class>& cls)
-        : Object(cls) {}
+        : CustomObject(cls) {}
 
     bool IteratorObject::Peek(const Handle<Interpreter>& interpreter)
     {
@@ -35,7 +35,8 @@ namespace tempearly
         return true;
     }
 
-    bool IteratorObject::Peek(const Handle<Interpreter>& interpreter, Value& slot)
+    bool IteratorObject::Peek(const Handle<Interpreter>& interpreter,
+                              Handle<Object>& slot)
     {
         if (m_pushback.IsEmpty())
         {
@@ -66,7 +67,8 @@ namespace tempearly
         return true;
     }
 
-    Value IteratorObject::Next(const Handle<Interpreter>& interpreter)
+    bool IteratorObject::Next(const Handle<Interpreter>& interpreter,
+                              Handle<Object>& slot)
     {
         if (m_pushback.IsEmpty())
         {
@@ -75,7 +77,8 @@ namespace tempearly
             switch (result.GetKind())
             {
                 case Result::KIND_SUCCESS:
-                    return result.GetValue();
+                    slot = result.GetValue();
+                    return true;
 
                 case Result::KIND_BREAK:
                     if (!interpreter->HasException())
@@ -85,18 +88,17 @@ namespace tempearly
                     }
 
                 default:
-                    return Value();
+                    return false;
             }
         } else {
-            Value value = m_pushback.GetBack();
-
+            slot = m_pushback.GetBack();
             m_pushback.Erase(m_pushback.GetSize() - 1);
 
-            return value;
+            return true;
         }
     }
 
-    void IteratorObject::Feed(const Value& value)
+    void IteratorObject::Feed(const Handle<Object>& value)
     {
         m_pushback.PushBack(value);
     }
@@ -106,7 +108,10 @@ namespace tempearly
         Object::Mark();
         for (std::size_t i = 0; i < m_pushback.GetSize(); ++i)
         {
-            m_pushback[i].Mark();
+            if (!m_pushback[i]->IsMarked())
+            {
+                m_pushback[i]->Mark();
+            }
         }
     }
 
@@ -124,7 +129,12 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iter_next)
     {
-        frame->SetReturnValue(args[0].As<IteratorObject>()->Next(interpreter));
+        Handle<Object> slot;
+
+        if (args[0].As<IteratorObject>()->Next(interpreter, slot))
+        {
+            frame->SetReturnValue(slot);
+        }
     }
 
     /**
@@ -165,7 +175,7 @@ namespace tempearly
      */
     TEMPEARLY_NATIVE_METHOD(iter_peek)
     {
-        Value result;
+        Handle<Object> result;
 
         if (args[0].As<IteratorObject>()->Peek(interpreter, result))
         {
@@ -193,12 +203,12 @@ namespace tempearly
     {
         if (args[0].As<IteratorObject>()->Peek(interpreter))
         {
-            frame->SetReturnValue(Value::NewBool(true));
+            frame->SetReturnValue(Object::NewBool(true));
         }
         else if (interpreter->HasException(interpreter->eStopIteration))
         {
             interpreter->ClearException();
-            frame->SetReturnValue(Value::NewBool(false));
+            frame->SetReturnValue(Object::NewBool(false));
         }
     }
 

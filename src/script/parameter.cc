@@ -15,7 +15,7 @@ namespace tempearly
 
     bool Parameter::Apply(const Handle<Interpreter>& interpreter,
                           const Vector<Handle<Parameter> >& parameters,
-                          const Vector<Value>& arguments)
+                          const Vector<Handle<Object>>& arguments)
     {
         const Handle<Frame> frame = interpreter->GetFrame();
 
@@ -29,7 +29,7 @@ namespace tempearly
 
                 for (std::size_t j = i; j < arguments.GetSize(); ++j)
                 {
-                    const Value& value = arguments[j];
+                    const Handle<Object>& value = arguments[j];
 
                     if (parameter->m_type)
                     {
@@ -49,13 +49,13 @@ namespace tempearly
                     }
                     list->Append(value);
                 }
-                frame->SetLocalVariable(parameter->m_name, Value(list));
+                frame->SetLocalVariable(parameter->m_name, list);
 
                 return true;
             }
             else if (i < arguments.GetSize())
             {
-                const Value& value = arguments[i];
+                const Handle<Object>& value = arguments[i];
 
                 if (parameter->m_type)
                 {
@@ -77,7 +77,7 @@ namespace tempearly
             }
             else if (parameter->m_default_value)
             {
-                Value value;
+                Handle<Object> value;
 
                 if (!parameter->m_default_value->Evaluate(interpreter, value))
                 {
