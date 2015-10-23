@@ -174,6 +174,7 @@ namespace tempearly
             } else {
                 m_used_tail = record;
             }
+            m_used_head = record;
 
             return record;
         }
