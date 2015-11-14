@@ -15,6 +15,11 @@ namespace tempearly
 
         bool Execute(const Handle<Interpreter>& interpreter) const;
 
+        bool Evaluate(
+            const Handle<Interpreter>& interpreter,
+            Handle<Object>& slot
+        ) const;
+
         void Mark();
 
     private:
