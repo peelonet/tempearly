@@ -41,6 +41,26 @@ namespace tempearly
         return true;
     }
 
+    bool Script::Evaluate(const Handle<Interpreter>& interpreter,
+                          Handle<Object>& result) const
+    {
+        if (m_nodes.IsEmpty())
+        {
+            result = Object::NewNull();
+
+            return true;
+        }
+        for (std::size_t i = 0; i < m_nodes.GetSize(); ++i)
+        {
+            if (!m_nodes[i]->Evaluate(interpreter, result))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     void Script::Mark()
     {
         CountedObject::Mark();

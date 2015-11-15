@@ -84,6 +84,18 @@ namespace tempearly
         return new Script(nodes);
     }
 
+    Handle<Script> ScriptParser::CompileExpression()
+    {
+        const Handle<Node> expr = parse_expr(this);
+
+        if (expr)
+        {
+            return new Script(Vector<Handle<Node>>(1, expr));
+        } else {
+            return Handle<Script>();
+        }
+    }
+
     const ScriptParser::TokenDescriptor& ScriptParser::PeekToken()
     {
         if (m_pushback_tokens.IsEmpty())

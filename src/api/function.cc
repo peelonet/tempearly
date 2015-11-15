@@ -207,6 +207,18 @@ namespace tempearly
         return new UnboundMethod(interpreter, cls, arity, callback);
     }
 
+    String FunctionObject::GetName() const
+    {
+        Handle<Object> value;
+
+        if (GetOwnAttribute("__name__", value) && value->IsString())
+        {
+            return value->AsString();
+        } else {
+            return "<anonymous function>";
+        }
+    }
+
     bool FunctionObject::Invoke(const Handle<Interpreter>& interpreter,
                                 Handle<Object>& slot,
                                 const Vector<Handle<Object>>& args)

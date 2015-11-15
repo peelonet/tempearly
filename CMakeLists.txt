@@ -27,6 +27,12 @@ OPTION(
 )
 
 OPTION(
+    ENABLE_REPL_SAPI
+    "Enable REPL"
+    OFF
+)
+
+OPTION(
     TEMPEARLY_GC_DEBUG
     "Display debugging messages from GC"
     OFF
@@ -198,6 +204,16 @@ IF (ENABLE_HTTPD_SAPI)
         src/sapi/httpd/request.cc
         src/sapi/httpd/response.cc
         src/sapi/httpd/server.cc
+        ${INTERPRETER_SOURCES}
+    )
+ENDIF()
+
+IF (ENABLE_REPL_SAPI)
+    ADD_EXECUTABLE(
+        tempearly-repl
+        src/sapi/repl/main.cc
+        src/sapi/repl/request.cc
+        src/sapi/repl/response.cc
         ${INTERPRETER_SOURCES}
     )
 ENDIF()

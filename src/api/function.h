@@ -60,6 +60,12 @@ namespace tempearly
         );
 
         /**
+         * Returns name of the function or "<anonymous function>" if this
+         * function has no name.
+         */
+        String GetName() const;
+
+        /**
          * Invokes the function.
          *
          * \param interpreter Script interpreter

@@ -24,6 +24,8 @@ namespace tempearly
 
         Handle<Script> Compile();
 
+        Handle<Script> CompileExpression();
+
         const TokenDescriptor& PeekToken();
 
         bool PeekToken(Token::Kind kind);
