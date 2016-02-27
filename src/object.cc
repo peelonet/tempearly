@@ -28,7 +28,22 @@ namespace tempearly
 
         const Handle<Class> cls = GetClass(interpreter);
 
-        if (cls->GetAttribute(interpreter, name, slot))
+        if (cls == interpreter->cClass)
+        {
+            if (cls->GetOwnAttribute(name, slot))
+            {
+                if (slot->IsUnboundMethod())
+                {
+                    slot = slot.As<FunctionObject>()->Curry(
+                        interpreter,
+                        Vector<Handle<Object>>(1, this)
+                    );
+                }
+
+                return true;
+            }
+        }
+        else if (cls->GetAttribute(interpreter, name, slot))
         {
             if (slot->IsUnboundMethod())
             {
