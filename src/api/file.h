@@ -16,6 +16,11 @@ namespace tempearly
             return m_path;
         }
 
+        bool IsFile() const
+        {
+            return true;
+        }
+
     private:
         const Filename m_path;
         TEMPEARLY_DISALLOW_COPY_AND_ASSIGN(FileObject);
