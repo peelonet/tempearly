@@ -53,7 +53,7 @@ ELSE()
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
     ELSE()
         MESSAGE(
-            DATAL_ERROR
+            FATAL_ERROR
             "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support."
         )
     ENDIF()
