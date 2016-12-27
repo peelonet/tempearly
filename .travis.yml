@@ -3,6 +3,6 @@ compiler:
   - clang
   - gcc
 env:
-  - CFLAGS="-Wall -Werror"
+  - CXXFLAGS="-Wall -Werror"
 script:
   - mkdir build && cd build && cmake .. && cmake --build .
