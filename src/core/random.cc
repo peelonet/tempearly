@@ -72,7 +72,7 @@ namespace tempearly
             seed((std::time(0) >> 8) ^ std::time(0));
 #endif
         }
-        if (offset == n)
+        if (offset == static_cast<std::size_t>(n))
         {
             gen_state();
         }
@@ -104,7 +104,7 @@ namespace tempearly
             seed((std::time(0) >> 8) ^ std::time(0));
 #endif
         }
-        if (offset == n)
+        if (offset == static_cast<std::size_t>(n))
         {
             gen_state();
         }
