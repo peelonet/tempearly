@@ -1786,8 +1786,8 @@ SCAN_EXPONENT:
      * "-" unary-expression
      * "!" unary-expression
      * "~" unary-expression
-     * "++" unary-expression
-     * "--" unary-expression
+     * "++" postfix-expression
+     * "--" postfix-expression
      */
     static Handle<Node> parse_unary(const Handle<ScriptParser>& parser)
     {
@@ -1836,7 +1836,7 @@ SCAN_EXPONENT:
                     PrefixNode::INCREMENT : PrefixNode::DECREMENT;
 
                 parser->SkipToken();
-                if (!(node = parse_unary(parser)))
+                if (!(node = parse_postfix(parser)))
                 {
                     return Handle<Node>();
                 }
